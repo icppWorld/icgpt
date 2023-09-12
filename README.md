@@ -91,9 +91,9 @@ make dfx-start-local
 make dfx-stop-local
 ```
 
-## Deploy internet_identity
+## Internet Identity
 
-Our dapp is using internet identity for authentication.
+icgpt is using internet identity for authentication.
 
 The internet_identity canister will be installed during a `dfx deploy --network local` command using the instructions provided in `dfx.json`. It will NOT be deployed when deploying to the IC.
 
@@ -115,7 +115,7 @@ This file is not checked in, but automatically created/updated by all the follow
  - `make dfx-deploy-ic`
 l
 ### Deploy
-Deploy the dapp to the local network with:
+Deploy the icgpt to the local network with:
 
 ```bash
 # from root directory
