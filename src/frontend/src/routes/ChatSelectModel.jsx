@@ -63,7 +63,10 @@ export function ChatSelectModel({
         </Button>
       </Card>
 
-      <ChatSelectModelSizeCardTiny modelSize={modelSize} doSetModelSize={doSetModelSize} />
+      <ChatSelectModelSizeCardTiny
+        modelSize={modelSize}
+        doSetModelSize={doSetModelSize}
+      />
 
       <Card
         id="setPromptTypeCard"
