@@ -11,8 +11,8 @@ export function ChatSelectModel({
   setModelType,
   modelSize,
   setModelSize,
-  promptType,
-  setPromptType,
+  finetuneType,
+  setFinetuneType,
 }) {
   async function doSetModelType(type) {
     const handleSetModelType = (modelType) => {
@@ -37,12 +37,12 @@ export function ChatSelectModel({
     handleSetModelSize(size)
   }
 
-  async function doSetPromptType(type) {
-    const handleSetPromptType = (promptType) => {
-      setPromptType(promptType) // update parent's state
-      console.log('promptType  : ' + promptType)
+  async function doSetFinetuneType(type) {
+    const handleSetFinetuneType = (finetuneType) => {
+      setFinetuneType(finetuneType) // update parent's state
+      console.log('finetuneType  : ' + finetuneType)
     }
-    handleSetPromptType(type)
+    handleSetFinetuneType(type)
   }
 
   return (
@@ -84,32 +84,32 @@ export function ChatSelectModel({
       ) : null}
 
       <Card
-        id="setPromptTypeCard"
+        id="setFinetuneTypeCard"
         variant="subtle"
         color="purple"
         p="md"
         m="md"
       >
-        {/* <Box>
-          <Text color="white">Prompt Type: </Text>
+        <Box>
+          <Text color="white">Finetune: </Text>
         </Box>
 
-        <Divider></Divider> */}
+        <Divider></Divider>
         <Button
-          color={promptType === 'Chat' ? 'white' : 'purple'}
+          color={finetuneType === 'LLM' ? 'white' : 'purple'}
           size="lg"
           p="2xl"
-          onClick={() => doSetPromptType('Chat')}
+          onClick={() => doSetFinetuneType('LLM')}
         >
-          Chat
+          LLM
         </Button>
         <Button
-          color={promptType === 'Continue' ? 'white' : 'purple'}
+          color={finetuneType === 'Chat' ? 'white' : 'purple'}
           size="lg"
           p="2xl"
-          onClick={() => doSetPromptType('Continue')}
+          onClick={() => doSetFinetuneType('Chat')}
         >
-          Continue
+          Chat
         </Button>
       </Card>
     </Box>

@@ -11,7 +11,7 @@ import { ChatSelectModel } from './ChatSelectModel'
 export function Chat() {
   const [authClient, setAuthClient] = useOutletContext()
   const [modelType, setModelType] = React.useState('Tiny')
-  const [promptType, setPromptType] = React.useState('Continue')
+  const [finetuneType, setFinetuneType] = React.useState('LLM')
   const [modelSize, setModelSize] = React.useState('15M')
 
   const identity = authClient.getIdentity()
@@ -42,10 +42,10 @@ export function Chat() {
             <ChatSelectModel
               modelType={modelType}
               setModelType={setModelType}
-              promptType={promptType}
-              setPromptType={setPromptType}
               modelSize={modelSize}
               setModelSize={setModelSize}
+              finetuneType={finetuneType}
+              setFinetuneType={setFinetuneType}
             />
           </Card>
         </div>
