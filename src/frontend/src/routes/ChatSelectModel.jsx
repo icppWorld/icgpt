@@ -13,11 +13,29 @@ export function ChatSelectModel({
   setModelSize,
   finetuneType,
   setFinetuneType,
+  inputPlaceholder,
+  setInputPlaceholder
 }) {
-  async function doSetModelType(type) {
-    const handleSetModelType = (modelType) => {
-      setModelType(modelType) // update parent's state
-      console.log('modelType  : ' + modelType)
+  function print_state() {
+    console.log('------------------------------------')
+    console.log('modelType         : ' + modelType)
+    console.log('modelSize         : ' + modelSize)
+    console.log('finetuneType      : ' + finetuneType)
+    console.log('inputPlaceholder  : ' + inputPlaceholder)
+  }
+
+  // state updates are asynchronous, so call dependent ones with useEffect
+  React.useEffect(() => {
+    print_state();
+  }, [modelType, modelSize, finetuneType, inputPlaceholder]);
+
+  React.useEffect(() => {
+    doSetInputPlaceholder();
+  }, [modelType, finetuneType]);
+
+  function doSetModelType(type) {
+    const handleSetModelType = (type_) => {
+      setModelType(type_) // update parent's state
     }
     handleSetModelType(type)
 
@@ -29,20 +47,34 @@ export function ChatSelectModel({
     }
   }
 
-  async function doSetModelSize(size) {
-    const handleSetModelSize = (modelSize) => {
-      setModelSize(modelSize) // update parent's state
-      console.log('modelSize  : ' + modelSize)
+  function doSetModelSize(size) {
+    const handleSetModelSize = (size_) => {
+      setModelSize(size_) // update parent's state
     }
     handleSetModelSize(size)
   }
 
-  async function doSetFinetuneType(type) {
+  function doSetFinetuneType(type) {
     const handleSetFinetuneType = (finetuneType) => {
       setFinetuneType(finetuneType) // update parent's state
-      console.log('finetuneType  : ' + finetuneType)
     }
     handleSetFinetuneType(type)
+  }
+
+  function doSetInputPlaceholder() {
+    const handleSetInputPlaceholder = (placeholder) => {
+      setInputPlaceholder(placeholder) // update parent's state
+
+    }
+    let placeholder = 'Send a message'
+    if (finetuneType === 'LLM') {
+      if (modelType === 'Tiny') {
+        placeholder = 'Start your story (pretend to be 4 years old...)'
+      } else if (modelType === 'llama2') {
+        placeholder = 'Start your sentence...'
+      }
+    }
+    handleSetInputPlaceholder(placeholder)
   }
 
   return (

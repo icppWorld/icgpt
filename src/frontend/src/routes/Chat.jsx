@@ -7,12 +7,14 @@ import { Card, Heading, Divider } from 'dracula-ui'
 
 import { Footer } from '../common/Footer'
 import { ChatSelectModel } from './ChatSelectModel'
+import { ChatInput } from './ChatInput'
 
 export function Chat() {
   const [authClient, setAuthClient] = useOutletContext()
   const [modelType, setModelType] = React.useState('Tiny')
-  const [finetuneType, setFinetuneType] = React.useState('LLM')
   const [modelSize, setModelSize] = React.useState('15M')
+  const [finetuneType, setFinetuneType] = React.useState('LLM')
+  const [inputPlaceholder, setInputPlaceholder] = React.useState('Start your story (pretend to be 4 years old...)')
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
@@ -46,7 +48,10 @@ export function Chat() {
               setModelSize={setModelSize}
               finetuneType={finetuneType}
               setFinetuneType={setFinetuneType}
+              inputPlaceholder={inputPlaceholder}
+              setInputPlaceholder={setInputPlaceholder}
             />
+            <ChatInput inputPlaceholder={inputPlaceholder} />
           </Card>
         </div>
         <Footer />
