@@ -23,9 +23,9 @@ export function ChatSelectModel({
 
     // Setting the default modelSize based on the modelType
     if (type === 'Tiny') {
-      doSetModelSize('15M');
+      doSetModelSize('15M')
     } else if (type === 'llama2') {
-      doSetModelSize('7B');
+      doSetModelSize('7B')
     }
   }
 
@@ -44,8 +44,6 @@ export function ChatSelectModel({
     }
     handleSetPromptType(type)
   }
-
-
 
   return (
     <Box>
@@ -74,9 +72,15 @@ export function ChatSelectModel({
       </Card>
 
       {modelType === 'Tiny' ? (
-        <ChatSelectModelSizeCardTiny modelSize={modelSize} doSetModelSize={doSetModelSize} />
+        <ChatSelectModelSizeCardTiny
+          modelSize={modelSize}
+          doSetModelSize={doSetModelSize}
+        />
       ) : modelType === 'llama2' ? (
-        <ChatSelectModelSizeCardLlama2 modelSize={modelSize} doSetModelSize={doSetModelSize} />
+        <ChatSelectModelSizeCardLlama2
+          modelSize={modelSize}
+          doSetModelSize={doSetModelSize}
+        />
       ) : null}
 
       <Card
