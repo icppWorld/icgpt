@@ -38,8 +38,12 @@ export function Login({ setAuthClient }) {
                 <tbody>
                   <tr>
                     <td className="drac-text-bold drac-text-white">data set</td>
-                    <td className="drac-text-bold drac-text-white">model size</td>
-                    <td className="drac-text-bold drac-text-white">finetuned</td>
+                    <td className="drac-text-bold drac-text-white">
+                      model size
+                    </td>
+                    <td className="drac-text-bold drac-text-white">
+                      finetuned
+                    </td>
                     <td className="drac-text-bold drac-text-white">status</td>
                   </tr>
                   <tr>
