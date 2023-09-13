@@ -3,7 +3,10 @@ import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 
-export function ChatSelectModelSizeCardTinyStories({ modelSize, doSetModelSize }) {
+export function ChatSelectModelSizeCardTinyStories({
+  modelSize,
+  doSetModelSize,
+}) {
   return (
     <Box>
       <Button

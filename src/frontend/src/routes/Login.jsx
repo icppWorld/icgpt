@@ -99,7 +99,6 @@ export function Login({ setAuthClient }) {
                 </tbody>
               </Table>
             </Box>
-
           </Card>
         </div>
         <Footer />

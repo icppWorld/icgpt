@@ -141,7 +141,6 @@ export function ChatSelectModel({
             </Button>
           </Box>
         </Box>
-
       </Card>
     </Box>
   )
