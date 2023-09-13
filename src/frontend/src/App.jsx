@@ -8,6 +8,9 @@ import { Outlet } from 'react-router-dom'
 import { Login } from './routes/Login'
 import { WaitAnimation } from './routes/WaitAnimation'
 
+import 'bootstrap-icons/font/bootstrap-icons.css';
+
+
 export function App() {
   // Authentication with internet identity
   const [authClient, setAuthClient] = React.useState()
