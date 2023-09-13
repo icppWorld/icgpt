@@ -14,7 +14,7 @@ export function Home() {
   return (
     <div>
       <Helmet>
-        <title>icgpt: Home</title>
+        <title>ICGPT: Home</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">

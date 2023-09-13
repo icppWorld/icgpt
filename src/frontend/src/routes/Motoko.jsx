@@ -9,7 +9,7 @@ export function Motoko() {
   return (
     <div>
       <Helmet>
-        <title>icgpt: Motoko</title>
+        <title>ICGPT: Motoko</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">

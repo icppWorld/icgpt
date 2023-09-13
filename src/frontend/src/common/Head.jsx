@@ -11,12 +11,9 @@ export function Head(props) {
 
       <meta
         name="description"
-        content="We build Rasa chatbots for the Internet Computer."
+        content="Internet Computer Generative Pre-trained Transformers"
       />
-      <meta
-        name="keywords"
-        content="Internet Computer, AI, LLM, C++, icpp-pro, llama2.c"
-      />
+      <meta name="keywords" content="Internet Computer, GPT, AI, LLM" />
       <meta name="author" content="icppWorld" />
 
       {/* TODO:
@@ -27,7 +24,7 @@ export function Head(props) {
       <link rel="manifest" href="manifest.json" />
       */}
 
-      <title>icgpt</title>
+      <title>ICGPT</title>
       <link rel="icon" href="favicon.ico" />
     </Helmet>
   )

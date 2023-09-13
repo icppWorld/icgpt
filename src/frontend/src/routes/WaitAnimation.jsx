@@ -9,7 +9,7 @@ export function WaitAnimation({ message }) {
   return (
     <div>
       <Helmet>
-        <title>icgpt: Login</title>
+        <title>ICGPT: Login</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">
@@ -21,11 +21,8 @@ export function WaitAnimation({ message }) {
             display="inline-block"
           >
             <Heading color="white" size="xl">
-              icgpt
+              ICGPT Labs
             </Heading>
-            {/* <Heading color="yellow" size="xl">
-              The first Rasa Chatbot for the Internet Computer
-            </Heading> */}
             <Divider></Divider>
             <Box>
               <Card variant="subtle" color="purple" p="md" m="md">

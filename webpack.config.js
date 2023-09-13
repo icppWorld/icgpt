@@ -4,6 +4,8 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const TerserPlugin = require('terser-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
 
+const frontendDirectory = 'frontend'
+
 // URL for Internet Identity
 const II_URL_LOCAL = 'http://be2us-64aaa-aaaaa-qaabq-cai.localhost:4943' // Replace ID with your local internet_identity canister
 const II_URL_IC = 'https://identity.ic0.app/'
@@ -222,19 +224,21 @@ module.exports = (env = {}, args = {}) => {
       path: path.join(__dirname, 'dist', 'frontend'),
       clean: true,
     },
-    // proxy /api to port 8000 during development
+    // proxy /api to port 4943 during development.
+    // if you edit dfx.json to define a project-specific local network, change the port to match.
     devServer: {
       proxy: {
         '/api': {
-          target: 'http://localhost:8000',
+          target: 'http://127.0.0.1:4943',
           changeOrigin: true,
           pathRewrite: {
             '^/api': '/api',
           },
         },
       },
+      static: path.resolve(__dirname, 'src', frontendDirectory, 'assets'),
       hot: true,
-      watchFiles: ['./src/frontend'],
+      watchFiles: [path.resolve(__dirname, 'src', frontendDirectory)],
       liveReload: true,
     },
   }
