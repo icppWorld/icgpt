@@ -14,7 +14,7 @@ export function ChatSelectModel({
   finetuneType,
   setFinetuneType,
   inputPlaceholder,
-  setInputPlaceholder
+  setInputPlaceholder,
 }) {
   function print_state() {
     console.log('------------------------------------')
@@ -26,12 +26,12 @@ export function ChatSelectModel({
 
   // state updates are asynchronous, so call dependent ones with useEffect
   React.useEffect(() => {
-    print_state();
-  }, [modelType, modelSize, finetuneType, inputPlaceholder]);
+    print_state()
+  }, [modelType, modelSize, finetuneType, inputPlaceholder])
 
   React.useEffect(() => {
-    doSetInputPlaceholder();
-  }, [modelType, finetuneType]);
+    doSetInputPlaceholder()
+  }, [modelType, finetuneType])
 
   function doSetModelType(type) {
     const handleSetModelType = (type_) => {
@@ -64,7 +64,6 @@ export function ChatSelectModel({
   function doSetInputPlaceholder() {
     const handleSetInputPlaceholder = (placeholder) => {
       setInputPlaceholder(placeholder) // update parent's state
-
     }
     let placeholder = 'Send a message'
     if (finetuneType === 'LLM') {

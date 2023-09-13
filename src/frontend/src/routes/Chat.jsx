@@ -14,7 +14,9 @@ export function Chat() {
   const [modelType, setModelType] = React.useState('Tiny')
   const [modelSize, setModelSize] = React.useState('15M')
   const [finetuneType, setFinetuneType] = React.useState('LLM')
-  const [inputPlaceholder, setInputPlaceholder] = React.useState('Start your story (pretend to be 4 years old...)')
+  const [inputPlaceholder, setInputPlaceholder] = React.useState(
+    'Start your story (pretend to be 4 years old...)'
+  )
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
