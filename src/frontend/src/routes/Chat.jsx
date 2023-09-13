@@ -11,7 +11,7 @@ import { ChatInput } from './ChatInput'
 
 export function Chat() {
   const [authClient, setAuthClient] = useOutletContext()
-  const [modelType, setModelType] = React.useState('Tiny')
+  const [modelType, setModelType] = React.useState('TinyStories')
   const [modelSize, setModelSize] = React.useState('15M')
   const [finetuneType, setFinetuneType] = React.useState('LLM')
   const [inputPlaceholder, setInputPlaceholder] = React.useState(
@@ -40,7 +40,7 @@ export function Chat() {
               ICGPT Labs
             </Heading>
             <Heading color="yellow" size="sm">
-              experiments with on-chain LLMs
+              on-chain LLMs
             </Heading>
             <Divider></Divider>
             <ChatSelectModel

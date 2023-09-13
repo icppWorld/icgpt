@@ -5,18 +5,7 @@ import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 
 export function ChatSelectModelSizeCardLlama2({ modelSize, doSetModelSize }) {
   return (
-    <Card
-      id="setModelSizeCard_Llama2"
-      variant="subtle"
-      color="purple"
-      p="md"
-      m="md"
-    >
-      {/* <Box>
-          <Text color="white">Model Size: </Text>
-        </Box>
-
-        <Divider></Divider> */}
+    <Box>
       <Button
         color={modelSize === '7B' ? 'white' : 'purple'}
         size="lg"
@@ -41,6 +30,6 @@ export function ChatSelectModelSizeCardLlama2({ modelSize, doSetModelSize }) {
       >
         70B
       </Button>
-    </Card>
+    </Box>
   )
 }

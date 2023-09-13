@@ -4,7 +4,6 @@ import ReactDOM from 'react-dom'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { App } from './App'
 import { Chat } from './routes/Chat'
-import { Home } from './routes/Home'
 import { Motoko } from './routes/Motoko'
 import { Docs } from './routes/Docs'
 import { About } from './routes/About'
@@ -18,7 +17,6 @@ ReactDOM.render(
       <Routes>
         <Route path="/" element={<App />}>
           <Route index element={<Chat />} />
-          {/* <Route index element={<Home />} /> */}
           <Route path="motoko" element={<Motoko />} />
           <Route path="docs" element={<Docs />} />
           <Route path="about" element={<About />} />

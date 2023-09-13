@@ -2,7 +2,7 @@
 import React from 'react'
 import { Helmet } from 'react-helmet'
 import 'dracula-ui/styles/dracula-ui.css'
-import { Card, Heading, Divider } from 'dracula-ui'
+import { Box, Card, Heading, Divider, Table } from 'dracula-ui'
 
 import { Footer } from '../common/Footer'
 import { LogInWithInternetIdentity } from './LoginWithInternetIdentity'
@@ -26,10 +26,80 @@ export function Login({ setAuthClient }) {
               ICGPT Labs
             </Heading>
             <Heading color="yellow" size="sm">
-              experiments with on-chain LLMs
+              on-chain LLMs
             </Heading>
             <Divider></Divider>
             <LogInWithInternetIdentity setAuthClient={setAuthClient} />
+
+            <Divider></Divider>
+
+            <Heading color="cyan" size="sm">
+              Currently deployed to IC canisters:
+            </Heading>
+
+            <Divider></Divider>
+
+            <Box>
+              <Table>
+                <thead>
+                  <tr>
+                    <th className="drac-text drac-text-white">data set</th>
+                    <th className="drac-text drac-text-white">model size</th>
+                    <th className="drac-text drac-text-white">finetuned</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="drac-text drac-text-white">TinyStories</td>
+                    <td className="drac-text drac-text-white">260K</td>
+                    <td className="drac-text drac-text-white">LLM</td>
+                  </tr>
+                  <tr>
+                    <td className="drac-text drac-text-white">TinyStories</td>
+                    <td className="drac-text drac-text-white">15M</td>
+                    <td className="drac-text drac-text-white">LLM</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </Box>
+
+            <Divider></Divider>
+
+            <Heading color="yellow" size="sm">
+              Coming soon:
+            </Heading>
+
+            <Divider></Divider>
+
+            <Box>
+              <Table>
+                <thead>
+                  <tr>
+                    <th className="drac-text drac-text-white">data set</th>
+                    <th className="drac-text drac-text-white">model size</th>
+                    <th className="drac-text drac-text-white">finetuned</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="drac-text drac-text-white">TinyStories</td>
+                    <td className="drac-text drac-text-white">15M</td>
+                    <td className="drac-text drac-text-white">Chat</td>
+                  </tr>
+                  <tr>
+                    <td className="drac-text drac-text-white">Llama2</td>
+                    <td className="drac-text drac-text-white">7B</td>
+                    <td className="drac-text drac-text-white">LLM</td>
+                  </tr>
+                  <tr>
+                    <td className="drac-text drac-text-white">Llama2</td>
+                    <td className="drac-text drac-text-white">7B</td>
+                    <td className="drac-text drac-text-white">Chat</td>
+                  </tr>
+                </tbody>
+              </Table>
+            </Box>
+
           </Card>
         </div>
         <Footer />

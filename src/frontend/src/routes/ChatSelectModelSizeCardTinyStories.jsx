@@ -3,20 +3,9 @@ import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 
-export function ChatSelectModelSizeCardTiny({ modelSize, doSetModelSize }) {
+export function ChatSelectModelSizeCardTinyStories({ modelSize, doSetModelSize }) {
   return (
-    <Card
-      id="setModelSizeCard_Tiny"
-      variant="subtle"
-      color="purple"
-      p="md"
-      m="md"
-    >
-      {/* <Box>
-          <Text color="white">Model Size: </Text>
-        </Box>
-
-        <Divider></Divider> */}
+    <Box>
       <Button
         color={modelSize === '260K' ? 'white' : 'purple'}
         size="lg"
@@ -49,6 +38,6 @@ export function ChatSelectModelSizeCardTiny({ modelSize, doSetModelSize }) {
       >
         110M
       </Button>
-    </Card>
+    </Box>
   )
 }
