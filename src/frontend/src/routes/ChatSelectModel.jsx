@@ -4,14 +4,15 @@ import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 
 import { ChatSelectModelSizeCardTiny } from './ChatSelectModelSizeCardTiny'
+import { ChatSelectModelSizeCardLlama2 } from './ChatSelectModelSizeCardLlama2'
 
 export function ChatSelectModel({
   modelType,
   setModelType,
-  promptType,
-  setPromptType,
   modelSize,
   setModelSize,
+  promptType,
+  setPromptType,
 }) {
   async function doSetModelType(type) {
     const handleSetModelType = (modelType) => {
@@ -19,6 +20,21 @@ export function ChatSelectModel({
       console.log('modelType  : ' + modelType)
     }
     handleSetModelType(type)
+
+    // Setting the default modelSize based on the modelType
+    if (type === 'Tiny') {
+      doSetModelSize('15M');
+    } else if (type === 'llama2') {
+      doSetModelSize('7B');
+    }
+  }
+
+  async function doSetModelSize(size) {
+    const handleSetModelSize = (modelSize) => {
+      setModelSize(modelSize) // update parent's state
+      console.log('modelSize  : ' + modelSize)
+    }
+    handleSetModelSize(size)
   }
 
   async function doSetPromptType(type) {
@@ -29,13 +45,7 @@ export function ChatSelectModel({
     handleSetPromptType(type)
   }
 
-  async function doSetModelSize(size) {
-    const handleSetModelSize = (modelSize) => {
-      setModelSize(modelSize) // update parent's state
-      console.log('modelSize  : ' + modelSize)
-    }
-    handleSetModelSize(size)
-  }
+
 
   return (
     <Box>
@@ -63,10 +73,11 @@ export function ChatSelectModel({
         </Button>
       </Card>
 
-      <ChatSelectModelSizeCardTiny
-        modelSize={modelSize}
-        doSetModelSize={doSetModelSize}
-      />
+      {modelType === 'Tiny' ? (
+        <ChatSelectModelSizeCardTiny modelSize={modelSize} doSetModelSize={doSetModelSize} />
+      ) : modelType === 'llama2' ? (
+        <ChatSelectModelSizeCardLlama2 modelSize={modelSize} doSetModelSize={doSetModelSize} />
+      ) : null}
 
       <Card
         id="setPromptTypeCard"
