@@ -43,14 +43,21 @@ export function App() {
         authClient={authClient}
         setAuthClient={setAuthClient}
       /> */}
-      <Outlet context={{
-        authClient, setAuthClient,
-        modelType, setModelType,
-        modelSize, setModelSize,
-        finetuneType, setFinetuneType,
-        inputPlaceholder, setInputPlaceholder,
-        prompt, setPrompt
-      }}
+      <Outlet
+        context={{
+          authClient,
+          setAuthClient,
+          modelType,
+          setModelType,
+          modelSize,
+          setModelSize,
+          finetuneType,
+          setFinetuneType,
+          inputPlaceholder,
+          setInputPlaceholder,
+          prompt,
+          setPrompt,
+        }}
       />
       {/* <StagingBanner /> */}
       <Footer />
