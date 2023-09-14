@@ -10,14 +10,12 @@ import { ChatSelectModel } from './ChatSelectModel'
 import { ChatInput } from './ChatInput'
 
 export function ChatNew() {
-  const [authClient, setAuthClient] = useOutletContext()
-  const [modelType, setModelType] = React.useState('TinyStories')
-  const [modelSize, setModelSize] = React.useState('15M')
-  const [finetuneType, setFinetuneType] = React.useState('LLM')
-  const [inputPlaceholder, setInputPlaceholder] = React.useState(
-    'Start your story (pretend to be 4 years old...)'
-  )
-  const [prompt, setPrompt] = React.useState('')
+  const { authClient, setAuthClient } = useOutletContext()
+  const { modelType, setModelType } = useOutletContext()
+  const { modelSize, setModelSize } = useOutletContext()
+  const { finetuneType, setFinetuneType } = useOutletContext()
+  const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
+  const { prompt, setPrompt } = useOutletContext()
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
