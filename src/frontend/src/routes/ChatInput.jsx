@@ -3,7 +3,7 @@ import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 
-export function ChatInput({ inputPlaceholder }) {
+export function ChatInput({ inputPlaceholder, prompt, setPrompt }) {
   const [text, setText] = React.useState('')
   const textareaRef = React.useRef(null)
 
@@ -25,6 +25,10 @@ export function ChatInput({ inputPlaceholder }) {
     display: 'flex', // to make textarea and button sit side by side
     alignItems: 'center',
     gap: '10px',
+  }
+
+  function doSetPrompt() {
+    setPrompt(text)
   }
 
   return (
@@ -51,7 +55,7 @@ export function ChatInput({ inputPlaceholder }) {
         }}
       />
 
-      <Button onClick={() => console.log('Submitting...')}>
+      <Button onClick={doSetPrompt}>
         <i
           className="bi bi-caret-right-square-fill"
           style={{ fontSize: '20px' }}
