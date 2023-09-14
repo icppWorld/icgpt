@@ -9,14 +9,13 @@ import { Footer } from '../common/Footer'
 import { ChatSelectModel } from './ChatSelectModel'
 import { ChatInput } from './ChatInput'
 
-export function Chat() {
-  const [authClient, setAuthClient] = useOutletContext()
-  const [modelType, setModelType] = React.useState('TinyStories')
-  const [modelSize, setModelSize] = React.useState('15M')
-  const [finetuneType, setFinetuneType] = React.useState('LLM')
-  const [inputPlaceholder, setInputPlaceholder] = React.useState(
-    'Start your story (pretend to be 4 years old...)'
-  )
+export function ChatNew() {
+  const { authClient, setAuthClient } = useOutletContext()
+  const { modelType, setModelType } = useOutletContext()
+  const { modelSize, setModelSize } = useOutletContext()
+  const { finetuneType, setFinetuneType } = useOutletContext()
+  const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
+  const { prompt, setPrompt } = useOutletContext()
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
@@ -25,7 +24,7 @@ export function Chat() {
   return (
     <div>
       <Helmet>
-        <title>ICGPT: Chat</title>
+        <title>ICGPT: ChatNew</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">
@@ -53,7 +52,11 @@ export function Chat() {
               inputPlaceholder={inputPlaceholder}
               setInputPlaceholder={setInputPlaceholder}
             />
-            <ChatInput inputPlaceholder={inputPlaceholder} />
+            <ChatInput
+              inputPlaceholder={inputPlaceholder}
+              prompt={prompt}
+              setPrompt={setPrompt}
+            />
           </Card>
         </div>
         <Footer />

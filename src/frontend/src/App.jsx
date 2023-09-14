@@ -11,8 +11,21 @@ import { WaitAnimation } from './routes/WaitAnimation'
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
 export function App() {
+  // ---------------------------------------------------------
+  // These props are all added to the App's context via Outlet
+
   // Authentication with internet identity
   const [authClient, setAuthClient] = React.useState()
+
+  // ChatNew
+  const [modelType, setModelType] = React.useState('TinyStories')
+  const [modelSize, setModelSize] = React.useState('15M')
+  const [finetuneType, setFinetuneType] = React.useState('LLM')
+  const [inputPlaceholder, setInputPlaceholder] = React.useState(
+    'Start your story (pretend to be 4 years old...)'
+  )
+  const [prompt, setPrompt] = React.useState('')
+  // ---------------------------------------------------------
 
   if (!authClient) {
     return (
@@ -30,8 +43,22 @@ export function App() {
         authClient={authClient}
         setAuthClient={setAuthClient}
       /> */}
-      {/* https://stackoverflow.com/a/71882311/5480536 */}
-      <Outlet context={[authClient, setAuthClient]} />
+      <Outlet
+        context={{
+          authClient,
+          setAuthClient,
+          modelType,
+          setModelType,
+          modelSize,
+          setModelSize,
+          finetuneType,
+          setFinetuneType,
+          inputPlaceholder,
+          setInputPlaceholder,
+          prompt,
+          setPrompt,
+        }}
+      />
       {/* <StagingBanner /> */}
       <Footer />
     </div>
