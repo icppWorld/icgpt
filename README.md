@@ -46,6 +46,37 @@ and make the script executable:
 chmod +x .git/hooks/pre-commit
 ```
 
+## icpp_llama2
+
+We defined in dfx.json of the icgpt repo what to use for the `llama2` canister:
+```json
+"llama2": {
+      "type": "custom",
+      "candid": "../icpp-llm/icpp_llama2/src/llama2.did",
+      "wasm": "../icpp-llm/icpp_llama2/build/llama2.wasm",
+      "shrink": false,
+      "remote": {
+        "candid": "llama2.did",
+        "id": {
+          "ic": "4c4bn-daaaa-aaaag-abvcq-cai"
+        }
+      }
+    }
+```
+
+So, make sure to clone the icpp-llm repo as a sibling, and build the wasm for icpp_llama2 as described in that repo. 
+
+
+## Javascript bindings 
+
+
+## process.env.CANISTER_ID_<NAME>
+
+The generated declarations and in our own frontend code the canister Ids are defined with `process.env.CANISTER_ID_<NAME>`.
+
+The way that these environment variables are created is:
+- The command `dfx deploy` maintains a section in the file `.env` where it stores the canister id for every deployed canister.
+- The commands `npm build/run` use `webpack.config.js`, where the `webpack.EnvironmentPlugin` is used to define the values.
 
 
 ## Dracula UI

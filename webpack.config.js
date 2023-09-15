@@ -111,6 +111,11 @@ module.exports = (env = {}, args = {}) => {
 
       // Use these aliases in import statements
       alias: {
+        DeclarationsCanisterLlama2: path.resolve(
+          __dirname,
+          'src/declarations',
+          'llama2'
+        ),
         DeclarationsCanisterMotoko: path.resolve(
           __dirname,
           'src/declarations',
@@ -176,6 +181,11 @@ module.exports = (env = {}, args = {}) => {
         chunks: ['Main'],
         cache: false,
       }),
+      new webpack.EnvironmentPlugin({
+        ...canisterEnvVariables,
+        II_URL,
+        IC_HOST_URL,
+      }),
       /*
       Do not use the CopyPlugin, because:
       (-) It copies blindly, without giving webpack a chance to build a dependency graph,
@@ -208,11 +218,6 @@ module.exports = (env = {}, args = {}) => {
             noErrorOnMissing: true,
           },
         ],
-      }),
-      new webpack.EnvironmentPlugin({
-        ...canisterEnvVariables,
-        II_URL,
-        IC_HOST_URL,
       }),
       new webpack.ProvidePlugin({
         Buffer: [require.resolve('buffer/'), 'Buffer'],
