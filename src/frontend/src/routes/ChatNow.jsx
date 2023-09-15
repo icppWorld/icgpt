@@ -6,16 +6,11 @@ import 'dracula-ui/styles/dracula-ui.css'
 import { Card, Heading, Divider } from 'dracula-ui'
 
 import { Footer } from '../common/Footer'
-import { ChatSelectModel } from './ChatSelectModel'
 import { ChatInput } from './ChatInput'
 
-export function ChatNew() {
+export function ChatNow() {
   const { authClient, setAuthClient } = useOutletContext()
-  const { actor, setActor } = useOutletContext()
-  const { chatNew, setChatNew } = useOutletContext()
-  const { modelType, setModelType } = useOutletContext()
-  const { modelSize, setModelSize } = useOutletContext()
-  const { finetuneType, setFinetuneType } = useOutletContext()
+  const { modelType, modelSize, finetuneType } = useOutletContext()
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
   const { prompt, setPrompt } = useOutletContext()
 
@@ -26,7 +21,7 @@ export function ChatNew() {
   return (
     <div>
       <Helmet>
-        <title>ICGPT: ChatNew</title>
+        <title>ICGPT: ChatNow</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">
@@ -38,29 +33,14 @@ export function ChatNew() {
             display="inline-block"
           >
             <Heading color="white" size="xl">
-              ICGPT Labs (COMING SOON!)
+              ICGPT Labs
             </Heading>
             <Heading color="yellow" size="sm">
               on-chain LLMs
             </Heading>
             <Divider></Divider>
-            <ChatSelectModel
-              modelType={modelType}
-              setModelType={setModelType}
-              modelSize={modelSize}
-              setModelSize={setModelSize}
-              finetuneType={finetuneType}
-              setFinetuneType={setFinetuneType}
-              inputPlaceholder={inputPlaceholder}
-              setInputPlaceholder={setInputPlaceholder}
-            />
+            {/* TODO - INSERT COMPONENT TO DISPLAY GENERATED TEXT */}
             <ChatInput
-              authClient={authClient}
-              setAuthClient={setAuthClient}
-              actor={actor}
-              setActor={setActor}
-              chatNew={chatNew}
-              setChatNew={setChatNew}
               inputPlaceholder={inputPlaceholder}
               prompt={prompt}
               setPrompt={setPrompt}

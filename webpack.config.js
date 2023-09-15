@@ -12,7 +12,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production'
 const frontendDirectory = 'frontend'
 
 // URL for Internet Identity
-const II_URL_LOCAL = 'http://be2us-64aaa-aaaaa-qaabq-cai.localhost:4943' // Replace ID with your local internet_identity canister
+const II_URL_LOCAL = `http://${process.env.CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`
 const II_URL_IC = 'https://identity.ic0.app/'
 const II_URL = process.env.NODE_ENV === 'production' ? II_URL_IC : II_URL_LOCAL
 console.warn(`II_URL: ${II_URL}`)
@@ -23,6 +23,18 @@ const IC_HOST_URL_IC = 'https://ic0.app'
 const IC_HOST_URL =
   process.env.NODE_ENV === 'production' ? IC_HOST_URL_IC : IC_HOST_URL_LOCAL
 console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
+
+// More data from .env, because the approach with ...Object below does not seem to work
+const DFX_VERSION = `${process.env.DFX_VERSION}`
+const DFX_NETWORK = `${process.env.DFX_NETWORK}`
+const CANISTER_ID_LLAMA2 = `${process.env.CANISTER_ID_LLAMA2}`
+const CANISTER_ID_INTERNET_IDENTITY = `${process.env.CANISTER_ID_INTERNET_IDENTITY}`
+const CANISTER_ID_CANISTER_FRONTEND = `${process.env.CANISTER_ID_CANISTER_FRONTEND}`
+console.warn(`DFX_VERSION: ${DFX_VERSION}`)
+console.warn(`DFX_NETWORK: ${DFX_NETWORK}`)
+console.warn(`CANISTER_ID_LLAMA2: ${CANISTER_ID_LLAMA2}`)
+console.warn(`CANISTER_ID_INTERNET_IDENTITY: ${CANISTER_ID_INTERNET_IDENTITY}`)
+console.warn(`CANISTER_ID_CANISTER_FRONTEND: ${CANISTER_ID_CANISTER_FRONTEND}`)
 
 // function initCanisterEnv() {
 //   let localCanisters, prodCanisters
@@ -180,11 +192,18 @@ module.exports = (env = {}, args = {}) => {
         cache: false,
       }),
       new webpack.EnvironmentPlugin({
-        ...Object.keys(process.env).filter((key) => {
-          if (key.includes('CANISTER')) return true
-          if (key.includes('DFX')) return true
-          return false
-        }),
+        // This does not seem to work
+        // ...Object.keys(process.env).filter((key) => {
+        //   if (key.includes('CANISTER')) return true
+        //   if (key.includes('DFX')) return true
+        //   return false
+        // }),
+        DFX_VERSION,
+        DFX_NETWORK,
+        CANISTER_ID_LLAMA2,
+        CANISTER_ID_INTERNET_IDENTITY,
+        CANISTER_ID_CANISTER_FRONTEND,
+        //
         II_URL,
         IC_HOST_URL,
       }),

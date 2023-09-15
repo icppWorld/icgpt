@@ -17,7 +17,12 @@ export function App() {
   // Authentication with internet identity
   const [authClient, setAuthClient] = React.useState()
 
+  // actor for the selected LLM canister
+  // -> see js bindings stored in src/declarations/canister (See README)
+  const [actor, setActor] = React.useState()
+
   // ChatNew
+  const [chatNew, setChatNew] = React.useState(true)
   const [modelType, setModelType] = React.useState('TinyStories')
   const [modelSize, setModelSize] = React.useState('15M')
   const [finetuneType, setFinetuneType] = React.useState('LLM')
@@ -47,6 +52,10 @@ export function App() {
         context={{
           authClient,
           setAuthClient,
+          actor,
+          setActor,
+          chatNew,
+          setChatNew,
           modelType,
           setModelType,
           modelSize,
