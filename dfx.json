@@ -1,16 +1,12 @@
 {
   "canisters": {
     "canister_frontend": {
-      "dependencies": ["canister_motoko"],
+      "dependencies": [],
       "frontend": {
         "entrypoint": "src/frontend/src/index.html"
       },
       "source": ["dist/frontend/"],
       "type": "assets"
-    },
-    "canister_motoko": {
-      "main": "src/backend/motoko/main.mo",
-      "type": "motoko"
     },
     "internet_identity": {
       "type": "custom",

@@ -21,7 +21,7 @@ export function WaitAnimation({ message }) {
             display="inline-block"
           >
             <Heading color="white" size="xl">
-              ICGPT Labs
+              ICGPT Labs (COMING SOON!)
             </Heading>
             <Divider></Divider>
             <Box>

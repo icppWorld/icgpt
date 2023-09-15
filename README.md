@@ -92,7 +92,6 @@ All color styling is done using the open source Dracula UI:
 Install the toolchain:
 
 - The dfx release version is specified in `dfx.json`
-- We use [vessel](https://github.com/dfinity/vessel) to include motoko package sets curated in the [vessel-package-set.](https://github.com/kritzcreek/vessel-package-set/tree/main/index) (See Appendix B below)
 
 ```bash
 conda activate icgpt

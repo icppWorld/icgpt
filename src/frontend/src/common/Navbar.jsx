@@ -109,21 +109,6 @@ function TogglerNavLinks({ authClient, setAuthClient }) {
             {/* 
             <Box>
               <NavLink
-                to="/motoko"
-                className={(linkState) => {
-                  if (linkState.isActive) {
-                    return 'drac-anchor drac-box drac-bg-purple drac-text-black drac-text-black--hover drac-d-inline-block drac-rounded-lg drac-mr-sm drac-px-sm'
-                  } else {
-                    return 'drac-anchor drac-text drac-text-orange drac-text-pink--hover drac-mr-sm drac-px-sm'
-                  }
-                }}
-              >
-                Motoko Backend
-              </NavLink>
-            </Box>
-
-            <Box>
-              <NavLink
                 to="/docs"
                 className={(linkState) => {
                   if (linkState.isActive) {
