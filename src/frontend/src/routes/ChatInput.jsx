@@ -10,13 +10,13 @@ const IC_HOST_URL = process.env.IC_HOST_URL
 export function ChatInput({
   authClient,
   setAuthClient,
-  actor,
-  setActor,
+  actorRef,
+  setActorRef,
   chatNew,
   setChatNew,
   inputPlaceholder,
-  prompt,
-  setPrompt,
+  promptRef,
+  setPromptRef,
 }) {
   // ------------------------------------------------------------------------
   // Once user clicks the submit button:
@@ -81,11 +81,11 @@ export function ChatInput({
         onClick={() =>
           doSubmit({
             authClient,
-            actor,
+            actorRef,
             chatNew,
-            setActor,
+            setActorRef,
             setChatNew,
-            setPrompt,
+            setPromptRef,
             text,
           })
         }

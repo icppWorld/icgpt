@@ -5,14 +5,14 @@ const IC_HOST_URL = process.env.IC_HOST_URL
 
 export async function doSubmit({
   authClient,
-  actor,
+  actorRef,
   chatNew,
-  setActor,
+  setActorRef,
   setChatNew,
-  setPrompt,
+  setPromptRef,
   text,
 }) {
-  let actor_ = actor
+  let actor_ = actorRef.current
   if (chatNew) {
     const identity = await authClient.getIdentity()
     actor_ = createActor(canisterId, {
@@ -21,9 +21,7 @@ export async function doSubmit({
         host: IC_HOST_URL,
       },
     })
-    setActor(actor_)
-    setPrompt(text)
-    setChatNew(false)
+    setActorRef(actor_)
   }
 
   try {
@@ -31,13 +29,15 @@ export async function doSubmit({
     const responseHealth = await actor_.health()
     console.log('llama2 canister health: ', responseHealth)
 
-    // if (responseHealth.ok) {
-    //   // console.log('Django server health: ', await responseHealth.json())
-    // } else {
-    //   throw new Error(
-    //     `llama2 canister is not healthy - Status: ${responseHealth.status}`
-    //   )
-    // }
+    if (responseHealth) {
+      console.log('llama2 canister is healthy: ', responseHealth)
+      setPromptRef(text)
+      if (chatNew) {
+        setChatNew(false) // This will force a re-render
+      }
+    } else {
+      throw new Error(`llama2 canister is not healthy`)
+    }
   } catch (error) {
     console.error(error)
   }
