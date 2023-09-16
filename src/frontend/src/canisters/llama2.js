@@ -5,14 +5,14 @@ const IC_HOST_URL = process.env.IC_HOST_URL
 
 export async function doSubmit({
   authClient,
-  actor,
+  actorRef,
   chatNew,
-  setActor,
+  setActorRef,
   setChatNew,
   setPrompt,
   text,
 }) {
-  let actor_ = actor
+  let actor_ = actorRef.current
   if (chatNew) {
     const identity = await authClient.getIdentity()
     actor_ = createActor(canisterId, {
@@ -21,7 +21,7 @@ export async function doSubmit({
         host: IC_HOST_URL,
       },
     })
-    setActor(actor_)
+    setActorRef(actor_)
     setPrompt(text)
     setChatNew(false)
   }

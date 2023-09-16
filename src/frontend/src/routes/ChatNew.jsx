@@ -11,7 +11,7 @@ import { ChatInput } from './ChatInput'
 
 export function ChatNew() {
   const { authClient, setAuthClient } = useOutletContext()
-  const { actor, setActor } = useOutletContext()
+  const { actorRef, setActorRef } = useOutletContext()
   const { chatNew, setChatNew } = useOutletContext()
   const { modelType, setModelType } = useOutletContext()
   const { modelSize, setModelSize } = useOutletContext()
@@ -57,8 +57,8 @@ export function ChatNew() {
             <ChatInput
               authClient={authClient}
               setAuthClient={setAuthClient}
-              actor={actor}
-              setActor={setActor}
+              actorRef={actorRef}
+              setActorRef={setActorRef}
               chatNew={chatNew}
               setChatNew={setChatNew}
               inputPlaceholder={inputPlaceholder}

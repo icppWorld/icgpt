@@ -19,7 +19,10 @@ export function App() {
 
   // actor for the selected LLM canister
   // -> see js bindings stored in src/declarations/canister (See README)
-  const [actor, setActor] = React.useState()
+  const actorRef = React.useRef()
+  const setActorRef = (value) => {
+    actorRef.current = value;
+  }
 
   // ChatNew
   const [chatNew, setChatNew] = React.useState(true)
@@ -52,8 +55,8 @@ export function App() {
         context={{
           authClient,
           setAuthClient,
-          actor,
-          setActor,
+          actorRef,
+          setActorRef,
           chatNew,
           setChatNew,
           modelType,
