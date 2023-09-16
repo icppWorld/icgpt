@@ -14,9 +14,13 @@ export async function doSubmit({
   setChatOutputText,
   setChatDisplay,
 }) {
+  console.log('entered llama2.js doSubmit ')
+  console.log('chatNew : ', chatNew)
   let actor_ = actorRef.current
   if (chatNew) {
+    console.log('Creating identity ')
     const identity = await authClient.getIdentity()
+    console.log('Creating actor ')
     actor_ = createActor(canisterId, {
       agentOptions: {
         identity,
@@ -30,6 +34,7 @@ export async function doSubmit({
     // Call llama2 canister to check on health
     // Force a re-render, showing the WaitAnimation
     setChatDisplay('WaitAnimation')
+    console.log('Calling actor_.health ')
     const responseHealth = await actor_.health()
     console.log('llama2 canister health: ', responseHealth)
 
