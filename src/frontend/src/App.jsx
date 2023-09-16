@@ -13,6 +13,11 @@ import 'bootstrap-icons/font/bootstrap-icons.css'
 export function App() {
   // ---------------------------------------------------------
   // These props are all added to the App's context via Outlet
+  // Notes:
+  // (-) React.useState triggers a re-render when value changed by setter
+  //
+  // (-) React.useRef   does not trigger a re-render when value changes
+  //                    we must define a setter ourselves
 
   // Authentication with internet identity
   const [authClient, setAuthClient] = React.useState()
