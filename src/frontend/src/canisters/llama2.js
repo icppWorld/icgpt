@@ -36,9 +36,7 @@ export async function doSubmit({
         setChatNew(false) // This will force a re-render
       }
     } else {
-      throw new Error(
-        `llama2 canister is not healthy`
-      )
+      throw new Error(`llama2 canister is not healthy`)
     }
   } catch (error) {
     console.error(error)
