@@ -6,7 +6,6 @@ import { Navbar } from './common/Navbar'
 import { StagingBanner } from './common/StagingBanner'
 import { Outlet } from 'react-router-dom'
 import { Login } from './routes/Login'
-import { WaitAnimation } from './routes/WaitAnimation'
 
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
@@ -41,6 +40,12 @@ export function App() {
   const setPromptRef = (value) => {
     promptRef.current = value
   }
+
+  // Chat output
+  const [chatOutputText, setChatOutputText] = React.useState('')
+
+  // What to display in
+  const [chatDisplay, setChatDisplay] = React.useState('SelectModel')
   // ---------------------------------------------------------
 
   if (!authClient) {
@@ -77,6 +82,10 @@ export function App() {
           setInputPlaceholder,
           promptRef,
           setPromptRef,
+          chatOutputText,
+          setChatOutputText,
+          chatDisplay,
+          setChatDisplay,
         }}
       />
       {/* <StagingBanner /> */}

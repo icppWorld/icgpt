@@ -31,29 +31,21 @@ export function LogInWithInternetIdentity({ setAuthClient }) {
   }
 
   return (
-    <Box>
-      <Card variant="subtle" color="purple" p="md" m="md">
-        <Box>
-          <Text color="white">Login with your Internet Identity: </Text>
-        </Box>
+    <Card variant="subtle" color="purple" p="md" m="md">
+      <Box>
+        <Text color="white">Login with your Internet Identity: </Text>
+      </Box>
 
-        <Divider></Divider>
-        <Button
-          variant="ghost"
-          color="black"
-          size="lg"
-          p="2xl"
-          onClick={doLogIn}
-        >
-          <img src="loop.svg" />
-        </Button>
+      <Divider></Divider>
+      <Button variant="ghost" color="black" size="lg" p="2xl" onClick={doLogIn}>
+        <img src="loop.svg" />
+      </Button>
 
-        <Divider></Divider>
-        <Text color="white" size="xs">
-          After login you can try out a variety of LLMs running in IC canisters{' '}
-        </Text>
-      </Card>
-    </Box>
+      <Divider></Divider>
+      <Text color="white" size="xs">
+        After login you can try out a variety of LLMs running in IC canisters{' '}
+      </Text>
+    </Card>
   )
 }
 
