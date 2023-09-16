@@ -12,9 +12,6 @@ export async function doSubmit({
   setPromptRef,
   text,
 }) {
-
-
-
   let actor_ = actorRef.current
   if (chatNew) {
     const identity = await authClient.getIdentity()
@@ -25,8 +22,6 @@ export async function doSubmit({
       },
     })
     setActorRef(actor_)
-    setPromptRef(text)
-    setChatNew(false)
   }
 
   try {
@@ -34,13 +29,17 @@ export async function doSubmit({
     const responseHealth = await actor_.health()
     console.log('llama2 canister health: ', responseHealth)
 
-    // if (responseHealth.ok) {
-    //   // console.log('Django server health: ', await responseHealth.json())
-    // } else {
-    //   throw new Error(
-    //     `llama2 canister is not healthy - Status: ${responseHealth.status}`
-    //   )
-    // }
+    if (responseHealth) {
+      console.log('llama2 canister is healthy: ', responseHealth)
+      setPromptRef(text)
+      if (chatNew) {
+        setChatNew(false) // This will force a re-render
+      }
+    } else {
+      throw new Error(
+        `llama2 canister is not healthy`
+      )
+    }
   } catch (error) {
     console.error(error)
   }
