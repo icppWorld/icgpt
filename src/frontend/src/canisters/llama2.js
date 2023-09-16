@@ -1,7 +1,7 @@
 // Functions to interact with the icpp_llama2 canister
 import { canisterId, createActor } from 'DeclarationsCanisterLlama2'
 
-const IC_HOST_URL = process.env.IC_HOST_URL;
+const IC_HOST_URL = process.env.IC_HOST_URL
 
 export async function doSubmit({
   authClient,
@@ -10,9 +10,8 @@ export async function doSubmit({
   setActor,
   setChatNew,
   setPrompt,
-  text
+  text,
 }) {
-
   let actor_ = actor
   if (chatNew) {
     const identity = await authClient.getIdentity()

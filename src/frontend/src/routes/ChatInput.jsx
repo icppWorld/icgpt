@@ -4,8 +4,6 @@ import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 import { doSubmit } from '../canisters/llama2'
 
-
-
 const II_URL = process.env.II_URL
 const IC_HOST_URL = process.env.IC_HOST_URL
 
@@ -79,15 +77,19 @@ export function ChatInput({
         }}
       />
 
-      <Button onClick={() => doSubmit({
-        authClient,
-        actor,
-        chatNew,
-        setActor,
-        setChatNew,
-        setPrompt,
-        text
-      })}>
+      <Button
+        onClick={() =>
+          doSubmit({
+            authClient,
+            actor,
+            chatNew,
+            setActor,
+            setChatNew,
+            setPrompt,
+            text,
+          })
+        }
+      >
         <i
           className="bi bi-caret-right-square-fill"
           style={{ fontSize: '20px' }}
