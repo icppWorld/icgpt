@@ -2,8 +2,24 @@
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
+import { doSubmit } from '../canisters/llama2'
 
-export function ChatInput({ inputPlaceholder, prompt, setPrompt }) {
+const II_URL = process.env.II_URL
+const IC_HOST_URL = process.env.IC_HOST_URL
+
+export function ChatInput({
+  authClient,
+  setAuthClient,
+  actorRef,
+  setActorRef,
+  chatNew,
+  setChatNew,
+  inputPlaceholder,
+  promptRef,
+  setPromptRef,
+}) {
+  // -------------------------------------------------------------------------
+  // UI work
   const [text, setText] = React.useState('')
   const textareaRef = React.useRef(null)
 
@@ -25,10 +41,6 @@ export function ChatInput({ inputPlaceholder, prompt, setPrompt }) {
     display: 'flex', // to make textarea and button sit side by side
     alignItems: 'center',
     gap: '10px',
-  }
-
-  function doSetPrompt() {
-    setPrompt(text)
   }
 
   return (
@@ -55,7 +67,19 @@ export function ChatInput({ inputPlaceholder, prompt, setPrompt }) {
         }}
       />
 
-      <Button onClick={doSetPrompt}>
+      <Button
+        onClick={() =>
+          doSubmit({
+            authClient,
+            actorRef,
+            chatNew,
+            setActorRef,
+            setChatNew,
+            setPromptRef,
+            text,
+          })
+        }
+      >
         <i
           className="bi bi-caret-right-square-fill"
           style={{ fontSize: '20px' }}

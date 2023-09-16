@@ -1,11 +1,7 @@
 {
   "canisters": {
-    "canister_motoko": {
-      "main": "src/backend/motoko/main.mo",
-      "type": "motoko"
-    },
     "canister_frontend": {
-      "dependencies": ["canister_motoko"],
+      "dependencies": [],
       "frontend": {
         "entrypoint": "src/frontend/src/index.html"
       },
@@ -21,6 +17,18 @@
         "candid": "internet_identity.did",
         "id": {
           "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
+        }
+      }
+    },
+    "llama2": {
+      "type": "custom",
+      "candid": "../icpp-llm/icpp_llama2/src/llama2.did",
+      "wasm": "../icpp-llm/icpp_llama2/build/llama2.wasm",
+      "shrink": false,
+      "remote": {
+        "candid": "llama2.did",
+        "id": {
+          "ic": "4c4bn-daaaa-aaaag-abvcq-cai"
         }
       }
     }

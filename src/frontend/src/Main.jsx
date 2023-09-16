@@ -3,8 +3,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { App } from './App'
-import { ChatNew } from './routes/ChatNew'
-import { Motoko } from './routes/Motoko'
+import { Chat } from './routes/Chat'
 import { Docs } from './routes/Docs'
 import { About } from './routes/About'
 import { NothingHere } from './common/NothingHere'
@@ -16,8 +15,7 @@ ReactDOM.render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<App />}>
-          <Route index element={<ChatNew />} />
-          <Route path="motoko" element={<Motoko />} />
+          <Route index element={<Chat />} />
           <Route path="docs" element={<Docs />} />
           <Route path="about" element={<About />} />
           <Route path="*" element={<NothingHere />} />

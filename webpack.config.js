@@ -1,13 +1,18 @@
+require('dotenv').config()
 const path = require('path')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const TerserPlugin = require('terser-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
 
+// The environment variable NODE_ENV will the set to 'production' by the command
+//   dfx deploy --network ic
+const isDevelopment = process.env.NODE_ENV !== 'production'
+
 const frontendDirectory = 'frontend'
 
 // URL for Internet Identity
-const II_URL_LOCAL = 'http://be2us-64aaa-aaaaa-qaabq-cai.localhost:4943' // Replace ID with your local internet_identity canister
+const II_URL_LOCAL = `http://${process.env.CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`
 const II_URL_IC = 'https://identity.ic0.app/'
 const II_URL = process.env.NODE_ENV === 'production' ? II_URL_IC : II_URL_LOCAL
 console.warn(`II_URL: ${II_URL}`)
@@ -19,34 +24,46 @@ const IC_HOST_URL =
   process.env.NODE_ENV === 'production' ? IC_HOST_URL_IC : IC_HOST_URL_LOCAL
 console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
 
-function initCanisterEnv() {
-  let localCanisters, prodCanisters
-  try {
-    localCanisters = require(path.resolve('.dfx', 'local', 'canister_ids.json'))
-  } catch (error) {
-    console.log('No local canister_ids.json found. Continuing production')
-  }
-  try {
-    prodCanisters = require(path.resolve('canister_ids.json'))
-  } catch (error) {
-    console.log('No production canister_ids.json found. Continuing with local')
-  }
+// More data from .env, because the approach with ...Object below does not seem to work
+const DFX_VERSION = `${process.env.DFX_VERSION}`
+const DFX_NETWORK = `${process.env.DFX_NETWORK}`
+const CANISTER_ID_LLAMA2 = `${process.env.CANISTER_ID_LLAMA2}`
+const CANISTER_ID_INTERNET_IDENTITY = `${process.env.CANISTER_ID_INTERNET_IDENTITY}`
+const CANISTER_ID_CANISTER_FRONTEND = `${process.env.CANISTER_ID_CANISTER_FRONTEND}`
+console.warn(`DFX_VERSION: ${DFX_VERSION}`)
+console.warn(`DFX_NETWORK: ${DFX_NETWORK}`)
+console.warn(`CANISTER_ID_LLAMA2: ${CANISTER_ID_LLAMA2}`)
+console.warn(`CANISTER_ID_INTERNET_IDENTITY: ${CANISTER_ID_INTERNET_IDENTITY}`)
+console.warn(`CANISTER_ID_CANISTER_FRONTEND: ${CANISTER_ID_CANISTER_FRONTEND}`)
 
-  //   console.log(`process.env.DFX_NETWORK: ${process.env.DFX_NETWORK}`)
-  const network = process.env.DFX_NETWORK || 'local'
+// function initCanisterEnv() {
+//   let localCanisters, prodCanisters
+//   try {
+//     localCanisters = require(path.resolve('.dfx', 'local', 'canister_ids.json'))
+//   } catch (error) {
+//     console.log('No local canister_ids.json found. Continuing production')
+//   }
+//   try {
+//     prodCanisters = require(path.resolve('canister_ids.json'))
+//   } catch (error) {
+//     console.log('No production canister_ids.json found. Continuing with local')
+//   }
 
-  const canisterConfig = network === 'local' ? localCanisters : prodCanisters
+//   //   console.log(`process.env.DFX_NETWORK: ${process.env.DFX_NETWORK}`)
+//   const network = process.env.DFX_NETWORK || 'local'
 
-  return Object.entries(canisterConfig).reduce((prev, current) => {
-    const [canisterName, canisterDetails] = current
-    prev[canisterName.toUpperCase() + '_CANISTER_ID'] = canisterDetails[network]
-    return prev
-  }, {})
-}
-const canisterEnvVariables = initCanisterEnv()
-console.log(
-  `canisterEnvVariables: ${JSON.stringify(canisterEnvVariables, null, 2)}`
-)
+//   const canisterConfig = network === 'local' ? localCanisters : prodCanisters
+
+//   return Object.entries(canisterConfig).reduce((prev, current) => {
+//     const [canisterName, canisterDetails] = current
+//     prev[canisterName.toUpperCase() + '_CANISTER_ID'] = canisterDetails[network]
+//     return prev
+//   }, {})
+// }
+// const canisterEnvVariables = initCanisterEnv()
+// console.log(
+//   `canisterEnvVariables: ${JSON.stringify(canisterEnvVariables, null, 2)}`
+// )
 
 module.exports = (env = {}, args = {}) => {
   console.log(`env: ${JSON.stringify(env, null, 2)}`)
@@ -69,8 +86,6 @@ module.exports = (env = {}, args = {}) => {
     
     "fail to verify certificate"
   */
-  // const isDevelopment = !env.production
-  const isDevelopment = process.env.NODE_ENV !== 'production'
   console.warn(`isDevelopment: ${isDevelopment}`)
 
   return {
@@ -111,10 +126,10 @@ module.exports = (env = {}, args = {}) => {
 
       // Use these aliases in import statements
       alias: {
-        DeclarationsCanisterMotoko: path.resolve(
+        DeclarationsCanisterLlama2: path.resolve(
           __dirname,
           'src/declarations',
-          'canister_motoko'
+          'llama2'
         ),
         DeclarationsCanisterFrontend: path.resolve(
           __dirname,
@@ -176,6 +191,22 @@ module.exports = (env = {}, args = {}) => {
         chunks: ['Main'],
         cache: false,
       }),
+      new webpack.EnvironmentPlugin({
+        // This does not seem to work
+        // ...Object.keys(process.env).filter((key) => {
+        //   if (key.includes('CANISTER')) return true
+        //   if (key.includes('DFX')) return true
+        //   return false
+        // }),
+        DFX_VERSION,
+        DFX_NETWORK,
+        CANISTER_ID_LLAMA2,
+        CANISTER_ID_INTERNET_IDENTITY,
+        CANISTER_ID_CANISTER_FRONTEND,
+        //
+        II_URL,
+        IC_HOST_URL,
+      }),
       /*
       Do not use the CopyPlugin, because:
       (-) It copies blindly, without giving webpack a chance to build a dependency graph,
@@ -208,11 +239,6 @@ module.exports = (env = {}, args = {}) => {
             noErrorOnMissing: true,
           },
         ],
-      }),
-      new webpack.EnvironmentPlugin({
-        ...canisterEnvVariables,
-        II_URL,
-        IC_HOST_URL,
       }),
       new webpack.ProvidePlugin({
         Buffer: [require.resolve('buffer/'), 'Buffer'],

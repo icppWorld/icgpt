@@ -9,13 +9,15 @@ import { Footer } from '../common/Footer'
 import { ChatSelectModel } from './ChatSelectModel'
 import { ChatInput } from './ChatInput'
 
-export function ChatNew() {
+export function Chat() {
   const { authClient, setAuthClient } = useOutletContext()
+  const { actorRef, setActorRef } = useOutletContext()
+  const { chatNew, setChatNew } = useOutletContext()
   const { modelType, setModelType } = useOutletContext()
   const { modelSize, setModelSize } = useOutletContext()
   const { finetuneType, setFinetuneType } = useOutletContext()
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
-  const { prompt, setPrompt } = useOutletContext()
+  const { promptRef, setPromptRef } = useOutletContext()
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
@@ -24,7 +26,7 @@ export function ChatNew() {
   return (
     <div>
       <Helmet>
-        <title>ICGPT: ChatNew</title>
+        <title>ICGPT: Chat</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">
@@ -36,7 +38,7 @@ export function ChatNew() {
             display="inline-block"
           >
             <Heading color="white" size="xl">
-              ICGPT Labs
+              ICGPT Labs (COMING SOON!)
             </Heading>
             <Heading color="yellow" size="sm">
               on-chain LLMs
@@ -53,9 +55,15 @@ export function ChatNew() {
               setInputPlaceholder={setInputPlaceholder}
             />
             <ChatInput
+              authClient={authClient}
+              setAuthClient={setAuthClient}
+              actorRef={actorRef}
+              setActorRef={setActorRef}
+              chatNew={chatNew}
+              setChatNew={setChatNew}
               inputPlaceholder={inputPlaceholder}
-              prompt={prompt}
-              setPrompt={setPrompt}
+              promptRef={promptRef}
+              setPromptRef={setPromptRef}
             />
           </Card>
         </div>

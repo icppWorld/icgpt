@@ -20,8 +20,7 @@
     "prebuild": "dfx generate",
     "start": "webpack serve --mode development --env development",
     "deploy:local": "dfx deploy --network=local",
-    "deploy:ic": "dfx deploy --network=ic",
-    "generate": "dfx generate motoko"
+    "deploy:ic": "dfx deploy --network=ic"
   },
   "devDependencies": {
     "@dfinity/agent": "^0.19.2",
@@ -34,6 +33,7 @@
     "copy-webpack-plugin": "^11.0.0",
     "cors": "^2.8.5",
     "css-loader": "^6.5.1",
+    "dotenv": "^16.3.1",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-config-standard": "^16.0.3",

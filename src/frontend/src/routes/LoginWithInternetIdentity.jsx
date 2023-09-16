@@ -7,8 +7,6 @@ import { Box, Card, Button, Divider, Text } from 'dracula-ui'
 
 import { AuthClient } from '@dfinity/auth-client'
 
-import { canisterId, createActor } from 'DeclarationsCanisterMotoko'
-
 import { writeAuthClientDetailsToConsole } from './LoginWithInternetIdentityDebug'
 
 const II_URL = process.env.II_URL

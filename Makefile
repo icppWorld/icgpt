@@ -19,21 +19,6 @@ CANISTER_CANDID_UI_IC ?= "a4gq6-oaaaa-aaaab-qaa4q-cai"
 COMMIT_JSON ?= "src/frontend/assets/deploy-info/commit.json"
 
 ###########################################################################
-# Unit testing of canisters
-CANISTER_DIR ?= src/backend/motoko
-CANISTER_NAME ?= canister_motoko
-TEST_CANISTER_PY ?= test/backend/test__$(CANISTER_NAME).py
-
-# To call a canister method with dfx-canister-call
-CANISTER_METHOD ?= greet
-CANISTER_ARGUMENT ?= ("T. Ester")
-CANISTER_OUTPUT ?= pp
-CANISTER_INPUT ?= idl
-
-.PHONY: build-motoko-canister
-build-motoko-canister:
-	dfx build canister_motoko 
-
 .PHONY: all-static
 all-static: \
 	python-format python-lint \
@@ -94,29 +79,24 @@ dfx-install:
 .PHONY: dfx-canisters-of-project-ic
 dfx-canisters-of-project-ic:
 	@$(eval CANISTER_WALLET := $(shell dfx identity --network ic get-wallet))
-	@$(eval CANISTER_MOTOKO := $(shell dfx canister --network ic id canister_motoko))
 	@$(eval CANISTER_FRONTEND := $(shell dfx canister --network ic id canister_frontend))
 
 	@echo '-------------------------------------------------'
 	@echo "NETWORK            : ic"
 	@echo "cycles canister    : $(CANISTER_WALLET)"
 	@echo "Candid UI canister : $(CANISTER_CANDID_UI_IC)"
-	@echo "canister_motoko    : $(CANISTER_MOTOKO)"
 	@echo "canister_frontend  : $(CANISTER_FRONTEND)"
 	@echo '-------------------------------------------------'
 	@echo 'View in browser at:'
 	@echo  "cycles canister                : https://$(CANISTER_WALLET).raw.ic0.app/"
 	@echo  "Candid UI                      : https://$(CANISTER_CANDID_UI_IC).raw.ic0.app/"
-	@echo  "Candid UI of canister_motoko   : https://$(CANISTER_CANDID_UI_IC).raw.ic0.app/?id=$(CANISTER_MOTOKO)"
 	@echo  "Candid UI of canister_frontend : https://$(CANISTER_CANDID_UI_IC).raw.ic0.app/?id=$(CANISTER_FRONTEND)"
-	@echo  "canister_motoko                : https://$(CANISTER_MOTOKO).ic0.app/"
 	@echo  "canister_frontend              : https://$(CANISTER_FRONTEND).ic0.app/"
 
 .PHONY: dfx-canisters-of-project-local
 dfx-canisters-of-project-local:
 	@$(eval CANISTER_WALLET := $(shell dfx identity get-wallet))
 	@$(eval CANISTER_CANDID_UI_LOCAL ?= $(shell dfx canister id __Candid_UI))
-	@$(eval CANISTER_MOTOKO := $(shell dfx canister id canister_motoko))
 	@$(eval CANISTER_FRONTEND := $(shell dfx canister id canister_frontend))
 
 	
@@ -124,14 +104,11 @@ dfx-canisters-of-project-local:
 	@echo "NETWORK            : local"
 	@echo "cycles canister    : $(CANISTER_WALLET)"
 	@echo "Candid UI canister : $(CANISTER_CANDID_UI_IC)"
-	@echo "canister_motoko    : $(CANISTER_MOTOKO)"
 	@echo "canister_frontend  : $(CANISTER_FRONTEND)"
 	@echo '-------------------------------------------------'
 	@echo 'View in browser at:'
 	@echo  "__Candid_UI                    : http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(CANISTER_CANDID_UI_LOCAL)"
-	@echo  "Candid UI of canister_motoko   : http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(CANISTER_CANDID_UI_LOCAL)&id=$(CANISTER_MOTOKO)"
 	@echo  "Candid UI of canister_frontend : http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(CANISTER_CANDID_UI_LOCAL)&id=$(CANISTER_FRONTEND)"
-	@echo  "canister_motoko (http_request) : http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(CANISTER_MOTOKO)"
 	@echo  "canister_frontend              : http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(CANISTER_FRONTEND)"
 
 .PHONY: dfx-canisters-of-project
@@ -353,7 +330,7 @@ python-clean:
 	find . -name '*.pyo' -exec rm -f {} +
 	find . -name '*~' -exec rm -f  {} +
 
-PYTHON_DIRS ?= scripts test
+PYTHON_DIRS ?= scripts
 
 .PHONY: python-format
 python-format:
