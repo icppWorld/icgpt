@@ -21,7 +21,7 @@ export function App() {
   // -> see js bindings stored in src/declarations/canister (See README)
   const actorRef = React.useRef()
   const setActorRef = (value) => {
-    actorRef.current = value;
+    actorRef.current = value
   }
 
   // ChatNew
