@@ -29,7 +29,7 @@ export function App() {
     actorRef.current = value
   }
 
-  // ChatNew
+  // Chat state
   const [chatNew, setChatNew] = React.useState(true)
   const [modelType, setModelType] = React.useState('TinyStories')
   const [modelSize, setModelSize] = React.useState('15M')

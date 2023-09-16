@@ -9,7 +9,7 @@ import { Footer } from '../common/Footer'
 import { ChatSelectModel } from './ChatSelectModel'
 import { ChatInput } from './ChatInput'
 
-export function ChatNew() {
+export function Chat() {
   const { authClient, setAuthClient } = useOutletContext()
   const { actorRef, setActorRef } = useOutletContext()
   const { chatNew, setChatNew } = useOutletContext()
@@ -26,7 +26,7 @@ export function ChatNew() {
   return (
     <div>
       <Helmet>
-        <title>ICGPT: ChatNew</title>
+        <title>ICGPT: Chat</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">

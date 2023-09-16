@@ -18,16 +18,6 @@ export function ChatInput({
   promptRef,
   setPromptRef,
 }) {
-  // ------------------------------------------------------------------------
-  // Once user clicks the submit button:
-  // TODO: call canister chat_new once user clicks submit prompt button
-  // (-) store the function in a separate file: canisterLLM.js
-  // (-) import the function
-  // (-) pass the function into ChatInput component
-  // (-) execute the function
-  //
-  // Upon success, navigate to the ChatNow page
-
   // -------------------------------------------------------------------------
   // UI work
   const [text, setText] = React.useState('')
