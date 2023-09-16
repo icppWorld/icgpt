@@ -12,7 +12,7 @@ export function ChatNow() {
   const { authClient, setAuthClient } = useOutletContext()
   const { modelType, modelSize, finetuneType } = useOutletContext()
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
-  const { prompt, setPrompt } = useOutletContext()
+  const { promptRef, setPromptRef } = useOutletContext()
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
@@ -42,8 +42,8 @@ export function ChatNow() {
             {/* TODO - INSERT COMPONENT TO DISPLAY GENERATED TEXT */}
             <ChatInput
               inputPlaceholder={inputPlaceholder}
-              prompt={prompt}
-              setPrompt={setPrompt}
+              promptRef={promptRef}
+              setPromptRef={setPromptRef}
             />
           </Card>
         </div>

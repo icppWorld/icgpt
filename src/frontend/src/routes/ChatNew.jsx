@@ -17,7 +17,7 @@ export function ChatNew() {
   const { modelSize, setModelSize } = useOutletContext()
   const { finetuneType, setFinetuneType } = useOutletContext()
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
-  const { prompt, setPrompt } = useOutletContext()
+  const { promptRef, setPromptRef } = useOutletContext()
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
@@ -62,8 +62,8 @@ export function ChatNew() {
               chatNew={chatNew}
               setChatNew={setChatNew}
               inputPlaceholder={inputPlaceholder}
-              prompt={prompt}
-              setPrompt={setPrompt}
+              promptRef={promptRef}
+              setPromptRef={setPromptRef}
             />
           </Card>
         </div>

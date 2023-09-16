@@ -37,7 +37,10 @@ export function App() {
   const [inputPlaceholder, setInputPlaceholder] = React.useState(
     'Start your story (pretend to be 4 years old...)'
   )
-  const [prompt, setPrompt] = React.useState('')
+  const promptRef = React.useRef()
+  const setPromptRef = (value) => {
+    promptRef.current = value
+  }
   // ---------------------------------------------------------
 
   if (!authClient) {
@@ -72,8 +75,8 @@ export function App() {
           setFinetuneType,
           inputPlaceholder,
           setInputPlaceholder,
-          prompt,
-          setPrompt,
+          promptRef,
+          setPromptRef,
         }}
       />
       {/* <StagingBanner /> */}

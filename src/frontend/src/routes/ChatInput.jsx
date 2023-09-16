@@ -15,8 +15,8 @@ export function ChatInput({
   chatNew,
   setChatNew,
   inputPlaceholder,
-  prompt,
-  setPrompt,
+  promptRef,
+  setPromptRef,
 }) {
   // ------------------------------------------------------------------------
   // Once user clicks the submit button:
@@ -85,7 +85,7 @@ export function ChatInput({
             chatNew,
             setActorRef,
             setChatNew,
-            setPrompt,
+            setPromptRef,
             text,
           })
         }

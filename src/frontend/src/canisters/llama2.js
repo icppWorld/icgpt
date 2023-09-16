@@ -9,9 +9,12 @@ export async function doSubmit({
   chatNew,
   setActorRef,
   setChatNew,
-  setPrompt,
+  setPromptRef,
   text,
 }) {
+
+
+
   let actor_ = actorRef.current
   if (chatNew) {
     const identity = await authClient.getIdentity()
@@ -22,7 +25,7 @@ export async function doSubmit({
       },
     })
     setActorRef(actor_)
-    setPrompt(text)
+    setPromptRef(text)
     setChatNew(false)
   }
 
