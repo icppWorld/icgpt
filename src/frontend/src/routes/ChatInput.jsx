@@ -17,6 +17,9 @@ export function ChatInput({
   inputPlaceholder,
   promptRef,
   setPromptRef,
+  chatOutputText,
+  setChatOutputText,
+  setChatDisplay,
 }) {
   // -------------------------------------------------------------------------
   // UI work
@@ -77,6 +80,8 @@ export function ChatInput({
             setChatNew,
             setPromptRef,
             text,
+            setChatOutputText,
+            setChatDisplay,
           })
         }
       >
