@@ -370,7 +370,6 @@ smoketest:
 integrationtest:
 	pytest --network=$(NETWORK) --django-url=$(DJANGO_URL) --bot-url=$(BOT_URL) $(TEST_INTEGRATION_PY)
 
-
 ###########################################################################
 # Toolchain installation
 .PHONY: install-all
@@ -413,3 +412,18 @@ install-vessel:
 	@echo " "
 	@echo "Installed successfully in:"
 	@echo /usr/local/bin/vessel
+
+
+###########################################################################
+# Llama2 model upload
+# (-) We need to add parent of this folder to Python path, for `python -m` to work
+# (-) Everything else just works, because the upload script:
+#     -> uses model & tokenizer path are relative to itself
+#     -> pulls the canister information out of the network info (.dfx in icgpt repo)
+
+.PHONY: llama2-upload-tiny-stories-15M
+llama2-upload-tiny-stories-15M:
+	@echo "---"
+	@echo "llama2-upload-tiny-stories-15M"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.icpp_llama2.scripts.upload --model models/stories15M.bin --tokenizer tokenizer/tokenizer.bin

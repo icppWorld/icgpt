@@ -32,7 +32,7 @@ export function Chat() {
 
   switch (chatDisplay) {
     case 'WaitAnimation':
-      DisplayComponent = <WaitAnimation message="Calling LLM canister" />
+      DisplayComponent = <WaitAnimation message="Connecting to LLM canister..." />
       break
     case 'SelectModel':
       DisplayComponent = (
@@ -57,7 +57,7 @@ export function Chat() {
       )
       break
     default:
-      DisplayComponent = null // or some default component
+      DisplayComponent = null
   }
 
   return (
