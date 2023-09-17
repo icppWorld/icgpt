@@ -8,7 +8,7 @@ let isDisplaying = false
 
 async function waitForQueueToEmpty() {
   while (displayQueue.length > 0) {
-    await sleep(100);
+    await sleep(100)
   }
 }
 
@@ -160,7 +160,7 @@ export async function doSubmit({
   setChatOutputText,
   setChatDisplay,
   isSubmitting,
-  setIsSubmitting
+  setIsSubmitting,
 }) {
   console.log('entered llama2.js doSubmit ')
   setIsSubmitting(true)
@@ -211,8 +211,7 @@ export async function doSubmit({
           setInputPlaceholder
         )
 
-        await waitForQueueToEmpty();
-
+        await waitForQueueToEmpty()
       } else {
         throw new Error(`LLM canister is not ready`)
       }
@@ -224,7 +223,7 @@ export async function doSubmit({
     // Force a re-render, showing the ChatOutput
     setChatDisplay('CanisterError')
   } finally {
-    setIsSubmitting(false);
+    setIsSubmitting(false)
   }
 }
 

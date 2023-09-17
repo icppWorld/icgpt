@@ -24,7 +24,7 @@ export function ChatInput({
   setChatOutputText,
   setChatDisplay,
 }) {
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   const textareaRef = React.useRef(null)
 
@@ -111,7 +111,7 @@ export function ChatInput({
             setChatOutputText,
             setChatDisplay,
             isSubmitting,
-            setIsSubmitting
+            setIsSubmitting,
           })
         }
       >
