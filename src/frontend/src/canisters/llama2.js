@@ -108,7 +108,7 @@ export async function doSubmit({
   setActorRef,
   setChatNew,
   setPromptRef,
-  text,
+  inputString,
   setChatOutputText,
   setChatDisplay,
 }) {
@@ -144,7 +144,7 @@ export async function doSubmit({
       console.log('llama2 canister ready: ', responseReady)
 
       if (responseReady) {
-        setPromptRef(text)
+        setPromptRef(inputString)
 
         // Ok, ready for show time...
         await fetchInference(

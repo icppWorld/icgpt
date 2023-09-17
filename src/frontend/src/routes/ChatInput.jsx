@@ -23,7 +23,7 @@ export function ChatInput({
 }) {
   // -------------------------------------------------------------------------
   // UI work
-  const [text, setText] = React.useState('')
+  const [inputString, setInputString] = React.useState('')
   const textareaRef = React.useRef(null)
 
   React.useEffect(() => {
@@ -31,7 +31,7 @@ export function ChatInput({
       textareaRef.current.style.height = 'auto' // reset the height
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
     }
-  }, [text])
+  }, [inputString])
 
   const floatingStyle = {
     position: 'fixed',
@@ -57,8 +57,8 @@ export function ChatInput({
     >
       <textarea
         ref={textareaRef}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
+        value={inputString}
+        onChange={(e) => setInputString(e.target.value)}
         placeholder={inputPlaceholder}
         style={{
           flex: 1,
@@ -79,7 +79,7 @@ export function ChatInput({
             setActorRef,
             setChatNew,
             setPromptRef,
-            text,
+            inputString,
             setChatOutputText,
             setChatDisplay,
           })
