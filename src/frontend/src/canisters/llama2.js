@@ -11,9 +11,13 @@ async function fetchInference(
   setChatOutputText,
   chatNew,
   setChatNew,
-  setChatDisplay
+  setChatDisplay,
+  inputString,
+  setInputString,
+  inputPlaceholder,
+  setInputPlaceholder,
 ) {
-  const params = {
+  let params = {
     prompt: '',
     steps: 10,
     temperature: 0.0,
@@ -21,29 +25,57 @@ async function fetchInference(
     rng_seed: 0,
   }
 
+  // Helper function to split the inputString into chunks of 10 words
+  const splitIntoChunks = (str) => {
+    const words = str.split(/\s+/)
+    const chunks = []
+    for (let i = 0; i < words.length; i += 10) {
+      chunks.push(words.slice(i, i + 10).join(' '))
+    }
+    return chunks
+  }
+
+  // Chunk the inputString and save for processing
+  const inputChunks = splitIntoChunks(inputString)
+  let currentChunkIndex = 0
+
   // Start the display loop in the background
   processDisplayQueue(setChatDisplay, setChatOutputText)
 
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 10; i++) {
     let response
+
+    // Update the params.prompt to the next chunk of inputString
+    if (currentChunkIndex < inputChunks.length) {
+      params.prompt = inputChunks[currentChunkIndex]
+      currentChunkIndex++
+    } else {
+      params.prompt = '' // Reset to empty if no chunks left
+    }
 
     if (i === 0 && chatNew) {
       console.log('Calling actor_.new_chat ')
       const responseNewChat = await actor.new_chat()
       console.log('llama2 canister new_chat: ', responseNewChat)
-      console.log('Calling inference for next tokens...')
+      console.log('Calling inference for next tokens with prompt: ', params.prompt)
       response = await actor.inference(params)
 
       // Now we can force a re-render and switch to an empty output
       setChatNew(false)
       setChatOutputText('')
     } else {
-      console.log('Calling inference for next tokens...')
+      console.log('Calling inference for next tokens with prompt: ', params.prompt)
       response = await actor.inference(params)
     }
 
     // Push the response to the queue and the display loop will pick it up
     displayQueue.push(response)
+
+    if (i === 0) {
+      // Reset the inputString and provide a new placeHolder
+      setInputString('')
+      setInputPlaceholder('Continue the story...')
+    }
   }
 }
 
@@ -109,6 +141,9 @@ export async function doSubmit({
   setChatNew,
   setPromptRef,
   inputString,
+  setInputString,
+  inputPlaceholder,
+  setInputPlaceholder,
   setChatOutputText,
   setChatDisplay,
 }) {
@@ -144,7 +179,7 @@ export async function doSubmit({
       console.log('llama2 canister ready: ', responseReady)
 
       if (responseReady) {
-        setPromptRef(inputString)
+        setPromptRef(inputString) // TODO: I am not using this at all.. DELETE...
 
         // Ok, ready for show time...
         await fetchInference(
@@ -152,7 +187,11 @@ export async function doSubmit({
           setChatOutputText,
           chatNew,
           setChatNew,
-          setChatDisplay
+          setChatDisplay,
+          inputString,
+          setInputString,
+          inputPlaceholder,
+          setInputPlaceholder,
         )
       } else {
         throw new Error(`LLM canister is not ready`)

@@ -19,6 +19,7 @@ export function Chat() {
   const { modelType, setModelType } = useOutletContext()
   const { modelSize, setModelSize } = useOutletContext()
   const { finetuneType, setFinetuneType } = useOutletContext()
+  const { inputString, setInputString } = useOutletContext()
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
   const { promptRef, setPromptRef } = useOutletContext()
   const { chatOutputText, setChatOutputText } = useOutletContext()
@@ -91,7 +92,10 @@ export function Chat() {
               setActorRef={setActorRef}
               chatNew={chatNew}
               setChatNew={setChatNew}
+              inputString={inputString}
+              setInputString={setInputString}
               inputPlaceholder={inputPlaceholder}
+              setInputPlaceholder={setInputPlaceholder}
               promptRef={promptRef}
               setPromptRef={setPromptRef}
               chatOutputText={chatOutputText}

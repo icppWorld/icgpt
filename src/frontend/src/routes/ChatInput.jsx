@@ -14,16 +14,16 @@ export function ChatInput({
   setActorRef,
   chatNew,
   setChatNew,
+  inputString,
+  setInputString,
   inputPlaceholder,
+  setInputPlaceholder,
   promptRef,
   setPromptRef,
   chatOutputText,
   setChatOutputText,
   setChatDisplay,
 }) {
-  // -------------------------------------------------------------------------
-  // UI work
-  const [inputString, setInputString] = React.useState('')
   const textareaRef = React.useRef(null)
 
   React.useEffect(() => {
@@ -80,6 +80,9 @@ export function ChatInput({
             setChatNew,
             setPromptRef,
             inputString,
+            setInputString,
+            inputPlaceholder,
+            setInputPlaceholder,
             setChatOutputText,
             setChatDisplay,
           })

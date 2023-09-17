@@ -33,6 +33,7 @@ export function App() {
   const [modelType, setModelType] = React.useState('TinyStories')
   const [modelSize, setModelSize] = React.useState('15M')
   const [finetuneType, setFinetuneType] = React.useState('LLM')
+  const [inputString, setInputString] = React.useState('')
   const [inputPlaceholder, setInputPlaceholder] = React.useState(
     'Start your story (pretend to be 4 years old...)'
   )
@@ -78,6 +79,8 @@ export function App() {
           setModelSize,
           finetuneType,
           setFinetuneType,
+          inputString,
+          setInputString,
           inputPlaceholder,
           setInputPlaceholder,
           promptRef,
