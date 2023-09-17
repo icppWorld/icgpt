@@ -12,7 +12,7 @@ async function fetchInference(actor, setChatOutputText) {
     rng_seed: 0,
   }
 
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < 20; i++) {
     const response = await actor.inference(params)
 
     console.log('response from inference:', response)
@@ -23,8 +23,11 @@ async function fetchInference(actor, setChatOutputText) {
       // Confirm it's a string
       const words = text.split(' ')
 
-      for (const word of words) {
-        await delayAndAppend(setChatOutputText, word)
+      for (let j = 0; j < words.length; j++) {
+        const word = words[j];
+        const prependSpace = j !== 0
+        console.log('prependSpace: ', prependSpace)
+        await delayAndAppend(setChatOutputText, word, prependSpace)
       }
     } else {
       console.error('Received unexpected response format:', response)
@@ -33,13 +36,14 @@ async function fetchInference(actor, setChatOutputText) {
 }
 
 // Function to add a delay and then update the chat output.
-async function delayAndAppend(setChatOutputText, word) {
+async function delayAndAppend(setChatOutputText, word, prependSpace) {
   return new Promise((resolve) => {
     setTimeout(() => {
       // Append word to the current chat output
-      setChatOutputText((prevText) => prevText + ' ' + word)
-      resolve()
-    }, 500) // 500ms delay between each word; adjust as necessary
+      const textToAppend = prependSpace ? " " + word : word
+      setChatOutputText(prevText => prevText + textToAppend)
+      resolve() // Signal that the promise is done
+    }, 500) // 500ms delay between each word
   })
 }
 
