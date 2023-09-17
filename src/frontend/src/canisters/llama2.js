@@ -139,6 +139,7 @@ async function delayAndAppend(setChatOutputText, word, prependSpace) {
   })
 }
 
+// Called when user clicks 'submit' button
 export async function doSubmit({
   authClient,
   actorRef,
@@ -210,4 +211,24 @@ export async function doSubmit({
     // Force a re-render, showing the ChatOutput
     setChatDisplay('CanisterError')
   }
+}
+
+// Called when user clicks '+ New chat' button
+export async function doNewChat({
+  authClient,
+  actorRef,
+  chatNew,
+  setActorRef,
+  setChatNew,
+  setPromptRef,
+  inputString,
+  setInputString,
+  inputPlaceholder,
+  setInputPlaceholder,
+  setChatOutputText,
+  setChatDisplay,
+}) {
+  console.log('entered llama2.js doNewChat ')
+  setChatNew(true)
+  setChatDisplay('SelectModel')
 }

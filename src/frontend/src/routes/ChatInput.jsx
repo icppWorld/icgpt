@@ -2,7 +2,7 @@
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
-import { doSubmit } from '../canisters/llama2'
+import { doNewChat, doSubmit } from '../canisters/llama2'
 
 const II_URL = process.env.II_URL
 const IC_HOST_URL = process.env.IC_HOST_URL
@@ -55,6 +55,24 @@ export function ChatInput({
       m="sm"
       style={floatingStyle}
     >
+      <Button color="purple" size="sm"
+        onClick={() =>
+          doNewChat({
+            authClient,
+            actorRef,
+            chatNew,
+            setActorRef,
+            setChatNew,
+            setPromptRef,
+            inputString,
+            setInputString,
+            inputPlaceholder,
+            setInputPlaceholder,
+            setChatOutputText,
+            setChatDisplay,
+          })
+        }
+      >+ New chat</Button>
       <textarea
         ref={textareaRef}
         value={inputString}
