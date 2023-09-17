@@ -3,6 +3,9 @@ import { canisterId, createActor } from 'DeclarationsCanisterLlama2'
 
 const IC_HOST_URL = process.env.IC_HOST_URL
 
+const displayQueue = []
+let isDisplaying = false
+
 async function fetchInference(
   actor,
   setChatOutputText,
@@ -18,44 +21,72 @@ async function fetchInference(
     rng_seed: 0,
   }
 
+  // Start the display loop in the background
+  processDisplayQueue(setChatDisplay, setChatOutputText)
+
   for (let i = 0; i < 20; i++) {
     let response
+
     if (i === 0 && chatNew) {
-      // The astronaut is still spinning
       console.log('Calling actor_.new_chat ')
       const responseNewChat = await actor.new_chat()
       console.log('llama2 canister new_chat: ', responseNewChat)
+      console.log('Calling inference for next tokens...')
       response = await actor.inference(params)
 
       // Now we can force a re-render and switch to an empty output text
       setChatNew(false)
       setChatOutputText('')
     } else {
+      console.log('Calling inference for next tokens...')
       response = await actor.inference(params)
     }
 
-    // force a re-render showing the ChatOutput
-    setChatDisplay('ChatOutput')
+    // Push the response to the queue and the display loop will pick it up
+    displayQueue.push(response)
+  }
+}
 
-    // Process the response
-    console.log('response from inference:', response)
-
-    const text = response.ok // Extract the text from the "ok" key
-
-    if (typeof text === 'string') {
-      // Confirm it's a string
-      const words = text.split(' ')
-
-      for (let j = 0; j < words.length; j++) {
-        const word = words[j]
-        const prependSpace = j !== 0
-        console.log('prependSpace: ', prependSpace)
-        await delayAndAppend(setChatOutputText, word, prependSpace)
-      }
+async function processDisplayQueue(setChatDisplay, setChatOutputText) {
+  while (true) {
+    if (displayQueue.length > 0 && !isDisplaying) {
+      isDisplaying = true
+      const response = displayQueue.shift()
+      await displayResponse(response, setChatDisplay, setChatOutputText)
+      isDisplaying = false
     } else {
-      console.error('Received unexpected response format:', response)
+      await sleep(100)
     }
   }
+}
+
+function displayResponse(response, setChatDisplay, setChatOutputText) {
+  // force a re-render showing the ChatOutput
+  setChatDisplay('ChatOutput')
+
+  console.log('response from inference:', response)
+
+  const text = response.ok // Extract the text from the "ok" key
+
+  if (typeof text !== 'string') {
+    console.error('Received unexpected response format:', response)
+    return Promise.reject(new Error('Unexpected response format'))
+  }
+
+  const words = text.split(' ')
+
+  // Use reduce to chain promises sequentially
+  return words.reduce((acc, word, j) => {
+    return acc.then(() => {
+      const prependSpace = j !== 0
+      console.log('prependSpace: ', prependSpace)
+      return delayAndAppend(setChatOutputText, word, prependSpace)
+    })
+  }, Promise.resolve())
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 // Function to add a delay and then update the chat output.
