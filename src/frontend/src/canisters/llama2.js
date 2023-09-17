@@ -34,7 +34,7 @@ async function fetchInference(
       console.log('Calling inference for next tokens...')
       response = await actor.inference(params)
 
-      // Now we can force a re-render and switch to an empty output text
+      // Now we can force a re-render and switch to an empty output
       setChatNew(false)
       setChatOutputText('')
     } else {
@@ -66,14 +66,14 @@ function displayResponse(response, setChatDisplay, setChatOutputText) {
 
   console.log('response from inference:', response)
 
-  const text = response.ok // Extract the text from the "ok" key
+  const responseString = response.ok // Extract the responseString from the "ok" key
 
-  if (typeof text !== 'string') {
+  if (typeof responseString !== 'string') {
     console.error('Received unexpected response format:', response)
     return Promise.reject(new Error('Unexpected response format'))
   }
 
-  const words = text.split(' ')
+  const words = responseString.split(' ')
 
   // Use reduce to chain promises sequentially
   return words.reduce((acc, word, j) => {
