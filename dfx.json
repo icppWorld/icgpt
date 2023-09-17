@@ -5,7 +5,9 @@
       "frontend": {
         "entrypoint": "src/frontend/src/index.html"
       },
-      "source": ["dist/frontend/"],
+      "source": [
+        "dist/frontend/"
+      ],
       "type": "assets"
     },
     "internet_identity": {
@@ -22,8 +24,8 @@
     },
     "llama2": {
       "type": "custom",
-      "candid": "../icpp-llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp-llm/icpp_llama2/build/llama2.wasm",
+      "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
+      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm",
       "shrink": false,
       "remote": {
         "candid": "llama2.did",

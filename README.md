@@ -2,7 +2,7 @@
 
 The full application consists of 2 GitHub repositories:
 1. [icgpt](https://github.com/icppWorld/icgpt)  (This repo)
-2. [icpp-llm](https://github.com/icppWorld/icpp-llm)
+2. [icpp_llm](https://github.com/icppWorld/icpp_llm)
 
 # Setup
 
@@ -52,8 +52,8 @@ We defined in dfx.json of the icgpt repo what to use for the `llama2` canister:
 ```json
 "llama2": {
       "type": "custom",
-      "candid": "../icpp-llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp-llm/icpp_llama2/build/llama2.wasm",
+      "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
+      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm",
       "shrink": false,
       "remote": {
         "candid": "llama2.did",
@@ -64,7 +64,7 @@ We defined in dfx.json of the icgpt repo what to use for the `llama2` canister:
     }
 ```
 
-So, make sure to clone the icpp-llm repo as a sibling, and build the wasm for icpp_llama2 as described in that repo. 
+So, make sure to clone the icpp_llm repo as a sibling, and build the wasm for icpp_llama2 as described in that repo. 
 
 
 ## Javascript bindings 

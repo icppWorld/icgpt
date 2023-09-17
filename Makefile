@@ -421,9 +421,16 @@ install-vessel:
 #     -> uses model & tokenizer path are relative to itself
 #     -> pulls the canister information out of the network info (.dfx in icgpt repo)
 
+.PHONY: llama2-upload-tiny-stories-260K
+llama2-upload-tiny-stories-260K:
+	@echo "---"
+	@echo "llama2-upload-tiny-stories-260K"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.icpp_llama2.scripts.upload --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
+
 .PHONY: llama2-upload-tiny-stories-15M
 llama2-upload-tiny-stories-15M:
 	@echo "---"
 	@echo "llama2-upload-tiny-stories-15M"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --model models/stories15M.bin --tokenizer tokenizer/tokenizer.bin
+    python -m icpp_llm.icpp_llama2.scripts.upload --model models/stories15M.bin --tokenizer tokenizers/tokenizer.bin
