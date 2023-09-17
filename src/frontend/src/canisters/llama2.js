@@ -3,7 +3,13 @@ import { canisterId, createActor } from 'DeclarationsCanisterLlama2'
 
 const IC_HOST_URL = process.env.IC_HOST_URL
 
-async function fetchInference(actor, setChatOutputText, chatNew, setChatNew, setChatDisplay) {
+async function fetchInference(
+  actor,
+  setChatOutputText,
+  chatNew,
+  setChatNew,
+  setChatDisplay
+) {
   const params = {
     prompt: '',
     steps: 10,
@@ -24,8 +30,7 @@ async function fetchInference(actor, setChatOutputText, chatNew, setChatNew, set
       // Now we can force a re-render and switch to an empty output text
       setChatNew(false)
       setChatOutputText('')
-    }
-    else {
+    } else {
       response = await actor.inference(params)
     }
 
@@ -111,8 +116,13 @@ export async function doSubmit({
         setPromptRef(text)
 
         // Ok, ready for show time...
-        await fetchInference(actor_, setChatOutputText, chatNew, setChatNew, setChatDisplay)
-
+        await fetchInference(
+          actor_,
+          setChatOutputText,
+          chatNew,
+          setChatNew,
+          setChatDisplay
+        )
       } else {
         throw new Error(`LLM canister is not ready`)
       }
