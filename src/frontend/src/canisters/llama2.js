@@ -15,9 +15,9 @@ async function fetchInference(
   inputString,
   setInputString,
   inputPlaceholder,
-  setInputPlaceholder,
+  setInputPlaceholder
 ) {
-  let params = {
+  const params = {
     prompt: '',
     steps: 10,
     temperature: 0.0,
@@ -57,14 +57,20 @@ async function fetchInference(
       console.log('Calling actor_.new_chat ')
       const responseNewChat = await actor.new_chat()
       console.log('llama2 canister new_chat: ', responseNewChat)
-      console.log('Calling inference for next tokens with prompt: ', params.prompt)
+      console.log(
+        'Calling inference for next tokens with prompt: ',
+        params.prompt
+      )
       response = await actor.inference(params)
 
       // Now we can force a re-render and switch to an empty output
       setChatNew(false)
       setChatOutputText('')
     } else {
-      console.log('Calling inference for next tokens with prompt: ', params.prompt)
+      console.log(
+        'Calling inference for next tokens with prompt: ',
+        params.prompt
+      )
       response = await actor.inference(params)
     }
 
@@ -191,7 +197,7 @@ export async function doSubmit({
           inputString,
           setInputString,
           inputPlaceholder,
-          setInputPlaceholder,
+          setInputPlaceholder
         )
       } else {
         throw new Error(`LLM canister is not ready`)
