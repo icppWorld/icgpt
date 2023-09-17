@@ -55,7 +55,9 @@ export function ChatInput({
       m="sm"
       style={floatingStyle}
     >
-      <Button color="purple" size="sm"
+      <Button
+        color="purple"
+        size="sm"
         onClick={() =>
           doNewChat({
             authClient,
@@ -72,7 +74,9 @@ export function ChatInput({
             setChatDisplay,
           })
         }
-      >+ New chat</Button>
+      >
+        + New chat
+      </Button>
       <textarea
         ref={textareaRef}
         value={inputString}
