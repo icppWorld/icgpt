@@ -86,6 +86,7 @@ export function ChatSelectModel({
               color={modelType === 'TinyStories' ? 'white' : 'purple'}
               size="lg"
               p="2xl"
+              m="xs"
               onClick={() => doSetModelType('TinyStories')}
             >
               TinyStories
@@ -94,7 +95,9 @@ export function ChatSelectModel({
               color={modelType === 'llama2' ? 'white' : 'purple'}
               size="lg"
               p="2xl"
+              m="xs"
               onClick={() => doSetModelType('llama2')}
+              disabled={true}
             >
               llama2
             </Button>

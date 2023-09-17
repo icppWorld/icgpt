@@ -2,7 +2,7 @@
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
-import { doSubmit } from '../canisters/llama2'
+import { doNewChat, doSubmit } from '../canisters/llama2'
 
 const II_URL = process.env.II_URL
 const IC_HOST_URL = process.env.IC_HOST_URL
@@ -24,6 +24,8 @@ export function ChatInput({
   setChatOutputText,
   setChatDisplay,
 }) {
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+
   const textareaRef = React.useRef(null)
 
   React.useEffect(() => {
@@ -55,6 +57,29 @@ export function ChatInput({
       m="sm"
       style={floatingStyle}
     >
+      <Button
+        color="purple"
+        size="sm"
+        disabled={isSubmitting} // Always wait until current submit is done
+        onClick={() =>
+          doNewChat({
+            authClient,
+            actorRef,
+            chatNew,
+            setActorRef,
+            setChatNew,
+            setPromptRef,
+            inputString,
+            setInputString,
+            inputPlaceholder,
+            setInputPlaceholder,
+            setChatOutputText,
+            setChatDisplay,
+          })
+        }
+      >
+        + New chat
+      </Button>
       <textarea
         ref={textareaRef}
         value={inputString}
@@ -85,6 +110,8 @@ export function ChatInput({
             setInputPlaceholder,
             setChatOutputText,
             setChatDisplay,
+            isSubmitting,
+            setIsSubmitting,
           })
         }
       >

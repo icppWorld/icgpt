@@ -6,6 +6,12 @@ const IC_HOST_URL = process.env.IC_HOST_URL
 const displayQueue = []
 let isDisplaying = false
 
+async function waitForQueueToEmpty() {
+  while (displayQueue.length > 0) {
+    await sleep(100)
+  }
+}
+
 async function fetchInference(
   actor,
   setChatOutputText,
@@ -139,6 +145,7 @@ async function delayAndAppend(setChatOutputText, word, prependSpace) {
   })
 }
 
+// Called when user clicks 'submit' button
 export async function doSubmit({
   authClient,
   actorRef,
@@ -152,8 +159,12 @@ export async function doSubmit({
   setInputPlaceholder,
   setChatOutputText,
   setChatDisplay,
+  isSubmitting,
+  setIsSubmitting,
 }) {
   console.log('entered llama2.js doSubmit ')
+  setIsSubmitting(true)
+
   console.log('chatNew : ', chatNew)
   let actor_ = actorRef.current
   if (chatNew) {
@@ -199,6 +210,8 @@ export async function doSubmit({
           inputPlaceholder,
           setInputPlaceholder
         )
+
+        await waitForQueueToEmpty()
       } else {
         throw new Error(`LLM canister is not ready`)
       }
@@ -209,5 +222,27 @@ export async function doSubmit({
     console.error(error)
     // Force a re-render, showing the ChatOutput
     setChatDisplay('CanisterError')
+  } finally {
+    setIsSubmitting(false)
   }
+}
+
+// Called when user clicks '+ New chat' button
+export async function doNewChat({
+  authClient,
+  actorRef,
+  chatNew,
+  setActorRef,
+  setChatNew,
+  setPromptRef,
+  inputString,
+  setInputString,
+  inputPlaceholder,
+  setInputPlaceholder,
+  setChatOutputText,
+  setChatDisplay,
+}) {
+  console.log('entered llama2.js doNewChat ')
+  setChatNew(true)
+  setChatDisplay('SelectModel')
 }
