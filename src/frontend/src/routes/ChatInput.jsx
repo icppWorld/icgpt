@@ -24,6 +24,8 @@ export function ChatInput({
   setChatOutputText,
   setChatDisplay,
 }) {
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
   const textareaRef = React.useRef(null)
 
   React.useEffect(() => {
@@ -58,6 +60,7 @@ export function ChatInput({
       <Button
         color="purple"
         size="sm"
+        disabled={isSubmitting} // Always wait until current submit is done
         onClick={() =>
           doNewChat({
             authClient,
@@ -107,6 +110,8 @@ export function ChatInput({
             setInputPlaceholder,
             setChatOutputText,
             setChatDisplay,
+            isSubmitting,
+            setIsSubmitting
           })
         }
       >

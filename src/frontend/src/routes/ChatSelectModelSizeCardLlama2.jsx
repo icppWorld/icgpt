@@ -10,6 +10,7 @@ export function ChatSelectModelSizeCardLlama2({ modelSize, doSetModelSize }) {
         color={modelSize === '7B' ? 'white' : 'purple'}
         size="lg"
         p="2xl"
+        m="xs"
         onClick={() => doSetModelSize('7B')}
       >
         7B
@@ -18,6 +19,7 @@ export function ChatSelectModelSizeCardLlama2({ modelSize, doSetModelSize }) {
         color={modelSize === '13B' ? 'white' : 'purple'}
         size="lg"
         p="2xl"
+        m="xs"
         onClick={() => doSetModelSize('13B')}
       >
         13B
@@ -26,6 +28,7 @@ export function ChatSelectModelSizeCardLlama2({ modelSize, doSetModelSize }) {
         color={modelSize === '70B' ? 'white' : 'purple'}
         size="lg"
         p="2xl"
+        m="xs"
         onClick={() => doSetModelSize('70B')}
       >
         70B

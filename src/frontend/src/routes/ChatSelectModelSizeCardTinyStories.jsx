@@ -13,7 +13,9 @@ export function ChatSelectModelSizeCardTinyStories({
         color={modelSize === '260K' ? 'white' : 'purple'}
         size="lg"
         p="2xl"
+        m="xs"
         onClick={() => doSetModelSize('260K')}
+        disabled={true}
       >
         260K
       </Button>
@@ -21,6 +23,7 @@ export function ChatSelectModelSizeCardTinyStories({
         color={modelSize === '15M' ? 'white' : 'purple'}
         size="lg"
         p="2xl"
+        m="xs"
         onClick={() => doSetModelSize('15M')}
       >
         15M
@@ -29,7 +32,9 @@ export function ChatSelectModelSizeCardTinyStories({
         color={modelSize === '42M' ? 'white' : 'purple'}
         size="lg"
         p="2xl"
+        m="xs"
         onClick={() => doSetModelSize('42M')}
+        disabled={true}
       >
         42M
       </Button>
@@ -37,7 +42,9 @@ export function ChatSelectModelSizeCardTinyStories({
         color={modelSize === '110M' ? 'white' : 'purple'}
         size="lg"
         p="2xl"
+        m="xs"
         onClick={() => doSetModelSize('110M')}
+        disabled={true}
       >
         110M
       </Button>
