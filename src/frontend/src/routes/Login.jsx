@@ -19,7 +19,7 @@ export function Login({ setAuthClient }) {
             variant="subtle"
             color="none"
             my="sm"
-            pr="md"
+            p="md"
             // mx="sm"
             display="inline-block"
           >
@@ -32,7 +32,7 @@ export function Login({ setAuthClient }) {
 
             <LogInWithInternetIdentity setAuthClient={setAuthClient} />
 
-            <Divider></Divider>
+            {/* <Divider></Divider>
 
             <Box>
               <Table>
@@ -79,7 +79,7 @@ export function Login({ setAuthClient }) {
                   </tr>
                 </tbody>
               </Table>
-            </Box>
+            </Box> */}
           </Card>
         </div>
         <Footer />

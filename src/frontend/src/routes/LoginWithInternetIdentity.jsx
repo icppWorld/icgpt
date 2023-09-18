@@ -39,8 +39,7 @@ export function LogInWithInternetIdentity({ setAuthClient }) {
 
       <Divider></Divider>
       <Text color="white" size="xs">
-        After login with your Internet Identity, you can try out a variety of
-        LLMs running in IC canisters{' '}
+        Login with your Internet Identity.
       </Text>
     </Card>
   )
