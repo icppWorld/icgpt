@@ -78,7 +78,7 @@ export function Chat() {
             display="inline-block"
           >
             <Heading color="white" size="xl">
-              ICGPT Labs (COMING SOON!)
+              ICGPT Labs (Beta Preview...)
             </Heading>
             <Heading color="yellow" size="sm">
               on-chain LLMs
