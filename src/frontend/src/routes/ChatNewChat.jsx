@@ -17,12 +17,12 @@ export function ChatNewChat({
   setInputString,
   inputPlaceholder,
   setInputPlaceholder,
+  isSubmitting,
+  setIsSubmitting,
   chatOutputText,
   setChatOutputText,
   setChatDisplay,
 }) {
-  const [isSubmitting, setIsSubmitting] = React.useState(false)
-
   // -----------------------------------------------------------------
   // Adjust button position based on height of the chatInput Card
   const [buttonPosition, setButtonPosition] = React.useState('10px') // Initial position
@@ -75,6 +75,8 @@ export function ChatNewChat({
             setInputString,
             inputPlaceholder,
             setInputPlaceholder,
+            isSubmitting,
+            setIsSubmitting,
             setChatOutputText,
             setChatDisplay,
           })

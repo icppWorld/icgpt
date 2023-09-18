@@ -43,6 +43,7 @@ export function App() {
   const [inputPlaceholder, setInputPlaceholder] = React.useState(
     'Start your story (pretend to be 4 years old...)'
   )
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   // ChatOutput
   const [chatOutputText, setChatOutputText] = React.useState('')
@@ -58,6 +59,7 @@ export function App() {
     console.log('inputPlaceholder  : ' + inputPlaceholder)
     console.log('chatDisplay       : ' + chatDisplay)
     console.log('heightChatInput   : ' + heightChatInput)
+    console.log('isSubmitting      : ' + isSubmitting)
   }
 
   // state updates are asynchronous, so call dependent ones with useEffect
@@ -71,6 +73,7 @@ export function App() {
     inputPlaceholder,
     chatDisplay,
     heightChatInput,
+    isSubmitting
   ])
 
   // ---------------------------------------------------------
@@ -111,6 +114,8 @@ export function App() {
           setInputString,
           inputPlaceholder,
           setInputPlaceholder,
+          isSubmitting,
+          setIsSubmitting,
           chatOutputText,
           setChatOutputText,
           chatDisplay,

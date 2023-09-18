@@ -154,11 +154,11 @@ export async function doSubmit({
   inputString,
   setInputString,
   inputPlaceholder,
+  isSubmitting,
+  setIsSubmitting,
   setInputPlaceholder,
   setChatOutputText,
   setChatDisplay,
-  isSubmitting,
-  setIsSubmitting,
 }) {
   console.log('entered llama2.js doSubmit ')
   setIsSubmitting(true)
@@ -233,6 +233,8 @@ export async function doNewChat({
   inputString,
   setInputString,
   inputPlaceholder,
+  isSubmitting,
+  setIsSubmitting,
   setInputPlaceholder,
   setChatOutputText,
   setChatDisplay,
