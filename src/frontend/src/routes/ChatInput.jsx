@@ -78,7 +78,7 @@ export function ChatInput({
       />
 
       <Button
-        color="cyan"
+        color="white"
         p="none"
         mr="none"
         disabled={isSubmitting} // Always wait until current submit is done

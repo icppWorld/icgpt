@@ -61,7 +61,7 @@ export function ChatNewChat({
       m="sm"
     >
       <Button
-        color="cyan"
+        color="white"
         size="sm"
         disabled={isSubmitting} // Always wait until current submit is done
         onClick={() =>
