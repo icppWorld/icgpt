@@ -32,10 +32,6 @@ export function LogInWithInternetIdentity({ setAuthClient }) {
 
   return (
     <Card variant="subtle" color="black" p="none" m="none">
-      {/* <Box>
-        <Text color="white">Login with your Internet Identity: </Text>
-      </Box> */}
-
       <Divider></Divider>
       <Button variant="ghost" color="black" size="lg" p="2xl" onClick={doLogIn}>
         <img src="loop.svg" />

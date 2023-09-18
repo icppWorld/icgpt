@@ -19,7 +19,8 @@ export function Login({ setAuthClient }) {
             variant="subtle"
             color="none"
             my="sm"
-            p="sm"
+            pr="md"
+            // mx="sm"
             display="inline-block"
           >
             <Heading color="yellow" size="md">
