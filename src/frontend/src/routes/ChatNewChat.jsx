@@ -27,7 +27,7 @@ export function ChatNewChat({
 
   // -----------------------------------------------------------------
   // Adjust button position based on height of the chatInput Card
-  const [buttonPosition, setButtonPosition] = React.useState('10px'); // Initial position
+  const [buttonPosition, setButtonPosition] = React.useState('10px') // Initial position
 
   React.useEffect(() => {
     function updatePosition() {
@@ -36,23 +36,23 @@ export function ChatNewChat({
     }
 
     // Initially set the position
-    updatePosition();
+    updatePosition()
 
     // Update position whenever window is resized
-    window.addEventListener('resize', updatePosition);
+    window.addEventListener('resize', updatePosition)
 
     // Cleanup listener on component unmount
     return () => {
-      window.removeEventListener('resize', updatePosition);
-    };
-  }, [heightChatInput]);
+      window.removeEventListener('resize', updatePosition)
+    }
+  }, [heightChatInput])
 
   const buttonStyle = {
     position: 'fixed',
     left: '45px', // Adjust this for positioning from the left edge
     bottom: buttonPosition, // height_of_chatInput, and some_spacing as necessary
     zIndex: 1001, // Making sure this is above other elements
-  };
+  }
 
   return (
     <Box

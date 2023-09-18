@@ -51,7 +51,7 @@ export function ChatInput({
     gap: '10px',
     flexDirection: 'row',
     flexWrap: 'nowrap',
-    paddingTop: '40px'
+    paddingTop: '40px',
   }
 
   return (

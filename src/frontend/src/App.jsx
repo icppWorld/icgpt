@@ -51,8 +51,6 @@ export function App() {
   // ChatOutput
   const [chatOutputText, setChatOutputText] = React.useState('')
 
-
-
   // ---------------------------------------------------------
   function print_state() {
     console.log('------------------------------------')
@@ -76,7 +74,7 @@ export function App() {
     finetuneType,
     inputPlaceholder,
     chatDisplay,
-    heightChatInput
+    heightChatInput,
   ])
 
   // ---------------------------------------------------------
