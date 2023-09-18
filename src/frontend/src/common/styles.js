@@ -1,6 +1,6 @@
 export const floatingStyleTop = {
   position: 'fixed',
-  top: '100px',
+  top: '10px',
   left: '10px',
   right: '10px',
   zIndex: 900,

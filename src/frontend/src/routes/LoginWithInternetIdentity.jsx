@@ -31,10 +31,10 @@ export function LogInWithInternetIdentity({ setAuthClient }) {
   }
 
   return (
-    <Card variant="subtle" color="black" p="md" m="md">
-      <Box>
+    <Card variant="subtle" color="black" p="none" m="none">
+      {/* <Box>
         <Text color="white">Login with your Internet Identity: </Text>
-      </Box>
+      </Box> */}
 
       <Divider></Divider>
       <Button variant="ghost" color="black" size="lg" p="2xl" onClick={doLogIn}>
@@ -43,7 +43,7 @@ export function LogInWithInternetIdentity({ setAuthClient }) {
 
       <Divider></Divider>
       <Text color="white" size="xs">
-        After login you can try out a variety of LLMs running in IC canisters{' '}
+        After login with your Internet Identity, you can try out a variety of LLMs running in IC canisters{' '}
       </Text>
     </Card>
   )

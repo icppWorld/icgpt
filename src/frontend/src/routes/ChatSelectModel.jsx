@@ -64,7 +64,7 @@ export function ChatSelectModel({
   }
 
   return (
-    <Card id="setModelTypeCard" variant="subtle" color="black" p="md" m="md">
+    <Card id="setModelTypeCard" variant="subtle" color="black" p="none" m="none">
       <Box>
         <Text color="white">model data: </Text>
         <Box>

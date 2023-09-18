@@ -10,9 +10,9 @@ export function WaitAnimation({ message }) {
   return (
     <Card
       variant="subtle"
-      color="purple"
-      p="md"
-      m="md"
+      color="black"
+      p="none"
+      m="none"
       style={floatingStyleTop}
     >
       <ImageWithFallback

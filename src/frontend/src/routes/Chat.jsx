@@ -3,7 +3,7 @@ import React from 'react'
 import { Helmet } from 'react-helmet'
 import { useOutletContext } from 'react-router-dom'
 import 'dracula-ui/styles/dracula-ui.css'
-import { Card, Heading, Divider } from 'dracula-ui'
+import { Card, Heading, Divider, Text } from 'dracula-ui'
 
 import { Footer } from '../common/Footer'
 import { WaitAnimation } from '../common/WaitAnimation'
@@ -79,13 +79,9 @@ export function Chat() {
             p="sm"
             display="inline-block"
           >
-            <Heading color="white" size="md">
+            {/* <Text color="yellow" size="md">
               ICGPT Labs
-            </Heading>
-            <Heading color="yellow" size="sm">
-              on-chain LLMs
-            </Heading>
-            <Divider></Divider>
+            </Text> */}
             {DisplayComponent}
             <ChatNewChat
               authClient={authClient}
