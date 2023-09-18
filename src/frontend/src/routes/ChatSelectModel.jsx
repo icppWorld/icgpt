@@ -78,7 +78,9 @@ export function ChatSelectModel({
             <Text
               color={modelType === 'TinyStories' ? 'purple' : 'wite'}
               size="sm"
-            >TinyStories</Text>
+            >
+              TinyStories
+            </Text>
           </Button>
           <Button
             color={modelType === 'llama2' ? 'white' : 'purple'}
@@ -88,10 +90,9 @@ export function ChatSelectModel({
             onClick={() => doSetModelType('llama2')}
             disabled={true}
           >
-            <Text
-              color={modelType === 'llama2' ? 'purple' : 'wite'}
-              size="sm"
-            >llama2</Text>
+            <Text color={modelType === 'llama2' ? 'purple' : 'wite'} size="sm">
+              llama2
+            </Text>
           </Button>
         </Box>
       </Box>
@@ -125,10 +126,9 @@ export function ChatSelectModel({
             m="xs"
             onClick={() => doSetFinetuneType('LLM')}
           >
-            <Text
-              color={modelType === 'LLM' ? 'purple' : 'wite'}
-              size="sm"
-            >LLM</Text>
+            <Text color={modelType === 'LLM' ? 'purple' : 'wite'} size="sm">
+              LLM
+            </Text>
           </Button>
           <Button
             color={finetuneType === 'Chat' ? 'white' : 'purple'}
@@ -138,10 +138,9 @@ export function ChatSelectModel({
             onClick={() => doSetFinetuneType('Chat')}
             disabled={true}
           >
-            <Text
-              color={modelType === 'Chat' ? 'purple' : 'wite'}
-              size="sm"
-            >Chat</Text>
+            <Text color={modelType === 'Chat' ? 'purple' : 'wite'} size="sm">
+              Chat
+            </Text>
           </Button>
         </Box>
       </Box>
