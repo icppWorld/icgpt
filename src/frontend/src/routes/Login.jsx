@@ -22,8 +22,8 @@ export function Login({ setAuthClient }) {
             p="sm"
             display="inline-block"
           >
-            <Heading color="white" size="xl">
-              ICGPT Labs (Beta Preview...)
+            <Heading color="white" size="md">
+              ICGPT Labs
             </Heading>
             <Heading color="yellow" size="sm">
               on-chain LLMs
