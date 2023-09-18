@@ -23,7 +23,6 @@ export function Chat() {
   const { heightChatInput, setHeightChatInput } = useOutletContext()
   const { inputString, setInputString } = useOutletContext()
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
-  const { promptRef, setPromptRef } = useOutletContext()
   const { chatOutputText, setChatOutputText } = useOutletContext()
   const { chatDisplay, setChatDisplay } = useOutletContext()
 
@@ -100,8 +99,6 @@ export function Chat() {
               setInputString={setInputString}
               inputPlaceholder={inputPlaceholder}
               setInputPlaceholder={setInputPlaceholder}
-              promptRef={promptRef}
-              setPromptRef={setPromptRef}
               chatOutputText={chatOutputText}
               setChatOutputText={setChatOutputText}
               setChatDisplay={setChatDisplay}
@@ -119,8 +116,6 @@ export function Chat() {
               setInputString={setInputString}
               inputPlaceholder={inputPlaceholder}
               setInputPlaceholder={setInputPlaceholder}
-              promptRef={promptRef}
-              setPromptRef={setPromptRef}
               chatOutputText={chatOutputText}
               setChatOutputText={setChatOutputText}
               setChatDisplay={setChatDisplay}

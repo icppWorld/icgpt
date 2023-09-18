@@ -43,10 +43,6 @@ export function App() {
   const [inputPlaceholder, setInputPlaceholder] = React.useState(
     'Start your story (pretend to be 4 years old...)'
   )
-  const promptRef = React.useRef() // Unused - DELETE (TODO)
-  const setPromptRef = (value) => {
-    promptRef.current = value
-  }
 
   // ChatOutput
   const [chatOutputText, setChatOutputText] = React.useState('')
@@ -115,8 +111,6 @@ export function App() {
           setInputString,
           inputPlaceholder,
           setInputPlaceholder,
-          promptRef,
-          setPromptRef,
           chatOutputText,
           setChatOutputText,
           chatDisplay,
