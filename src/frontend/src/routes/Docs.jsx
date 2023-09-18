@@ -8,7 +8,7 @@ export function Docs() {
   return (
     <div>
       <Helmet>
-        <title>ICGPT: Docs</title>
+        <title>ICGPT Labs</title>
       </Helmet>
       <main>
         <div className="container-fluid">

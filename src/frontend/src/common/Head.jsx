@@ -24,7 +24,7 @@ export function Head(props) {
       <link rel="manifest" href="manifest.json" />
       */}
 
-      <title>ICGPT</title>
+      <title>ICGPT Labs</title>
       <link rel="icon" href="favicon.ico" />
     </Helmet>
   )

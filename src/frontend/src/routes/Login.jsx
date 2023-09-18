@@ -11,7 +11,7 @@ export function Login({ setAuthClient }) {
   return (
     <div>
       <Helmet>
-        <title>ICGPT</title>
+        <title>ICGPT Labs</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">

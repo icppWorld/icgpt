@@ -73,7 +73,7 @@ export function Chat() {
   return (
     <div>
       <Helmet>
-        <title>ICGPT: Chat</title>
+        <title>ICGPT Labs</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">
