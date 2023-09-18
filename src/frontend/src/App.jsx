@@ -63,7 +63,14 @@ export function App() {
   // state updates are asynchronous, so call dependent ones with useEffect
   React.useEffect(() => {
     print_state()
-  }, [chatNew, modelType, modelSize, finetuneType, inputPlaceholder, chatDisplay])
+  }, [
+    chatNew,
+    modelType,
+    modelSize,
+    finetuneType,
+    inputPlaceholder,
+    chatDisplay,
+  ])
 
   // ---------------------------------------------------------
 

@@ -16,7 +16,6 @@ export function ChatSelectModel({
   inputPlaceholder,
   setInputPlaceholder,
 }) {
-
   React.useEffect(() => {
     doSetInputPlaceholder()
   }, [modelType, finetuneType])
