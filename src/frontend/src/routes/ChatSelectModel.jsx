@@ -64,74 +64,87 @@ export function ChatSelectModel({
   }
 
   return (
-    <Box>
-      <Card id="setModelTypeCard" variant="subtle" color="purple" p="md" m="md">
+    <Card id="setModelTypeCard" variant="subtle" color="black" p="md" m="md">
+      <Box>
+        <Text color="white">model data: </Text>
         <Box>
-          <Text color="white">model data: </Text>
-          <Box>
-            <Button
-              color={modelType === 'TinyStories' ? 'white' : 'purple'}
-              size="lg"
-              p="2xl"
-              m="xs"
-              onClick={() => doSetModelType('TinyStories')}
-            >
-              TinyStories
-            </Button>
-            <Button
-              color={modelType === 'llama2' ? 'white' : 'purple'}
-              size="lg"
-              p="2xl"
-              m="xs"
-              onClick={() => doSetModelType('llama2')}
-              disabled={true}
-            >
-              llama2
-            </Button>
-          </Box>
+          <Button
+            color={modelType === 'TinyStories' ? 'white' : 'purple'}
+            size="sm"
+            p="xs"
+            m="xs"
+            onClick={() => doSetModelType('TinyStories')}
+          >
+            <Text
+              color={modelType === 'TinyStories' ? 'purple' : 'wite'}
+              size="sm"
+            >TinyStories</Text>
+          </Button>
+          <Button
+            color={modelType === 'llama2' ? 'white' : 'purple'}
+            size="sm"
+            p="xs"
+            m="xs"
+            onClick={() => doSetModelType('llama2')}
+            disabled={true}
+          >
+            <Text
+              color={modelType === 'llama2' ? 'purple' : 'wite'}
+              size="sm"
+            >llama2</Text>
+          </Button>
         </Box>
+      </Box>
 
-        <Divider></Divider>
+      <Divider></Divider>
 
+      <Box>
+        <Text color="white">model size: </Text>
+        {modelType === 'TinyStories' ? (
+          <ChatSelectModelSizeCardTinyStories
+            modelSize={modelSize}
+            doSetModelSize={doSetModelSize}
+          />
+        ) : modelType === 'llama2' ? (
+          <ChatSelectModelSizeCardLlama2
+            modelSize={modelSize}
+            doSetModelSize={doSetModelSize}
+          />
+        ) : null}
+      </Box>
+
+      <Divider></Divider>
+
+      <Box>
+        <Text color="white">finetuned: </Text>
         <Box>
-          <Text color="white">model size: </Text>
-          {modelType === 'TinyStories' ? (
-            <ChatSelectModelSizeCardTinyStories
-              modelSize={modelSize}
-              doSetModelSize={doSetModelSize}
-            />
-          ) : modelType === 'llama2' ? (
-            <ChatSelectModelSizeCardLlama2
-              modelSize={modelSize}
-              doSetModelSize={doSetModelSize}
-            />
-          ) : null}
+          <Button
+            color={finetuneType === 'LLM' ? 'white' : 'purple'}
+            size="sm"
+            p="xs"
+            m="xs"
+            onClick={() => doSetFinetuneType('LLM')}
+          >
+            <Text
+              color={modelType === 'LLM' ? 'purple' : 'wite'}
+              size="sm"
+            >LLM</Text>
+          </Button>
+          <Button
+            color={finetuneType === 'Chat' ? 'white' : 'purple'}
+            size="sm"
+            p="xs"
+            m="xs"
+            onClick={() => doSetFinetuneType('Chat')}
+            disabled={true}
+          >
+            <Text
+              color={modelType === 'Chat' ? 'purple' : 'wite'}
+              size="sm"
+            >Chat</Text>
+          </Button>
         </Box>
-
-        <Divider></Divider>
-
-        <Box>
-          <Text color="white">finetuned: </Text>
-          <Box>
-            <Button
-              color={finetuneType === 'LLM' ? 'white' : 'purple'}
-              size="lg"
-              p="2xl"
-              onClick={() => doSetFinetuneType('LLM')}
-            >
-              LLM
-            </Button>
-            <Button
-              color={finetuneType === 'Chat' ? 'white' : 'purple'}
-              size="lg"
-              p="2xl"
-              onClick={() => doSetFinetuneType('Chat')}
-            >
-              Chat
-            </Button>
-          </Box>
-        </Box>
-      </Card>
-    </Box>
+      </Box>
+    </Card>
   )
 }

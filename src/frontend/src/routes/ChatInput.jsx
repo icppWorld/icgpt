@@ -78,6 +78,9 @@ export function ChatInput({
       />
 
       <Button
+        color="cyan"
+        p="xs"
+        m="xs"
         onClick={() =>
           doSubmit({
             authClient,
