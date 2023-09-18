@@ -73,7 +73,7 @@ export function App() {
     inputPlaceholder,
     chatDisplay,
     heightChatInput,
-    isSubmitting
+    isSubmitting,
   ])
 
   // ---------------------------------------------------------
