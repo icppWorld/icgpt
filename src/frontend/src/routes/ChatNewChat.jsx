@@ -29,7 +29,7 @@ export function ChatNewChat({
 
   React.useEffect(() => {
     function updatePosition() {
-      const calculatedBottomPosition = heightChatInput + 50
+      const calculatedBottomPosition = heightChatInput + 30
       setButtonPosition(`${calculatedBottomPosition}px`)
     }
 
@@ -47,7 +47,7 @@ export function ChatNewChat({
 
   const buttonStyle = {
     position: 'fixed',
-    left: '45px', // Adjust this for positioning from the left edge
+    left: '22px', // Adjust this for positioning from the left edge
     bottom: buttonPosition, // height_of_chatInput, and some_spacing as necessary
     zIndex: 1001, // Making sure this is above other elements
   }

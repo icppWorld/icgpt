@@ -31,7 +31,7 @@ export function LogInWithInternetIdentity({ setAuthClient }) {
   }
 
   return (
-    <Card variant="subtle" color="purple" p="md" m="md">
+    <Card variant="subtle" color="black" p="md" m="md">
       <Box>
         <Text color="white">Login with your Internet Identity: </Text>
       </Box>

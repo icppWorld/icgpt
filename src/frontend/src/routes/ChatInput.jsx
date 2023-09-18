@@ -58,8 +58,8 @@ export function ChatInput({
       id="chatInput"
       variant="subtle"
       color="white"
-      p="sm"
-      m="sm"
+      p="xxs"
+      m="xxs"
       style={floatingStyle}
     >
       <textarea
@@ -79,8 +79,9 @@ export function ChatInput({
 
       <Button
         color="cyan"
-        p="xs"
-        m="xs"
+        p="none"
+        mr="none"
+        disabled={isSubmitting} // Always wait until current submit is done
         onClick={() =>
           doSubmit({
             authClient,
@@ -101,10 +102,8 @@ export function ChatInput({
           })
         }
       >
-        <i
-          className="bi bi-caret-right-square-fill"
-          style={{ fontSize: '20px' }}
-        ></i>
+        {/* https://icons.getbootstrap.com/ */}
+        <i className="bi bi-caret-right"></i>
       </Button>
     </Card>
   )
