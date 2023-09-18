@@ -54,7 +54,12 @@ export function Chat() {
       )
       break
     case 'ChatOutput':
-      DisplayComponent = <ChatOutput chatOutputText={chatOutputText} heightChatInput={heightChatInput} />
+      DisplayComponent = (
+        <ChatOutput
+          chatOutputText={chatOutputText}
+          heightChatInput={heightChatInput}
+        />
+      )
       break
     case 'CanisterError':
       DisplayComponent = (
