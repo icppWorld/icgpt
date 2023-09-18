@@ -16,18 +16,6 @@ export function ChatSelectModel({
   inputPlaceholder,
   setInputPlaceholder,
 }) {
-  function print_state() {
-    console.log('------------------------------------')
-    console.log('modelType         : ' + modelType)
-    console.log('modelSize         : ' + modelSize)
-    console.log('finetuneType      : ' + finetuneType)
-    console.log('inputPlaceholder  : ' + inputPlaceholder)
-  }
-
-  // state updates are asynchronous, so call dependent ones with useEffect
-  React.useEffect(() => {
-    print_state()
-  }, [modelType, modelSize, finetuneType, inputPlaceholder])
 
   React.useEffect(() => {
     doSetInputPlaceholder()

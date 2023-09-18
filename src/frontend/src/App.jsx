@@ -47,6 +47,24 @@ export function App() {
 
   // What to display in
   const [chatDisplay, setChatDisplay] = React.useState('SelectModel')
+
+  // ---------------------------------------------------------
+  function print_state() {
+    console.log('------------------------------------')
+    console.log('chatNew           : ' + chatNew)
+    console.log('modelType         : ' + modelType)
+    console.log('modelSize         : ' + modelSize)
+    console.log('finetuneType      : ' + finetuneType)
+    // console.log('inputString       : ' + inputString)
+    console.log('inputPlaceholder  : ' + inputPlaceholder)
+    console.log('chatDisplay       : ' + chatDisplay)
+  }
+
+  // state updates are asynchronous, so call dependent ones with useEffect
+  React.useEffect(() => {
+    print_state()
+  }, [chatNew, modelType, modelSize, finetuneType, inputPlaceholder, chatDisplay])
+
   // ---------------------------------------------------------
 
   if (!authClient) {
