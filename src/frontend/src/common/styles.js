@@ -6,5 +6,5 @@ export const floatingStyleTop = {
   zIndex: 900,
   // display: 'flex',
   // alignItems: 'center',
-  overflowY: 'auto' // ensures content can be scrolled if it exceeds container height
+  overflowY: 'auto', // ensures content can be scrolled if it exceeds container height
 }
