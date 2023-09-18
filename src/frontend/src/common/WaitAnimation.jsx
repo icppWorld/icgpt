@@ -10,10 +10,13 @@ export function WaitAnimation({ message }) {
   return (
     <Card
       variant="subtle"
-      color="black"
+      color="black-transparent"
       p="none"
       m="none"
-      style={floatingStyleTop}
+      style={{
+        ...floatingStyleTop,
+        zIndex: 1002,
+      }}
     >
       <ImageWithFallback
         src="loader.webp"
@@ -23,8 +26,8 @@ export function WaitAnimation({ message }) {
 
       <Divider></Divider>
 
-      <Box>
-        <Text color="white">{message}</Text>
+      <Box color="black">
+        <Text color="yellow">{message}</Text>
       </Box>
     </Card>
   )

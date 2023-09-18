@@ -36,7 +36,13 @@ export function Chat() {
   switch (chatDisplay) {
     case 'WaitAnimation':
       DisplayComponent = (
-        <WaitAnimation message="Connecting to LLM canister..." />
+        <>
+          <ChatOutput
+            chatOutputText={chatOutputText}
+            heightChatInput={heightChatInput}
+          />
+          <WaitAnimation message="Connecting to LLM canister..." />
+        </>
       )
       break
     case 'SelectModel':
@@ -83,10 +89,8 @@ export function Chat() {
             my="sm"
             p="sm"
             display="inline-block"
+            style={{ position: 'relative' }}
           >
-            {/* <Text color="yellow" size="md">
-              ICGPT Labs
-            </Text> */}
             {DisplayComponent}
             <ChatNewChat
               authClient={authClient}
