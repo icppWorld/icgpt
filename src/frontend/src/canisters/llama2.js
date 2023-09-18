@@ -123,7 +123,6 @@ function displayResponse(response, setChatDisplay, setChatOutputText) {
   return words.reduce((acc, word, j) => {
     return acc.then(() => {
       const prependSpace = j !== 0
-      console.log('prependSpace: ', prependSpace)
       return delayAndAppend(setChatOutputText, word, prependSpace)
     })
   }, Promise.resolve())

@@ -2,7 +2,7 @@
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
-import { doNewChat, doSubmit } from '../canisters/llama2'
+import { doSubmit } from '../canisters/llama2'
 
 const II_URL = process.env.II_URL
 const IC_HOST_URL = process.env.IC_HOST_URL
@@ -14,6 +14,8 @@ export function ChatInput({
   setActorRef,
   chatNew,
   setChatNew,
+  heightChatInput,
+  setHeightChatInput,
   inputString,
   setInputString,
   inputPlaceholder,
@@ -25,13 +27,14 @@ export function ChatInput({
   setChatDisplay,
 }) {
   const [isSubmitting, setIsSubmitting] = React.useState(false)
-
   const textareaRef = React.useRef(null)
 
   React.useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto' // reset the height
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
+      // 2. Update the heightChatInput state variable, used to position other components
+      setHeightChatInput(textareaRef.current.scrollHeight)
     }
   }, [inputString])
 
@@ -46,6 +49,9 @@ export function ChatInput({
     display: 'flex', // to make textarea and button sit side by side
     alignItems: 'center',
     gap: '10px',
+    flexDirection: 'row',
+    flexWrap: 'nowrap',
+    paddingTop: '40px'
   }
 
   return (
@@ -57,29 +63,6 @@ export function ChatInput({
       m="sm"
       style={floatingStyle}
     >
-      <Button
-        color="purple"
-        size="sm"
-        disabled={isSubmitting} // Always wait until current submit is done
-        onClick={() =>
-          doNewChat({
-            authClient,
-            actorRef,
-            chatNew,
-            setActorRef,
-            setChatNew,
-            setPromptRef,
-            inputString,
-            setInputString,
-            inputPlaceholder,
-            setInputPlaceholder,
-            setChatOutputText,
-            setChatDisplay,
-          })
-        }
-      >
-        + New chat
-      </Button>
       <textarea
         ref={textareaRef}
         value={inputString}

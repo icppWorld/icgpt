@@ -28,25 +28,30 @@ export function App() {
     actorRef.current = value
   }
 
-  // Chat state
+  // Chat
+  const [chatDisplay, setChatDisplay] = React.useState('SelectModel')
+
+  // ChatSelectModel
   const [chatNew, setChatNew] = React.useState(true)
   const [modelType, setModelType] = React.useState('TinyStories')
   const [modelSize, setModelSize] = React.useState('15M')
   const [finetuneType, setFinetuneType] = React.useState('LLM')
+
+  // ChatInput
+  const [heightChatInput, setHeightChatInput] = React.useState(0)
   const [inputString, setInputString] = React.useState('')
   const [inputPlaceholder, setInputPlaceholder] = React.useState(
     'Start your story (pretend to be 4 years old...)'
   )
-  const promptRef = React.useRef()
+  const promptRef = React.useRef() // Unused - DELETE (TODO)
   const setPromptRef = (value) => {
     promptRef.current = value
   }
 
-  // Chat output
+  // ChatOutput
   const [chatOutputText, setChatOutputText] = React.useState('')
 
-  // What to display in
-  const [chatDisplay, setChatDisplay] = React.useState('SelectModel')
+
 
   // ---------------------------------------------------------
   function print_state() {
@@ -58,6 +63,7 @@ export function App() {
     // console.log('inputString       : ' + inputString)
     console.log('inputPlaceholder  : ' + inputPlaceholder)
     console.log('chatDisplay       : ' + chatDisplay)
+    console.log('heightChatInput   : ' + heightChatInput)
   }
 
   // state updates are asynchronous, so call dependent ones with useEffect
@@ -70,6 +76,7 @@ export function App() {
     finetuneType,
     inputPlaceholder,
     chatDisplay,
+    heightChatInput
   ])
 
   // ---------------------------------------------------------
@@ -104,6 +111,8 @@ export function App() {
           setModelSize,
           finetuneType,
           setFinetuneType,
+          heightChatInput,
+          setHeightChatInput,
           inputString,
           setInputString,
           inputPlaceholder,

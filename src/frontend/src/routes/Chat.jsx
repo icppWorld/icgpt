@@ -10,6 +10,7 @@ import { WaitAnimation } from '../common/WaitAnimation'
 import { CardError } from '../common/CardError'
 import { ChatSelectModel } from './ChatSelectModel'
 import { ChatOutput } from './ChatOutput'
+import { ChatNewChat } from './ChatNewChat'
 import { ChatInput } from './ChatInput'
 
 export function Chat() {
@@ -19,6 +20,7 @@ export function Chat() {
   const { modelType, setModelType } = useOutletContext()
   const { modelSize, setModelSize } = useOutletContext()
   const { finetuneType, setFinetuneType } = useOutletContext()
+  const { heightChatInput, setHeightChatInput } = useOutletContext()
   const { inputString, setInputString } = useOutletContext()
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
   const { promptRef, setPromptRef } = useOutletContext()
@@ -85,6 +87,25 @@ export function Chat() {
             </Heading>
             <Divider></Divider>
             {DisplayComponent}
+            <ChatNewChat
+              authClient={authClient}
+              setAuthClient={setAuthClient}
+              actorRef={actorRef}
+              setActorRef={setActorRef}
+              chatNew={chatNew}
+              setChatNew={setChatNew}
+              heightChatInput={heightChatInput}
+              setHeightChatInput={setHeightChatInput}
+              inputString={inputString}
+              setInputString={setInputString}
+              inputPlaceholder={inputPlaceholder}
+              setInputPlaceholder={setInputPlaceholder}
+              promptRef={promptRef}
+              setPromptRef={setPromptRef}
+              chatOutputText={chatOutputText}
+              setChatOutputText={setChatOutputText}
+              setChatDisplay={setChatDisplay}
+            />
             <ChatInput
               authClient={authClient}
               setAuthClient={setAuthClient}
@@ -92,6 +113,8 @@ export function Chat() {
               setActorRef={setActorRef}
               chatNew={chatNew}
               setChatNew={setChatNew}
+              heightChatInput={heightChatInput}
+              setHeightChatInput={setHeightChatInput}
               inputString={inputString}
               setInputString={setInputString}
               inputPlaceholder={inputPlaceholder}
