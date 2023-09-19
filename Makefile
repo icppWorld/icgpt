@@ -75,34 +75,95 @@ git-on-origin-main:
 .PHONY: dfx-install
 dfx-install:
 	sh -ci "$$(curl -fsSL https://sdk.dfinity.org/install.sh)"
-	
+
+.PHONY: dfx-cycles-to-llama2
+dfx-cycles-to-llama2:
+	@$(eval CANISTER_LLAMA2_ID := $(shell dfx canister --network ic id llama2))
+	@echo "-------------------------------------------------------------------------"
+	@echo "dfx identity             : $(IDENTITY)"
+	@echo "- balance before: "
+	@dfx wallet --network ic balance
+	@echo "-------------------------------------------------------------------------"
+	@echo "llama2 canister  before    : $(CANISTER_LLAMA2_ID)"
+	@dfx canister --network=ic status llama2
+	@echo "-------------------------------------------------------------------------"
+	@echo "Sending 0.5T cycles to llama2"
+	dfx wallet --network ic send $(CANISTER_LLAMA2_ID) 500000000000
+	@echo "-------------------------------------------------------------------------"
+	@echo "dfx identity             : $(IDENTITY)"
+	@echo "- balance after: "
+	@dfx wallet --network ic balance
+	@echo "-------------------------------------------------------------------------"
+	@echo "llama2 canister  after    : $(CANISTER_LLAMA2_ID)"
+	@dfx canister --network=ic status llama2
+
+.PHONY: dfx-cycles-to-frontend
+dfx-cycles-to-llama2:
+	@$(eval CANISTER_FRONTEND_ID := $(shell dfx canister --network ic id canister_frontend))
+	@echo "-------------------------------------------------------------------------"
+	@echo "dfx identity             : $(IDENTITY)"
+	@echo "- balance before: "
+	@dfx wallet --network ic balance
+	@echo "-------------------------------------------------------------------------"
+	@echo "canister_frontend canister  before    : $(CANISTER_FRONTEND_ID)"
+	@dfx canister --network=ic status canister_frontend
+	@echo "-------------------------------------------------------------------------"
+	@echo "Sending 0.5T cycles to canister_frontend"
+	dfx wallet --network ic send $(CANISTER_FRONTEND_ID) 500000000000
+	@echo "-------------------------------------------------------------------------"
+	@echo "dfx identity             : $(IDENTITY)"
+	@echo "- balance after: "
+	@dfx wallet --network ic balance
+	@echo "-------------------------------------------------------------------------"
+	@echo "canister_frontend canister  after    : $(CANISTER_FRONTEND_ID)"
+	@dfx canister --network=ic status canister_frontend
+
 .PHONY: dfx-canisters-of-project-ic
 dfx-canisters-of-project-ic:
-	@$(eval CANISTER_WALLET := $(shell dfx identity --network ic get-wallet))
+	@$(eval IDENTITY_PRINCIPAL := $(shell dfx identity --network ic get-principal))
+	@$(eval IDENTITY_CYCLES_WALLET := $(shell dfx identity --network ic get-wallet))
+	@$(eval IDENTITY_ICP_WALLET := $(shell dfx ledger --network ic account-id))
+	@$(eval IDENTITY_ICP_BALANCE := $(shell dfx ledger --network ic balance))
 	@$(eval CANISTER_FRONTEND := $(shell dfx canister --network ic id canister_frontend))
+	@$(eval CANISTER_LLAMA2 := $(shell dfx canister --network ic id llama2))
 
 	@echo '-------------------------------------------------'
-	@echo "NETWORK            : ic"
-	@echo "cycles canister    : $(CANISTER_WALLET)"
-	@echo "Candid UI canister : $(CANISTER_CANDID_UI_IC)"
-	@echo "canister_frontend  : $(CANISTER_FRONTEND)"
+	@echo "NETWORK                  : ic"
+	@echo "dfx identity             : $(IDENTITY)"
+	@echo "identity's principal     : $(IDENTITY_PRINCIPAL)"
+	@echo "identity's cycles wallet : $(IDENTITY_CYCLES_WALLET)"
+	@echo "identity's ICP wallet    : $(IDENTITY_ICP_WALLET)"
+	@echo "identity's ICP balance   : $(IDENTITY_ICP_BALANCE)"
+	@echo '-------------------------------------------------'
+	@echo "identity's cycles wallet : $(IDENTITY_CYCLES_WALLET)"
+	@echo "- balance: "
+	@dfx wallet --network ic balance
+	@echo "- status: "
+	@dfx canister --network=ic status $(IDENTITY_CYCLES_WALLET)
+	@echo '-------------------------------------------------'
+	@echo "canister_frontend    : $(CANISTER_FRONTEND)"
+	@dfx canister --network=ic status canister_frontend
+	@echo '-------------------------------------------------'
+	@echo "llama2 canister      : $(CANISTER_LLAMA2)"
+	@dfx canister --network=ic status llama2
 	@echo '-------------------------------------------------'
 	@echo 'View in browser at:'
-	@echo  "cycles canister                : https://$(CANISTER_WALLET).raw.ic0.app/"
+	@echo  "canister_frontend (ICGPT Labs) : https://$(CANISTER_FRONTEND).ic0.app/"
+	@echo  "identity's wallet              : https://$(IDENTITY_CYCLES_WALLET).raw.ic0.app/"
 	@echo  "Candid UI                      : https://$(CANISTER_CANDID_UI_IC).raw.ic0.app/"
 	@echo  "Candid UI of canister_frontend : https://$(CANISTER_CANDID_UI_IC).raw.ic0.app/?id=$(CANISTER_FRONTEND)"
-	@echo  "canister_frontend              : https://$(CANISTER_FRONTEND).ic0.app/"
+	
 
 .PHONY: dfx-canisters-of-project-local
 dfx-canisters-of-project-local:
-	@$(eval CANISTER_WALLET := $(shell dfx identity get-wallet))
+	@$(eval IDENTITY_CYCLES_WALLET := $(shell dfx identity get-wallet))
 	@$(eval CANISTER_CANDID_UI_LOCAL ?= $(shell dfx canister id __Candid_UI))
 	@$(eval CANISTER_FRONTEND := $(shell dfx canister id canister_frontend))
 
 	
 	@echo '-------------------------------------------------'
 	@echo "NETWORK            : local"
-	@echo "cycles canister    : $(CANISTER_WALLET)"
+	@echo "cycles canister    : $(IDENTITY_CYCLES_WALLET)"
 	@echo "Candid UI canister : $(CANISTER_CANDID_UI_IC)"
 	@echo "canister_frontend  : $(CANISTER_FRONTEND)"
 	@echo '-------------------------------------------------'
@@ -260,16 +321,15 @@ dfx-start-local:
 dfx-stop-local:
 	@dfx stop
 
-
 .PHONY: dfx-wallet-details
 dfx-wallet-details:
-	@$(eval CANISTER_WALLET := $(shell dfx identity --network $(NETWORK) get-wallet))
+	@$(eval IDENTITY_CYCLES_WALLET := $(shell dfx identity --network $(NETWORK) get-wallet))
 	@echo "-------------------------------------------------------------------------"
 	@echo "make dfx-wallet-details NETWORK=$(NETWORK)"
 	@if [[ ${NETWORK} == "ic" ]]; then \
-		echo  "View details at         : https://$(CANISTER_WALLET).raw.ic0.app/"; \
+		echo  "View details at         : https://$(IDENTITY_CYCLES_WALLET).raw.ic0.app/"; \
 	else \
-		echo  "View details at         : ?? http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(CANISTER_WALLET) ?? "; \
+		echo  "View details at         : ?? http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(IDENTITY_CYCLES_WALLET) ?? "; \
 	fi
 	
 	@echo "-------------------------------------------------------------------------"
