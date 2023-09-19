@@ -182,3 +182,34 @@ The frontend is a react application with a webpack based build pipeline. Webpack
 - Open the browser at the URL printed & open the browser devtools
 
 - Make changes to the frontend code in your favorite editor, and when you save it, everything will auto-rebuild and auto-reload
+
+# Adding cycles
+
+## Check status
+Make sure that the cycles wallet of icpp-llm has sufficient cycles:
+```bash
+dfx identity use icpp-llm
+
+# Verify status
+make dfx-canisters-of-project-ic
+```
+
+## Add cycles to icpp-llm Identities' cycles wallet
+- Login NNS
+- My Canisters -> `jh35u-eqaaa-aaaag-abf3a-cai` 
+  - Shows the balance
+  - Has options for:
+    - Add Controller
+    - Add Cycles
+
+## Add cycles to the project canisters
+```bash
+dfx identity use icpp-llm
+
+# Verify status
+make dfx-canisters-of-project-ic
+
+# Add 0.5T cycles: 
+make dfx-cycles-to-llama2
+make dfx-cycles-to-frontend
+```

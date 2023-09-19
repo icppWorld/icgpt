@@ -98,7 +98,7 @@ dfx-cycles-to-llama2:
 	@dfx canister --network=ic status llama2
 
 .PHONY: dfx-cycles-to-frontend
-dfx-cycles-to-llama2:
+dfx-cycles-to-frontend:
 	@$(eval CANISTER_FRONTEND_ID := $(shell dfx canister --network ic id canister_frontend))
 	@echo "-------------------------------------------------------------------------"
 	@echo "dfx identity             : $(IDENTITY)"
