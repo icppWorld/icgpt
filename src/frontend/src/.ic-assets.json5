@@ -53,4 +53,8 @@
     // redirect all requests from .raw.icp0.io to .icp0.io (this redirection is the default)
     allow_raw_access: false,
   },
+  {
+    "match": ".well-known",
+    "ignore": false
+  },
 ]

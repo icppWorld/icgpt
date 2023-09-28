@@ -234,6 +234,10 @@ module.exports = (env = {}, args = {}) => {
             to: path.join(__dirname, 'dist', 'frontend'),
           },
           {
+            from: path.join(__dirname, 'src', 'frontend/domain-info'),
+            to: path.join(__dirname, 'dist', 'frontend'),
+          },
+          {
             from: `src/frontend/src/.ic-assets.json*`,
             to: '.ic-assets.json5',
             noErrorOnMissing: true,

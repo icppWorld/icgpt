@@ -213,3 +213,64 @@ make dfx-canisters-of-project-ic
 make dfx-cycles-to-llama2
 make dfx-cycles-to-frontend
 ```
+
+# Appendix A: Custom Domain `icgpt.icpp.world`
+
+[IC Custom Domain Docs](https://internetcomputer.org/docs/current/developer-docs/production/custom-domain/#custom-domains-on-the-boundary-nodes)
+
+One time steps to use the custom domain `icgpt.icpp.world` :
+
+- Define the DNS records at netfirms.com
+  - See also the google drive docs for netfirms
+
+- Created these files in a folder `src/frontend/domain-info`:
+
+  - `domain-info/.well-known/ic-domains`
+
+  Instead of a file `domain-info/.ic-assets.json` as explained in the docs, I added this content to `src/frontend/src/.ic-assets.json5`:
+  ```json
+  {
+    "match": ".well-known",
+    "ignore": false
+  },
+  ```
+
+  Note that the name `domain-info` is something I chose. 
+
+- Updated the `CopyPlugin` of `webpack.config.js` to copy these files into the `dist/frontend` folder during build.
+
+- Verify that files are included in `dist/frontend` during build:
+
+  ```bash
+  npm run build
+  ```
+
+- Deploy to canister
+
+- Initiate the registration of domain with IC with command:
+
+  ```bash
+  $ curl -sLv -X POST \
+      -H 'Content-Type: application/json' \
+      https://ic0.app/registrations \
+      --data @- <<EOF
+  {
+      "name": "icgpt.icpp.world"
+  }
+  EOF
+  
+  ...
+  * Connection #0 to host ic0.app left intact
+  {"id":"213b1338e030ac13404f9252870ad373462ec2a567b1c472ac5361c5109d83a8"}
+  ```
+
+- Query the status, using the REQUEST_ID (`e8f1...`):
+
+  ```bash
+  $ curl -sLv -X GET \
+      https://ic0.app/registrations/213b1338e030ac13404f9252870ad373462ec2a567b1c472ac5361c5109d83a8
+  ...
+  # once approved
+  * Connection #0 to host ic0.app left intact
+  {"name":"icgpt.icpp.world","canister":"4v3v2-lyaaa-aaaag-abzna-cai","state":"Available"}
+  ```
