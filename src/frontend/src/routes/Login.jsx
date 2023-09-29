@@ -11,7 +11,7 @@ export function Login({ setAuthClient }) {
   return (
     <div>
       <Helmet>
-        <title>ICGPT Labs</title>
+        <title>ICGPT</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">
@@ -24,7 +24,7 @@ export function Login({ setAuthClient }) {
             display="inline-block"
           >
             <Heading color="yellow" size="md">
-              ICGPT Labs
+              ICGPT
             </Heading>
             <Heading color="yellow" size="sm">
               on-chain LLMs

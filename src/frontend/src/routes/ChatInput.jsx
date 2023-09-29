@@ -25,6 +25,9 @@ export function ChatInput({
   chatOutputText,
   setChatOutputText,
   setChatDisplay,
+  modelType,
+  modelSize,
+  finetuneType,
 }) {
   const textareaRef = React.useRef(null)
 
@@ -99,6 +102,9 @@ export function ChatInput({
             setChatDisplay,
             isSubmitting,
             setIsSubmitting,
+            modelType,
+            modelSize,
+            finetuneType,
           })
         }
       >

@@ -148,7 +148,7 @@ dfx-canisters-of-project-ic:
 	@dfx canister --network=ic status llama2
 	@echo '-------------------------------------------------'
 	@echo 'View in browser at:'
-	@echo  "canister_frontend (ICGPT Labs) : https://$(CANISTER_FRONTEND).ic0.app/"
+	@echo  "canister_frontend (ICGPT) : https://$(CANISTER_FRONTEND).ic0.app/"
 	@echo  "identity's wallet              : https://$(IDENTITY_CYCLES_WALLET).raw.ic0.app/"
 	@echo  "Candid UI                      : https://$(CANISTER_CANDID_UI_IC).raw.ic0.app/"
 	@echo  "Candid UI of canister_frontend : https://$(CANISTER_CANDID_UI_IC).raw.ic0.app/?id=$(CANISTER_FRONTEND)"
@@ -481,16 +481,64 @@ install-vessel:
 #     -> uses model & tokenizer path are relative to itself
 #     -> pulls the canister information out of the network info (.dfx in icgpt repo)
 
-.PHONY: llama2-upload-tiny-stories-260K
-llama2-upload-tiny-stories-260K:
-	@echo "---"
-	@echo "llama2-upload-tiny-stories-260K"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
+.PHONY: upload-all-local
+upload-all-local: upload-260K-local upload-15M-local upload-42M-local upload-110M-local
 
-.PHONY: llama2-upload-tiny-stories-15M
-llama2-upload-tiny-stories-15M:
+.PHONY: upload-all-ic
+upload-all-local: upload-260K-ic upload-15M-ic upload-42M-ic upload-110M-ic
+
+.PHONY: upload-260K-local
+upload-260K-local:
 	@echo "---"
-	@echo "llama2-upload-tiny-stories-15M"
+	@echo "upload-260K-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --model models/stories15M.bin --tokenizer tokenizers/tokenizer.bin
+    python -m icpp_llm.icpp_llama2.scripts.upload --network local --canister llama2_260K --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
+
+.PHONY: upload-15M-local
+upload-15M-local:
+	@echo "---"
+	@echo "upload-15M-local"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.icpp_llama2.scripts.upload --network local --canister llama2 --model models/stories15M.bin --tokenizer tokenizers/tokenizer.bin
+
+.PHONY: upload-42M-local
+upload-42M-local:
+	@echo "---"
+	@echo "upload-42M-local"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.icpp_llama2.scripts.upload --network local --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
+
+.PHONY: upload-110M-local
+upload-110M-local:
+	@echo "---"
+	@echo "upload-110M-local"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.icpp_llama2.scripts.upload --network local --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
+
+.PHONY: upload-260K-ic
+upload-260K-ic:
+	@echo "---"
+	@echo "upload-260K-ic"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.icpp_llama2.scripts.upload --network ic --canister llama2_260K --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
+
+.PHONY: upload-15M-ic
+upload-15M-ic:
+	@echo "---"
+	@echo "upload-15M-ic"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.icpp_llama2.scripts.upload --network ic --canister llama2 --model models/stories15M.bin --tokenizer tokenizers/tokenizer.bin
+
+.PHONY: upload-42M-ic
+upload-42M-ic:
+	@echo "---"
+	@echo "upload-42M-ic"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.icpp_llama2.scripts.upload --network ic --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
+
+.PHONY: upload-110M-ic
+upload-110M-ic:
+	@echo "---"
+	@echo "upload-110M-local"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.icpp_llama2.scripts.upload --network ic --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin

@@ -24,14 +24,24 @@ const IC_HOST_URL =
   process.env.NODE_ENV === 'production' ? IC_HOST_URL_IC : IC_HOST_URL_LOCAL
 console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
 
-// More data from .env, because the approach with ...Object below does not seem to work
+// More data from .env
+// If you want to develop frontend locally, calling canisters on IC:
+// (1) make dfx-deploy-local   (local deploy, updates .env)
+// (2) edit .env, and update canister IDs to the ones of mainnet
+// (3) nmp run start
 const DFX_VERSION = `${process.env.DFX_VERSION}`
 const DFX_NETWORK = `${process.env.DFX_NETWORK}`
+const CANISTER_ID_LLAMA2_42M = `${process.env.CANISTER_ID_LLAMA2_42M}`
+const CANISTER_ID_LLAMA2_260K = `${process.env.CANISTER_ID_LLAMA2_260K}`
+const CANISTER_ID_LLAMA2_110M = `${process.env.CANISTER_ID_LLAMA2_110M}`
 const CANISTER_ID_LLAMA2 = `${process.env.CANISTER_ID_LLAMA2}`
 const CANISTER_ID_INTERNET_IDENTITY = `${process.env.CANISTER_ID_INTERNET_IDENTITY}`
 const CANISTER_ID_CANISTER_FRONTEND = `${process.env.CANISTER_ID_CANISTER_FRONTEND}`
 console.warn(`DFX_VERSION: ${DFX_VERSION}`)
 console.warn(`DFX_NETWORK: ${DFX_NETWORK}`)
+console.warn(`CANISTER_ID_LLAMA2_42M: ${CANISTER_ID_LLAMA2_42M}`)
+console.warn(`CANISTER_ID_LLAMA2_260K: ${CANISTER_ID_LLAMA2_260K}`)
+console.warn(`CANISTER_ID_LLAMA2_110M: ${CANISTER_ID_LLAMA2_110M}`)
 console.warn(`CANISTER_ID_LLAMA2: ${CANISTER_ID_LLAMA2}`)
 console.warn(`CANISTER_ID_INTERNET_IDENTITY: ${CANISTER_ID_INTERNET_IDENTITY}`)
 console.warn(`CANISTER_ID_CANISTER_FRONTEND: ${CANISTER_ID_CANISTER_FRONTEND}`)
@@ -126,6 +136,21 @@ module.exports = (env = {}, args = {}) => {
 
       // Use these aliases in import statements
       alias: {
+        DeclarationsCanisterLlama2_42M: path.resolve(
+          __dirname,
+          'src/declarations',
+          'llama2_42M'
+        ),
+        DeclarationsCanisterLlama2_260K: path.resolve(
+          __dirname,
+          'src/declarations',
+          'llama2_260K'
+        ),
+        DeclarationsCanisterLlama2_110M: path.resolve(
+          __dirname,
+          'src/declarations',
+          'llama2_110M'
+        ),
         DeclarationsCanisterLlama2: path.resolve(
           __dirname,
           'src/declarations',
@@ -200,6 +225,9 @@ module.exports = (env = {}, args = {}) => {
         // }),
         DFX_VERSION,
         DFX_NETWORK,
+        CANISTER_ID_LLAMA2_42M,
+        CANISTER_ID_LLAMA2_260K,
+        CANISTER_ID_LLAMA2_110M,
         CANISTER_ID_LLAMA2,
         CANISTER_ID_INTERNET_IDENTITY,
         CANISTER_ID_CANISTER_FRONTEND,

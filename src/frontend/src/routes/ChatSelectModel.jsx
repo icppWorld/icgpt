@@ -75,28 +75,28 @@ export function ChatSelectModel({
         <Text color="white">model data: </Text>
         <Box>
           <Button
-            color={modelType === 'TinyStories' ? 'white' : 'purple'}
+            color={modelType === 'TinyStories' ? 'cyan' : 'white'}
             size="sm"
             p="xs"
             m="xs"
             onClick={() => doSetModelType('TinyStories')}
           >
             <Text
-              color={modelType === 'TinyStories' ? 'purple' : 'wite'}
+              color={modelType === 'TinyStories' ? 'black' : 'black'}
               size="sm"
             >
               TinyStories
             </Text>
           </Button>
           <Button
-            color={modelType === 'llama2' ? 'white' : 'purple'}
+            color={modelType === 'llama2' ? 'cyan' : 'white'}
             size="sm"
             p="xs"
             m="xs"
             onClick={() => doSetModelType('llama2')}
             disabled={true}
           >
-            <Text color={modelType === 'llama2' ? 'purple' : 'wite'} size="sm">
+            <Text color={modelType === 'llama2' ? 'black' : 'black'} size="sm">
               llama2
             </Text>
           </Button>
@@ -126,25 +126,25 @@ export function ChatSelectModel({
         <Text color="white">finetuned: </Text>
         <Box>
           <Button
-            color={finetuneType === 'LLM' ? 'white' : 'purple'}
+            color={finetuneType === 'LLM' ? 'cyan' : 'white'}
             size="sm"
             p="xs"
             m="xs"
             onClick={() => doSetFinetuneType('LLM')}
           >
-            <Text color={modelType === 'LLM' ? 'purple' : 'wite'} size="sm">
+            <Text color={modelType === 'LLM' ? 'black' : 'black'} size="sm">
               LLM
             </Text>
           </Button>
           <Button
-            color={finetuneType === 'Chat' ? 'white' : 'purple'}
+            color={finetuneType === 'Chat' ? 'cyan' : 'white'}
             size="sm"
             p="xs"
             m="xs"
             onClick={() => doSetFinetuneType('Chat')}
             disabled={true}
           >
-            <Text color={modelType === 'Chat' ? 'purple' : 'wite'} size="sm">
+            <Text color={modelType === 'Chat' ? 'black' : 'black'} size="sm">
               Chat
             </Text>
           </Button>

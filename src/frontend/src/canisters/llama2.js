@@ -1,5 +1,4 @@
 // Functions to interact with the icpp_llama2 canister
-import { canisterId, createActor } from 'DeclarationsCanisterLlama2'
 
 const IC_HOST_URL = process.env.IC_HOST_URL
 
@@ -159,9 +158,39 @@ export async function doSubmit({
   setInputPlaceholder,
   setChatOutputText,
   setChatDisplay,
+  modelType,
+  modelSize,
+  finetuneType,
 }) {
   console.log('entered llama2.js doSubmit ')
   setIsSubmitting(true)
+
+  // Based on the values of modelType, modelSize, and finetuneType, determine the module to import
+  let moduleToImport
+  if (modelType === 'TinyStories' && finetuneType === 'LLM') {
+    switch (modelSize) {
+      case '260K':
+        console.log('canister - TinyStories, 260K, LLM')
+        moduleToImport = import('DeclarationsCanisterLlama2_260K')
+        break
+      case '42M':
+        console.log('canister - TinyStories, 42M, LLM')
+        moduleToImport = import('DeclarationsCanisterLlama2_42M')
+        break
+      case '110M':
+        console.log('canister - TinyStories, 110M, LLM')
+        moduleToImport = import('DeclarationsCanisterLlama2_110M')
+        break
+      default:
+        console.log('canister - TinyStories, 15M, LLM')
+        moduleToImport = import('DeclarationsCanisterLlama2')
+        break
+    }
+  } else {
+    console.log('canister - TinyStories, 15M, LLM')
+    moduleToImport = import('DeclarationsCanisterLlama2')
+  }
+  const { canisterId, createActor } = await moduleToImport
 
   console.log('chatNew : ', chatNew)
   let actor_ = actorRef.current

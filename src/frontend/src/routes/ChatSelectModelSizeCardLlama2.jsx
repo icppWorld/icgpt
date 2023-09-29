@@ -7,35 +7,35 @@ export function ChatSelectModelSizeCardLlama2({ modelSize, doSetModelSize }) {
   return (
     <Box>
       <Button
-        color={modelSize === '7B' ? 'white' : 'purple'}
+        color={modelSize === '7B' ? 'cyan' : 'white'}
         size="sm"
         p="xs"
         m="xs"
         onClick={() => doSetModelSize('7B')}
       >
-        <Text color={modelSize === '7B' ? 'purple' : 'wite'} size="sm">
+        <Text color={modelSize === '7B' ? 'black' : 'black'} size="sm">
           7B
         </Text>
       </Button>
       <Button
-        color={modelSize === '13B' ? 'white' : 'purple'}
+        color={modelSize === '13B' ? 'cyan' : 'white'}
         size="sm"
         p="xs"
         m="xs"
         onClick={() => doSetModelSize('13B')}
       >
-        <Text color={modelSize === '13B' ? 'purple' : 'wite'} size="sm">
+        <Text color={modelSize === '13B' ? 'black' : 'black'} size="sm">
           13B
         </Text>
       </Button>
       <Button
-        color={modelSize === '70B' ? 'white' : 'purple'}
+        color={modelSize === '70B' ? 'cyan' : 'white'}
         size="sm"
         p="xs"
         m="xs"
         onClick={() => doSetModelSize('70B')}
       >
-        <Text color={modelSize === '70B' ? 'purple' : 'wite'} size="sm">
+        <Text color={modelSize === '70B' ? 'black' : 'black'} size="sm">
           70B
         </Text>
       </Button>
