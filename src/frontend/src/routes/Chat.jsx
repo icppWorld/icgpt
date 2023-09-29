@@ -41,7 +41,9 @@ export function Chat() {
             chatOutputText={chatOutputText}
             heightChatInput={heightChatInput}
           />
-          <WaitAnimation message="Connecting to LLM canister..." />
+          <WaitAnimation
+            message={`Connecting to canister ${modelType}-${modelSize}-${finetuneType}...`}
+          />
         </>
       )
       break
@@ -69,7 +71,9 @@ export function Chat() {
       break
     case 'CanisterError':
       DisplayComponent = (
-        <CardError message="ERROR: The LLM canister is not ready..." />
+        <CardError
+          message={`ERROR: The canister ${modelType}-${modelSize}-${finetuneType} is not ready...`}
+        />
       )
       break
     default:
@@ -79,7 +83,7 @@ export function Chat() {
   return (
     <div>
       <Helmet>
-        <title>ICGPT Labs</title>
+        <title>ICGPT</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">
@@ -129,6 +133,9 @@ export function Chat() {
               chatOutputText={chatOutputText}
               setChatOutputText={setChatOutputText}
               setChatDisplay={setChatDisplay}
+              modelType={modelType}
+              modelSize={modelSize}
+              finetuneType={finetuneType}
             />
           </Card>
         </div>

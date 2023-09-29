@@ -9,7 +9,7 @@ export function About() {
   return (
     <div>
       <Helmet>
-        <title>ICGPT Labs</title>
+        <title>ICGPT</title>
       </Helmet>
       <main>
         <div className="container-fluid">

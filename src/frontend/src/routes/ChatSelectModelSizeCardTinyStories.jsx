@@ -10,49 +10,49 @@ export function ChatSelectModelSizeCardTinyStories({
   return (
     <Box>
       <Button
-        color={modelSize === '260K' ? 'white' : 'purple'}
+        color={modelSize === '260K' ? 'cyan' : 'white'}
         size="sm"
         p="2xl"
         m="xs"
         onClick={() => doSetModelSize('260K')}
-        disabled={true}
+        disabled={false}
       >
-        <Text color={modelSize === '260K' ? 'purple' : 'wite'} size="sm">
+        <Text color={modelSize === '260K' ? 'black' : 'black'} size="sm">
           260K
         </Text>
       </Button>
       <Button
-        color={modelSize === '15M' ? 'white' : 'purple'}
+        color={modelSize === '15M' ? 'cyan' : 'white'}
         size="sm"
         p="2xl"
         m="xs"
         onClick={() => doSetModelSize('15M')}
       >
-        <Text color={modelSize === '15M' ? 'purple' : 'wite'} size="sm">
+        <Text color={modelSize === '15M' ? 'black' : 'black'} size="sm">
           15M
         </Text>
       </Button>
       <Button
-        color={modelSize === '42M' ? 'white' : 'purple'}
+        color={modelSize === '42M' ? 'cyan' : 'white'}
         size="sm"
         p="2xl"
         m="xs"
         onClick={() => doSetModelSize('42M')}
-        disabled={true}
+        disabled={false}
       >
-        <Text color={modelSize === '42M' ? 'purple' : 'wite'} size="sm">
+        <Text color={modelSize === '42M' ? 'black' : 'black'} size="sm">
           42M
         </Text>
       </Button>
       <Button
-        color={modelSize === '110M' ? 'white' : 'purple'}
+        color={modelSize === '110M' ? 'cyan' : 'white'}
         size="sm"
         p="2xl"
         m="xs"
         onClick={() => doSetModelSize('110M')}
         disabled={true}
       >
-        <Text color={modelSize === '110M' ? 'purple' : 'wite'} size="sm">
+        <Text color={modelSize === '110M' ? 'black' : 'black'} size="sm">
           110M
         </Text>
       </Button>
