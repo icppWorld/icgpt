@@ -114,9 +114,6 @@ ENV/
 .dfx/
 src/declarations
 
-# Vessel (Motoko packages)
-.vessel
-
 # frontend code
 node_modules/
 dist/

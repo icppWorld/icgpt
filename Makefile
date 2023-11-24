@@ -9,14 +9,9 @@ DFX_WEBSERVER_PORT ?= $(shell dfx info webserver-port)
 IDENTITY ?= $(shell dfx identity whoami)
 
 ###########################################################################
-# toolchain versions
-VERSION_VESSEL ?= $(shell cat version_vessel.txt)
-
-###########################################################################
 # Some constants
 CANISTER_INSTALL_MODE ?= install
 CANISTER_CANDID_UI_IC ?= "a4gq6-oaaaa-aaaab-qaa4q-cai"
-COMMIT_JSON ?= "src/frontend/assets/deploy-info/commit.json"
 
 ###########################################################################
 .PHONY: all-static
@@ -124,8 +119,11 @@ dfx-canisters-of-project-ic:
 	@$(eval IDENTITY_CYCLES_WALLET := $(shell dfx identity --network ic get-wallet))
 	@$(eval IDENTITY_ICP_WALLET := $(shell dfx ledger --network ic account-id))
 	@$(eval IDENTITY_ICP_BALANCE := $(shell dfx ledger --network ic balance))
-	@$(eval CANISTER_FRONTEND := $(shell dfx canister --network ic id canister_frontend))
-	@$(eval CANISTER_LLAMA2 := $(shell dfx canister --network ic id llama2))
+	@$(eval IC_CANISTER_ID_FRONTEND := $(shell dfx canister --network ic id canister_frontend))
+	@$(eval IC_CANISTER_ID_LLAMA2_260K := $(shell dfx canister --network ic id llama2_260K))
+	@$(eval IC_CANISTER_ID_LLAMA2 := $(shell dfx canister --network ic id llama2))
+	@$(eval IC_CANISTER_ID_LLAMA2_42M := $(shell dfx canister --network ic id llama2_42M))
+	@$(eval IC_CANISTER_ID_LLAMA2_110M := $(shell dfx canister --network ic id llama2_110M))
 
 	@echo '-------------------------------------------------'
 	@echo "NETWORK                  : ic"
@@ -141,11 +139,20 @@ dfx-canisters-of-project-ic:
 	@echo "- status: "
 	@dfx canister --network=ic status $(IDENTITY_CYCLES_WALLET)
 	@echo '-------------------------------------------------'
-	@echo "canister_frontend    : $(CANISTER_FRONTEND)"
+	@echo "canister_frontend        : $(IC_CANISTER_ID_FRONTEND)"
 	@dfx canister --network=ic status canister_frontend
 	@echo '-------------------------------------------------'
-	@echo "llama2 canister      : $(CANISTER_LLAMA2)"
+	@echo "llama2_260K canister     : $(IC_CANISTER_ID_LLAMA2_260K)"
+	@dfx canister --network=ic status llama2_260K
+	@echo '-------------------------------------------------'
+	@echo "llama2 canister (15M)    : $(IC_CANISTER_ID_LLAMA2)"
 	@dfx canister --network=ic status llama2
+	@echo '-------------------------------------------------'
+	@echo "llama2_42M canister      : $(IC_CANISTER_ID_LLAMA2_42M)"
+	@dfx canister --network=ic status llama2_42M
+	@echo '-------------------------------------------------'
+	@echo "llama2_110M canister     : $(IC_CANISTER_ID_LLAMA2_110M)"
+	@dfx canister --network=ic status llama2_110M
 	@echo '-------------------------------------------------'
 	@echo 'View in browser at:'
 	@echo  "canister_frontend (ICGPT) : https://$(CANISTER_FRONTEND).ic0.app/"
@@ -237,54 +244,15 @@ dfx-canister-call:
 .PHONY: dfx-deploy-local
 dfx-deploy-local:
 	@echo " "
-	@echo "--Set commit sha for About page (file: $(COMMIT_JSON))--"
-	@mkdir -p src/frontend/assets/deploy-info
-	@touch src/frontend/assets/deploy-info/commit.json
-	@echo '{ "sha": "'$$(git log -1 --format='%h')'" }' > $(COMMIT_JSON)
-	@cat $(COMMIT_JSON)
 	@dfx deploy
 	@echo  "All done.... Getting details... "
 	@make --no-print-directory dfx-canisters-of-project
 
-.PHONY: set-commit-sha
-set-commit-sha:
-	@echo " "
-	@echo "--Set commit sha for About page (file: $(COMMIT_JSON))--"
-	@mkdir -p src/frontend/assets/deploy-info
-	@touch src/frontend/assets/deploy-info/commit.json
-	@echo '{ "sha": "'$$(git log -1 --format='%h')'" }' > $(COMMIT_JSON)
-	@cat $(COMMIT_JSON)
-
 .PHONY: dfx-deploy-ic
-dfx-deploy-ic:
-	
-	# @echo " "	
-	# @echo "--Check that working directory is a freshly pulled main branch--"
-	# @make --no-print-directory git-on-origin-main
-	# @make --no-print-directory git-no-unstaged-files
-	# @make --no-print-directory git-no-staged-files
-	
-	@echo " "	
-	@echo "--Test Code--"
-	@make --no-print-directory test
-
-	@echo " "
-	@echo "--Set commit sha for About page (file: $(COMMIT_JSON))--"
-	@mkdir -p src/frontend/assets/deploy-info
-	@touch src/frontend/assets/deploy-info/commit.json
-	@echo '{ "sha": "'$$(git log -1 --format='%h')'" }' > $(COMMIT_JSON)
-	@cat $(COMMIT_JSON)
-	
+dfx-deploy-ic:	
 	@echo " "
 	@echo "--Deploy--"
 	@dfx deploy --network ic
-
-	@echo " "
-	@echo "--Discarding file $(COMMIT_JSON) --"
-	@git checkout -- $(COMMIT_JSON)
-	@cat $(COMMIT_JSON)
-
-
 	@echo "--All done.... Get canister details..--"
 	@make --no-print-directory dfx-canisters-of-project NETWORK=ic
 
@@ -422,18 +390,11 @@ python-type-check:
 	@echo "python-type-check"
 	python -m mypy --config-file .mypy.ini --show-column-numbers --strict $(PYTHON_DIRS)
 
-.PHONY: smoketest
-smoketest:
-	pytest --network=$(NETWORK) $(TEST_CANISTER_PY)
-
-.PHONY: integrationtest
-integrationtest:
-	pytest --network=$(NETWORK) --django-url=$(DJANGO_URL) --bot-url=$(BOT_URL) $(TEST_INTEGRATION_PY)
 
 ###########################################################################
 # Toolchain installation
 .PHONY: install-all
-install-all: install-jp install-dfx install-javascript install-python install-vessel
+install-all: install-jp install-dfx install-javascript install-python
 
 # This installs ~/bin/dfx
 # Make sure to source ~/.profile afterwards -> it adds ~/bin to the path if it exists
@@ -461,22 +422,10 @@ install-python:
 # 	@echo "Installing ic-cdk-optimizer"
 # 	cargo install ic-cdk-optimizer
 
-.PHONY: install-vessel
-install-vessel:
-	@echo "Installing $(VERSION_VESSEL) ..."
-	sudo rm -rf /usr/local/bin/vessel
-	rm -f vessel-linux64
-	wget https://github.com/kritzcreek/vessel/releases/download/$(VERSION_VESSEL)/vessel-linux64
-	chmod +x vessel-linux64
-	sudo mv vessel-linux64 /usr/local/bin/vessel
-	@echo " "
-	@echo "Installed successfully in:"
-	@echo /usr/local/bin/vessel
-
 
 ###########################################################################
 # Llama2 model upload
-# (-) We need to add parent of this folder to Python path, for `python -m` to work
+# (-) The parent of this folder is added to Python path, for `python -m` to work
 # (-) Everything else just works, because the upload script:
 #     -> uses model & tokenizer path are relative to itself
 #     -> pulls the canister information out of the network info (.dfx in icgpt repo)
@@ -485,7 +434,7 @@ install-vessel:
 upload-all-local: upload-260K-local upload-15M-local upload-42M-local upload-110M-local
 
 .PHONY: upload-all-ic
-upload-all-local: upload-260K-ic upload-15M-ic upload-42M-ic upload-110M-ic
+upload-all-ic: upload-260K-ic upload-15M-ic upload-42M-ic upload-110M-ic
 
 .PHONY: upload-260K-local
 upload-260K-local:

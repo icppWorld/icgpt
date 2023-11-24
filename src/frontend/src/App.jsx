@@ -2,7 +2,6 @@
 import React from 'react'
 import { Head } from './common/Head'
 import { Footer } from './common/Footer'
-import { Navbar } from './common/Navbar'
 import { StagingBanner } from './common/StagingBanner'
 import { Outlet } from 'react-router-dom'
 import { Login } from './routes/Login'
@@ -90,10 +89,6 @@ export function App() {
   return (
     <div>
       <Head />
-      {/* <Navbar
-        authClient={authClient}
-        setAuthClient={setAuthClient}
-      /> */}
       <Outlet
         context={{
           authClient,

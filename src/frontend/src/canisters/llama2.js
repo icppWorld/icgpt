@@ -20,7 +20,8 @@ async function fetchInference(
   inputString,
   setInputString,
   inputPlaceholder,
-  setInputPlaceholder
+  setInputPlaceholder,
+  numStepsFetchInference
 ) {
   const params = {
     prompt: '',
@@ -45,9 +46,14 @@ async function fetchInference(
   let currentChunkIndex = 0
 
   // Start the display loop in the background
-  processDisplayQueue(setChatDisplay, setChatOutputText)
+  processDisplayQueue(
+    setChatDisplay,
+    setChatOutputText,
+    setInputString,
+    setInputPlaceholder
+  )
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < numStepsFetchInference; i++) {
     let response
 
     // Update the params.prompt to the next chunk of inputString
@@ -82,20 +88,30 @@ async function fetchInference(
     // Push the response to the queue and the display loop will pick it up
     displayQueue.push(response)
 
-    if (i === 0) {
-      // Reset the inputString and provide a new placeHolder
-      setInputString('')
-      setInputPlaceholder('Continue the story...')
+    // Check if the response is an empty string. If it is, break out of the loop.
+    if (response.ok === '') {
+      break
     }
   }
 }
 
-async function processDisplayQueue(setChatDisplay, setChatOutputText) {
+async function processDisplayQueue(
+  setChatDisplay,
+  setChatOutputText,
+  setInputString,
+  setInputPlaceholder
+) {
   while (true) {
     if (displayQueue.length > 0 && !isDisplaying) {
       isDisplaying = true
       const response = displayQueue.shift()
-      await displayResponse(response, setChatDisplay, setChatOutputText)
+      await displayResponse(
+        response,
+        setChatDisplay,
+        setChatOutputText,
+        setInputString,
+        setInputPlaceholder
+      )
       isDisplaying = false
     } else {
       await sleep(100)
@@ -103,7 +119,13 @@ async function processDisplayQueue(setChatDisplay, setChatOutputText) {
   }
 }
 
-function displayResponse(response, setChatDisplay, setChatOutputText) {
+function displayResponse(
+  response,
+  setChatDisplay,
+  setChatOutputText,
+  setInputString,
+  setInputPlaceholder
+) {
   // force a re-render showing the ChatOutput
   setChatDisplay('ChatOutput')
 
@@ -114,6 +136,14 @@ function displayResponse(response, setChatDisplay, setChatOutputText) {
   if (typeof responseString !== 'string') {
     console.error('Received unexpected response format:', response)
     return Promise.reject(new Error('Unexpected response format'))
+  }
+
+  // Reset the inputString and provide a new placeHolder
+  setInputString('')
+  if (responseString === '') {
+    setInputPlaceholder('The end!')
+  } else {
+    setInputPlaceholder('Continue the story...')
   }
 
   const words = responseString.split(' ')
@@ -167,23 +197,33 @@ export async function doSubmit({
 
   // Based on the values of modelType, modelSize, and finetuneType, determine the module to import
   let moduleToImport
+  let numStepsFetchInference = 10
   if (modelType === 'TinyStories' && finetuneType === 'LLM') {
     switch (modelSize) {
       case '260K':
         console.log('canister - TinyStories, 260K, LLM')
         moduleToImport = import('DeclarationsCanisterLlama2_260K')
+        numStepsFetchInference = 10
+        break
+      case '15M':
+        console.log('canister - TinyStories, 15M, LLM')
+        moduleToImport = import('DeclarationsCanisterLlama2')
+        numStepsFetchInference = 10
         break
       case '42M':
         console.log('canister - TinyStories, 42M, LLM')
         moduleToImport = import('DeclarationsCanisterLlama2_42M')
+        numStepsFetchInference = 100
         break
       case '110M':
         console.log('canister - TinyStories, 110M, LLM')
         moduleToImport = import('DeclarationsCanisterLlama2_110M')
+        numStepsFetchInference = 100
         break
       default:
-        console.log('canister - TinyStories, 15M, LLM')
-        moduleToImport = import('DeclarationsCanisterLlama2')
+        console.log('canister - TinyStories, 42M, LLM')
+        moduleToImport = import('DeclarationsCanisterLlama2_42M')
+        numStepsFetchInference = 100
         break
     }
   } else {
@@ -233,7 +273,8 @@ export async function doSubmit({
           inputString,
           setInputString,
           inputPlaceholder,
-          setInputPlaceholder
+          setInputPlaceholder,
+          numStepsFetchInference
         )
 
         await waitForQueueToEmpty()
@@ -270,5 +311,6 @@ export async function doNewChat({
 }) {
   console.log('entered llama2.js doNewChat ')
   setChatNew(true)
+  setChatOutputText('')
   setChatDisplay('SelectModel')
 }

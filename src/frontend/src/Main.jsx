@@ -4,8 +4,6 @@ import ReactDOM from 'react-dom'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { App } from './App'
 import { Chat } from './routes/Chat'
-import { Docs } from './routes/Docs'
-import { About } from './routes/About'
 import { NothingHere } from './common/NothingHere'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
@@ -16,8 +14,6 @@ ReactDOM.render(
       <Routes>
         <Route path="/" element={<App />}>
           <Route index element={<Chat />} />
-          <Route path="docs" element={<Docs />} />
-          <Route path="about" element={<About />} />
           <Route path="*" element={<NothingHere />} />
         </Route>
       </Routes>
