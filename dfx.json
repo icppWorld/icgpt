@@ -23,50 +23,22 @@
     "llama2_260K": {
       "type": "custom",
       "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm",
-      "shrink": false,
-      "remote": {
-        "candid": "llama2.did",
-        "id": {
-          "ic": "otmmw-3yaaa-aaaag-ab2na-cai"
-        }
-      }
+      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm"
     },
     "llama2": {
       "type": "custom",
       "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm",
-      "shrink": false,
-      "remote": {
-        "candid": "llama2.did",
-        "id": {
-          "ic": "4c4bn-daaaa-aaaag-abvcq-cai"
-        }
-      }
+      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm"
     },
     "llama2_42M": {
       "type": "custom",
       "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm",
-      "shrink": false,
-      "remote": {
-        "candid": "llama2.did",
-        "id": {
-          "ic": "ounkc-waaaa-aaaag-ab2nq-cai"
-        }
-      }
+      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm"
     },
     "llama2_110M": {
       "type": "custom",
       "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm",
-      "shrink": false,
-      "remote": {
-        "candid": "llama2.did",
-        "id": {
-          "ic": "obk3p-xiaaa-aaaag-ab2oa-cai"
-        }
-      }
+      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm"
     }
   },
   "output_env_file": ".env",

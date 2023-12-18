@@ -172,28 +172,41 @@ All front-end color styling is done using the open source Dracula UI:
 
 # Deployment to IC
 
-When deploying for the first time:
-- First deploy the [icpp_llama2](https://github.com/icppWorld/icpp_llm/tree/main/icpp_llama2) canisters to the IC
-- Replace the canister ids in **./dfx.json**, because when you forked or cloned the github repo [icgpt](https://github.com/icppWorld/icgpt), it contained the canisters used by our deployment at https://icgpt.icpp.world/
+Step 0: When deploying for the first time:
+- Delete **canister_ids.json**, because when you forked or cloned the github repo [icgpt](https://github.com/icppWorld/icgpt), it contained the canisters used by our deployment at https://icgpt.icpp.world/
 
-Deploy to IC with:
+Step 1: Build the backend wasm files
+- Clone [icpp_llm](https://github.com/icppWorld/icpp_llm/) and follow the instructions in [icpp_llama2](https://github.com/icppWorld/icpp_llm/tree/main/icpp_llama2) to build the wasm for each backend canister.
 
-```bash
-# from root directory
-conda activate icgpt
+Step 2: Deploy the backend canisters
+- Note that **dfx.json** points to the wasm files build during Step 1
+  ```bash
+  # Deploy
+  dfx deploy --ic llama2_260K
+  dfx deploy --ic llama2
+  dfx deploy --ic llama2_42M
+  dfx deploy --ic llama2_110M
 
-dfx identity use <identity-of-controller>
+  # Upload the LLM models to the backend canisters
+  make upload-260K-ic
+  make upload-15M-ic
+  make upload-42M-ic
+  make upload-110M-ic
+  # Or, alternatively
+  make upload-all-ic
+  ```
 
-make dfx-deploy-ic
+Step 3: deploy the frontend
+- Now that the backend is in place, the frontend can be deployed
+  ```bash
+  # from root directory
+  conda activate icgpt
 
-# Upload the LLM models to the backend canisters
-make upload-260K-ic
-make upload-15M-ic
-make upload-42M-ic
-make upload-110M-ic
-# Or, alternatively
-make upload-all-ic
-```
+  dfx identity use <identity-of-controller>
+
+  # This deploys just the frontend!
+  dfx deploy --ic canister_frontend
+  ```
 
 # Appendix A - NOTES
 

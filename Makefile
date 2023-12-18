@@ -248,11 +248,11 @@ dfx-deploy-local:
 	@echo  "All done.... Getting details... "
 	@make --no-print-directory dfx-canisters-of-project
 
-.PHONY: dfx-deploy-ic
-dfx-deploy-ic:	
+.PHONY: dfx-deploy-ic-frontend
+dfx-deploy-ic-frontend:	
 	@echo " "
 	@echo "--Deploy--"
-	@dfx deploy --network ic
+	@dfx deploy --network ic canister_frontend
 	@echo "--All done.... Get canister details..--"
 	@make --no-print-directory dfx-canisters-of-project NETWORK=ic
 
