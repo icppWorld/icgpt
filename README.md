@@ -182,10 +182,10 @@ Step 2: Deploy the backend canisters
 - Note that **dfx.json** points to the wasm files build during Step 1
   ```bash
   # Deploy
-  dfx deploy --ic llama2_260K
-  dfx deploy --ic llama2
-  dfx deploy --ic llama2_42M
-  dfx deploy --ic llama2_110M
+  dfx deploy --ic llama2_260K -m reinstall
+  dfx deploy --ic llama2 -m reinstall
+  dfx deploy --ic llama2_42M -m reinstall
+  dfx deploy --ic llama2_110M -m reinstall
 
   # Upload the LLM models to the backend canisters
   make upload-260K-ic

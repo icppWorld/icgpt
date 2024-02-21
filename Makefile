@@ -400,7 +400,7 @@ install-all: install-jp install-dfx install-javascript install-python
 # Make sure to source ~/.profile afterwards -> it adds ~/bin to the path if it exists
 .PHONY: install-dfx
 install-dfx:
-	sh -ci "$$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+	DFXVM_INIT_YES=true sh -ci "$$(curl -fsSL https://sdk.dfinity.org/install.sh)"
 
 .PHONY: install-javascript
 install-javascript:
