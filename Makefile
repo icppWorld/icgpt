@@ -78,9 +78,9 @@ dfx-cycles-to-llama2:
 	@echo "dfx identity             : $(IDENTITY)"
 	@echo "- balance before: "
 	@dfx wallet --network ic balance
-	@echo "-------------------------------------------------------------------------"
-	@echo "llama2 canister  before    : $(CANISTER_LLAMA2_ID)"
-	@dfx canister --network=ic status llama2
+	# @echo "-------------------------------------------------------------------------"
+	# @echo "llama2 canister  before    : $(CANISTER_LLAMA2_ID)"
+	# @dfx canister --network=ic status llama2
 	@echo "-------------------------------------------------------------------------"
 	@echo "Sending 0.5T cycles to llama2"
 	dfx wallet --network ic send $(CANISTER_LLAMA2_ID) 500000000000
