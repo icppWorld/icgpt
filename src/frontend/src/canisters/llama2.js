@@ -54,7 +54,9 @@ async function fetchInference(
     setInputPlaceholder
   )
 
+  let count = 0
   for (let i = 0; i < numStepsFetchInference; i++) {
+    count++
     let response
 
     // Update the params.prompt to the next chunk of inputString
@@ -87,6 +89,13 @@ async function fetchInference(
         response = await actor.inference(params)
         if ('Ok' in response) {
           console.log('Call to inference successful')
+          // Now we can force a re-render and switch to an empty output
+          setChatNew(false)
+          setChatOutputText('')
+          setInputPlaceholder('The LLM is generating text...')
+
+          // Push the response to the queue and the display loop will pick it up
+          displayQueue.push(response)
         } else {
           let ermsg = ''
           if ('Err' in response && 'Other' in response.Err)
@@ -97,16 +106,23 @@ async function fetchInference(
         // caught by caller and printed to console there
         throw new Error(`Error: ${error.message}`)
       }
-
-      // Now we can force a re-render and switch to an empty output
-      setChatNew(false)
-      setChatOutputText('')
     } else {
       try {
         console.log('Calling inference with prompt: ', params.prompt)
         response = await actor.inference(params)
         if ('Ok' in response) {
           console.log('Call to inference successful')
+          // Push the response to the queue and the display loop will pick it up
+          displayQueue.push(response)
+          // We reached end of story if the number of generated tokens is less than the requested
+          if (response.Ok.num_tokens < params.steps) {
+            // Reset the inputString and provide a new placeHolder
+            setInputString('')
+            setInputPlaceholder('The end!')
+            break
+          } else {
+            setInputPlaceholder('The LLM is generating text...')
+          }
         } else {
           let ermsg = ''
           if ('Err' in response && 'Other' in response.Err)
@@ -118,14 +134,10 @@ async function fetchInference(
         throw new Error(`Error: ${error.message}`)
       }
     }
-
-    // Push the response to the queue and the display loop will pick it up
-    displayQueue.push(response)
-
-    // Check if the response contains less tokens than requested, we're done -> break out of the loop.
-    if (response.Ok.num_tokens < params.steps) {
-      break
-    }
+  }
+  if (count >= numStepsFetchInference) {
+    setInputString('')
+    setInputPlaceholder('Continue the story...')
   }
 }
 
@@ -170,14 +182,6 @@ function displayResponse(
   if (typeof responseString !== 'string') {
     console.error('Received unexpected response format:', response)
     return Promise.reject(new Error('Unexpected response format'))
-  }
-
-  // Reset the inputString and provide a new placeHolder
-  setInputString('')
-  if (response.Ok.num_tokens < params.steps) {
-    setInputPlaceholder('The end!')
-  } else {
-    setInputPlaceholder('Continue the story...')
   }
 
   const words = responseString.split(' ')
