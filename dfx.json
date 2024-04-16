@@ -22,23 +22,23 @@
     },
     "llama2_260K": {
       "type": "custom",
-      "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm"
+      "candid": "../icpp_llm/llama2_c/src/llama2.did",
+      "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
     },
-    "llama2": {
+    "llama2_15M": {
       "type": "custom",
-      "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm"
+      "candid": "../icpp_llm/llama2_c/src/llama2.did",
+      "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
     },
     "llama2_42M": {
       "type": "custom",
-      "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm"
+      "candid": "../icpp_llm/llama2_c/src/llama2.did",
+      "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
     },
     "llama2_110M": {
       "type": "custom",
-      "candid": "../icpp_llm/icpp_llama2/src/llama2.did",
-      "wasm": "../icpp_llm/icpp_llama2/build/llama2.wasm"
+      "candid": "../icpp_llm/llama2_c/src/llama2.did",
+      "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
     }
   },
   "output_env_file": ".env",

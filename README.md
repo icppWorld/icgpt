@@ -9,7 +9,8 @@
 ---
 
 The full application consists of 2 GitHub repositories:
-1. [icgpt](https://github.com/icppWorld/icgpt)  (This repo)
+
+1. [icgpt](https://github.com/icppWorld/icgpt) (This repo)
 2. [icpp_llm](https://github.com/icppWorld/icpp_llm)
 
 # Setup
@@ -62,8 +63,9 @@ Install the toolchain:
 
 ```bash
 conda activate icgpt
-make install-all  # for Ubuntu. 
-                  # see Makefile to replicate for other systems
+make install-all-ubuntu  # for Ubuntu.
+make install-all-mac     # for Mac.
+                         # see Makefile to replicate for other systems
 
 # ~/bin must be on path
 source ~/.profile
@@ -81,27 +83,31 @@ make all-static-check
 ## The backend LLM canisters
 
 ICGPT includes LLM backend canisters of [icpp_lmm](https://github.com/icppWorld/icpp_llm):
+
 - Clone [icpp_lmm](https://github.com/icppWorld/icpp_llm) as a sibling to this repo
-- Follow instructions of [icpp_llama2](https://github.com/icppWorld/icpp_llm/tree/main/icpp_llama2) to :
+- Follow instructions of [llama2_c](https://github.com/icppWorld/icpp_llm/tree/main/llama2_c) to :
   - Build the wasm
   - Get the model checkpoints
 
 The following files are used by the ICGPT deployment steps:
+
 ```
-../icpp_llm/icpp_llama2/src/llama2.did
-../icpp_llm/icpp_llama2/build/llama2.wasm
-../icpp_llm/icpp_llama2/scripts/upload.py
+../icpp_llm/llama2_c/src/llama2.did
+../icpp_llm/llama2_c/build/llama2.wasm
+../icpp_llm/llama2_c/scripts/upload.py
 
 #
 # For each of the backend canisters you're including
 #
-../icpp_llm/icpp_llama2/stories260K/stories260K.bin
-../icpp_llm/icpp_llama2/stories260K/tok512.bin
+../icpp_llm/llama2_c/stories260K/stories260K.bin
+../icpp_llm/llama2_c/stories260K/tok512.bin
 
-../icpp_llm/icpp_llama2/tokenizers/tokenizer.bin
-../icpp_llm/icpp_llama2/models/stories15M.bin
-../icpp_llm/icpp_llama2/models/stories42M.bin
-../icpp_llm/icpp_llama2/models/stories110M.bin
+../icpp_llm/llama2_c/tokenizers/tok4096.bin
+../icpp_llm/llama2_c/models/stories15Mtok4096.bin
+
+../icpp_llm/llama2_c/tokenizers/tokenizer.bin
+../icpp_llm/llama2_c/models/stories42M.bin
+../icpp_llm/llama2_c/models/stories110M.bin
 ```
 
 ## Deploy to local network
@@ -129,16 +135,13 @@ make upload-all-local
 dfx stop
 ```
 
-
-
-After the deployment steps described above, the full application is now deployed to the local network, including the front-end canister, the LLM back-end canisters, and the internet_identity canister: 
+After the deployment steps described above, the full application is now deployed to the local network, including the front-end canister, the LLM back-end canisters, and the internet_identity canister:
 
 You can now open the front-end in the browser at the URL printed by the deploy script:
 
 ![icgpt-login-screen](./images/icgpt-login-screen.png)
 
 When you login, just create a new II, and once login completed, you will see the start screen shown at the top of this README. Now you can play with it and have some fun !
-
 
 ## Front-end Development
 
@@ -149,12 +152,12 @@ The front-end is a react application with a webpack based build pipeline. Webpac
 
   ```bash
   # from root directory
-  
+
   conda activate icgpt
-  
+
   # start the npm development server, with hot reloading
   npm run start
-  
+
   # to rebuild from scratch
   npm run build
   ```
@@ -163,27 +166,31 @@ The front-end is a react application with a webpack based build pipeline. Webpac
 
 - Make changes to the front-end code in your favorite editor, and when you save it, everything will auto-rebuild and auto-reload
 
-
 ### Styling with Dracula UI
 
 All front-end color styling is done using the open source Dracula UI:
+
 - [github](https://github.com/dracula/dracula-ui)
 - [user guide](https://ui.draculatheme.com/)
 
 # Deployment to IC
 
 Step 0: When deploying for the first time:
+
 - Delete **canister_ids.json**, because when you forked or cloned the github repo [icgpt](https://github.com/icppWorld/icgpt), it contained the canisters used by our deployment at https://icgpt.icpp.world/
 
 Step 1: Build the backend wasm files
-- Clone [icpp_llm](https://github.com/icppWorld/icpp_llm/) and follow the instructions in [icpp_llama2](https://github.com/icppWorld/icpp_llm/tree/main/icpp_llama2) to build the wasm for each backend canister.
+
+- Clone [icpp_llm](https://github.com/icppWorld/icpp_llm/) and follow the instructions in [llama2_c](https://github.com/icppWorld/icpp_llm/tree/main/llama2_c) to build the wasm for each backend canister.
 
 Step 2: Deploy the backend canisters
+
 - Note that **dfx.json** points to the wasm files build during Step 1
+
   ```bash
   # Deploy
   dfx deploy --ic llama2_260K -m reinstall
-  dfx deploy --ic llama2 -m reinstall
+  dfx deploy --ic llama2_15M -m reinstall
   dfx deploy --ic llama2_42M -m reinstall
   dfx deploy --ic llama2_110M -m reinstall
 
@@ -194,10 +201,41 @@ Step 2: Deploy the backend canisters
   make upload-110M-ic
   # Or, alternatively
   make upload-all-ic
+
+  #--------------------------------------------------------------------------
+  # IMPORTANT: ic-py might throw a timeout => patch it here:
+  # Ubuntu:
+  # /home/<user>/miniconda3/envs/<your-env>/lib/python3.11/site-packages/httpx/_config.py
+  # Mac:
+  # /Users/<user>/miniconda3/envs/<your-env>/lib/python3.11/site-packages/httpx/_config.py
+  # DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
+  DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=99999999.0)
+  # And perhaps here:
+  # Ubuntu:
+  # /home/<user>/miniconda3/envs/<your-env>/lib/python3.11/site-packages/httpcore/_backends/sync.py #L28-L29
+  # Mac:
+  # /Users/<user>/miniconda3/envs/<your-env>/lib/python3.11/site-packages/httpcore/_backends/sync.py #L28-L29
+  #
+  class SyncStream(NetworkStream):
+      def __init__(self, sock: socket.socket) -> None:
+          self._sock = sock
+
+      def read(self, max_bytes: int, timeout: typing.Optional[float] = None) -> bytes:
+          exc_map: ExceptionMapping = {socket.timeout: ReadTimeout, OSError: ReadError}
+          with map_exceptions(exc_map):
+              # PATCH AB
+              timeout = 999999999
+              # ENDPATCH
+              self._sock.settimeout(timeout)
+              return self._sock.recv(max_bytes)
+  # ------------------------------------------------------------------------
+
   ```
 
 Step 3: deploy the frontend
+
 - Now that the backend is in place, the frontend can be deployed
+
   ```bash
   # from root directory
   conda activate icgpt
@@ -210,11 +248,12 @@ Step 3: deploy the frontend
 
 # Appendix A - NOTES
 
-## process.env.CANISTER_ID_<NAME>
+## process.env.CANISTER*ID*<NAME>
 
 The generated declarations and in our own front-end code the canister Ids are defined with `process.env.CANISTER_ID_<NAME>`.
 
 The way that these environment variables are created is:
+
 - The command `dfx deploy` maintains a section in the file `.env` where it stores the canister id for every deployed canister.
 - The commands `npm build/run` use `webpack.config.js`, where the `webpack.EnvironmentPlugin` is used to define the values.
 
@@ -222,9 +261,8 @@ The way that these environment variables are created is:
 
 icgpt is using internet identity for authentication.
 
-When deploying locally, the internet_identity canister will be installed automatically during the `make dfx-deploy-local` or `dfx deploy --network local` command. It uses the instructions provided in `dfx.json`. 
+When deploying locally, the internet_identity canister will be installed automatically during the `make dfx-deploy-local` or `dfx deploy --network local` command. It uses the instructions provided in `dfx.json`.
 
 When deploying to IC, it will NOT be deployed.
 
 For details, see this [forum post](https://forum.dfinity.org/t/problem-insalling-internet-identity-in-local-setup/20417/18).
-

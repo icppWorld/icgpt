@@ -71,26 +71,26 @@ git-on-origin-main:
 dfx-install:
 	sh -ci "$$(curl -fsSL https://sdk.dfinity.org/install.sh)"
 
-.PHONY: dfx-cycles-to-llama2
-dfx-cycles-to-llama2:
-	@$(eval CANISTER_LLAMA2_ID := $(shell dfx canister --network ic id llama2))
+.PHONY: dfx-cycles-to-llama2_15M
+dfx-cycles-to-llama2_15M:
+	@$(eval CANISTER_ID_LLAMA2_15M := $(shell dfx canister --network ic id llama2_15M))
 	@echo "-------------------------------------------------------------------------"
 	@echo "dfx identity             : $(IDENTITY)"
 	@echo "- balance before: "
 	@dfx wallet --network ic balance
 	# @echo "-------------------------------------------------------------------------"
-	# @echo "llama2 canister  before    : $(CANISTER_LLAMA2_ID)"
-	# @dfx canister --network=ic status llama2
+	# @echo "llama2_15M canister  before    : $(CANISTER_ID_LLAMA2_15M)"
+	# @dfx canister --network=ic status llama2_15M
 	@echo "-------------------------------------------------------------------------"
-	@echo "Sending 0.5T cycles to llama2"
-	dfx wallet --network ic send $(CANISTER_LLAMA2_ID) 500000000000
+	@echo "Sending 0.5T cycles to llama2_15M"
+	dfx wallet --network ic send $(CANISTER_ID_LLAMA2_15M) 500000000000
 	@echo "-------------------------------------------------------------------------"
 	@echo "dfx identity             : $(IDENTITY)"
 	@echo "- balance after: "
 	@dfx wallet --network ic balance
 	@echo "-------------------------------------------------------------------------"
-	@echo "llama2 canister  after    : $(CANISTER_LLAMA2_ID)"
-	@dfx canister --network=ic status llama2
+	@echo "llama2_15M canister  after    : $(CANISTER_ID_LLAMA2_15M)"
+	@dfx canister --network=ic status llama2_15M
 
 .PHONY: dfx-cycles-to-frontend
 dfx-cycles-to-frontend:
@@ -121,7 +121,7 @@ dfx-canisters-of-project-ic:
 	@$(eval IDENTITY_ICP_BALANCE := $(shell dfx ledger --network ic balance))
 	@$(eval IC_CANISTER_ID_FRONTEND := $(shell dfx canister --network ic id canister_frontend))
 	@$(eval IC_CANISTER_ID_LLAMA2_260K := $(shell dfx canister --network ic id llama2_260K))
-	@$(eval IC_CANISTER_ID_LLAMA2 := $(shell dfx canister --network ic id llama2))
+	@$(eval IC_CANISTER_ID_LLAMA2_15M := $(shell dfx canister --network ic id llama2_15M))
 	@$(eval IC_CANISTER_ID_LLAMA2_42M := $(shell dfx canister --network ic id llama2_42M))
 	@$(eval IC_CANISTER_ID_LLAMA2_110M := $(shell dfx canister --network ic id llama2_110M))
 
@@ -145,8 +145,8 @@ dfx-canisters-of-project-ic:
 	@echo "llama2_260K canister     : $(IC_CANISTER_ID_LLAMA2_260K)"
 	@dfx canister --network=ic status llama2_260K
 	@echo '-------------------------------------------------'
-	@echo "llama2 canister (15M)    : $(IC_CANISTER_ID_LLAMA2)"
-	@dfx canister --network=ic status llama2
+	@echo "llama2_15M canister (15M)    : $(IC_CANISTER_ID_LLAMA2_15M)"
+	@dfx canister --network=ic status llama2_15M
 	@echo '-------------------------------------------------'
 	@echo "llama2_42M canister      : $(IC_CANISTER_ID_LLAMA2_42M)"
 	@dfx canister --network=ic status llama2_42M
@@ -393,8 +393,11 @@ python-type-check:
 
 ###########################################################################
 # Toolchain installation
-.PHONY: install-all
-install-all: install-jp install-dfx install-javascript install-python
+.PHONY: install-all-ubuntu
+install-all-ubuntu: install-jp-ubuntu install-dfx install-javascript install-python
+
+.PHONY: install-all-mac
+install-all-mac: install-jp-mac install-dfx install-javascript install-python
 
 # This installs ~/bin/dfx
 # Make sure to source ~/.profile afterwards -> it adds ~/bin to the path if it exists
@@ -406,9 +409,13 @@ install-dfx:
 install-javascript:
 	npm install
 
-.PHONY: install-jp
-install-jp:
+.PHONY: install-jp-ubuntu
+install-jp-ubuntu:
 	sudo apt-get update && sudo apt-get install jp
+
+.PHONY: install-jp-mac
+install-jp-mac:
+	brew install jp
 
 .PHONY: install-python
 install-python:
@@ -439,55 +446,79 @@ upload-all-ic: upload-260K-ic upload-15M-ic upload-42M-ic upload-110M-ic
 .PHONY: upload-260K-local
 upload-260K-local:
 	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_260K set_canister_mode chat-principal --network local
+	@echo "---"
 	@echo "upload-260K-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --network local --canister llama2_260K --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
+    python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_260K --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
 
 .PHONY: upload-15M-local
 upload-15M-local:
 	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_15M set_canister_mode chat-principal --network local
+	@echo "---"
 	@echo "upload-15M-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --network local --canister llama2 --model models/stories15M.bin --tokenizer tokenizers/tokenizer.bin
+    python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_15M --model models/stories15Mtok4096.bin --tokenizer tokenizers/tok4096.bin
 
 .PHONY: upload-42M-local
 upload-42M-local:
 	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_42M set_canister_mode chat-principal --network local
+	@echo "---"
 	@echo "upload-42M-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --network local --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
+    python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
 
 .PHONY: upload-110M-local
 upload-110M-local:
 	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_110M set_canister_mode chat-principal --network local
+	@echo "---"
 	@echo "upload-110M-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --network local --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
+    python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
 
 .PHONY: upload-260K-ic
 upload-260K-ic:
 	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_260K set_canister_mode chat-principal --network ic
+	@echo "---"
 	@echo "upload-260K-ic"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --network ic --canister llama2_260K --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
+    python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_260K --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
 
 .PHONY: upload-15M-ic
 upload-15M-ic:
 	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_15M set_canister_mode chat-principal --network ic
+	@echo "---"
 	@echo "upload-15M-ic"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --network ic --canister llama2 --model models/stories15M.bin --tokenizer tokenizers/tokenizer.bin
+    python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_15M --model models/stories15Mtok4096.bin --tokenizer tokenizers/tok4096.bin
 
 .PHONY: upload-42M-ic
 upload-42M-ic:
 	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_42M set_canister_mode chat-principal --network ic
+	@echo "---"
 	@echo "upload-42M-ic"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --network ic --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
+    python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
 
 .PHONY: upload-110M-ic
 upload-110M-ic:
 	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_110M set_canister_mode chat-principal --network ic
+	@echo "---"
 	@echo "upload-110M-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.icpp_llama2.scripts.upload --network ic --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
+    python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin

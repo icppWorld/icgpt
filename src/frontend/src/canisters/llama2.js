@@ -1,9 +1,17 @@
-// Functions to interact with the icpp_llama2 canister
+// Functions to interact with the llama2_c canister
 
 const IC_HOST_URL = process.env.IC_HOST_URL
 
 const displayQueue = []
 let isDisplaying = false
+
+const params = {
+  prompt: '',
+  steps: 60,
+  temperature: 0.1,
+  topp: 0.9,
+  rng_seed: 0,
+}
 
 async function waitForQueueToEmpty() {
   while (displayQueue.length > 0) {
@@ -23,20 +31,13 @@ async function fetchInference(
   setInputPlaceholder,
   numStepsFetchInference
 ) {
-  const params = {
-    prompt: '',
-    steps: 10,
-    temperature: 0.0,
-    topp: 0.9,
-    rng_seed: 0,
-  }
-
-  // Helper function to split the inputString into chunks of 10 words
+  // Helper function to split the inputString into chunks of 20 words
+  // Use 30, to avoid going over 60 max steps (tokens)
   const splitIntoChunks = (str) => {
     const words = str.split(/\s+/)
     const chunks = []
-    for (let i = 0; i < words.length; i += 10) {
-      chunks.push(words.slice(i, i + 10).join(' '))
+    for (let i = 0; i < words.length; i += 20) {
+      chunks.push(words.slice(i, i + 20).join(' '))
     }
     return chunks
   }
@@ -65,31 +66,64 @@ async function fetchInference(
     }
 
     if (i === 0 && chatNew) {
-      console.log('Calling actor_.new_chat ')
-      const responseNewChat = await actor.new_chat()
-      console.log('llama2 canister new_chat: ', responseNewChat)
-      console.log(
-        'Calling inference for next tokens with prompt: ',
-        params.prompt
-      )
-      response = await actor.inference(params)
+      try {
+        console.log('Calling new_chat ')
+        const response = await actor.new_chat()
+        if ('Ok' in response) {
+          console.log('Call to new_chat successful')
+        } else {
+          let ermsg = ''
+          if ('Err' in response && 'Other' in response.Err)
+            ermsg = response.Err.Other
+          throw new Error(`Call to new_chat failed: ` + ermsg)
+        }
+      } catch (error) {
+        // caught by caller and printed to console there
+        throw new Error(`Error: ${error.message}`)
+      }
+
+      try {
+        console.log('Calling inference with prompt: ', params.prompt)
+        response = await actor.inference(params)
+        if ('Ok' in response) {
+          console.log('Call to inference successful')
+        } else {
+          let ermsg = ''
+          if ('Err' in response && 'Other' in response.Err)
+            ermsg = response.Err.Other
+          throw new Error(`Call to inference failed: ` + ermsg)
+        }
+      } catch (error) {
+        // caught by caller and printed to console there
+        throw new Error(`Error: ${error.message}`)
+      }
 
       // Now we can force a re-render and switch to an empty output
       setChatNew(false)
       setChatOutputText('')
     } else {
-      console.log(
-        'Calling inference for next tokens with prompt: ',
-        params.prompt
-      )
-      response = await actor.inference(params)
+      try {
+        console.log('Calling inference with prompt: ', params.prompt)
+        response = await actor.inference(params)
+        if ('Ok' in response) {
+          console.log('Call to inference successful')
+        } else {
+          let ermsg = ''
+          if ('Err' in response && 'Other' in response.Err)
+            ermsg = response.Err.Other
+          throw new Error(`Call to inference failed: ` + ermsg)
+        }
+      } catch (error) {
+        // caught by caller and printed to console there
+        throw new Error(`Error: ${error.message}`)
+      }
     }
 
     // Push the response to the queue and the display loop will pick it up
     displayQueue.push(response)
 
-    // Check if the response is an empty string. If it is, break out of the loop.
-    if (response.ok === '') {
+    // Check if the response contains less tokens than requested, we're done -> break out of the loop.
+    if (response.Ok.num_tokens < params.steps) {
       break
     }
   }
@@ -131,7 +165,7 @@ function displayResponse(
 
   console.log('response from inference:', response)
 
-  const responseString = response.ok // Extract the responseString from the "ok" key
+  const responseString = response.Ok.inference
 
   if (typeof responseString !== 'string') {
     console.error('Received unexpected response format:', response)
@@ -140,7 +174,7 @@ function displayResponse(
 
   // Reset the inputString and provide a new placeHolder
   setInputString('')
-  if (responseString === '') {
+  if (response.Ok.num_tokens < params.steps) {
     setInputPlaceholder('The end!')
   } else {
     setInputPlaceholder('Continue the story...')
@@ -169,7 +203,7 @@ async function delayAndAppend(setChatOutputText, word, prependSpace) {
       const textToAppend = prependSpace ? ' ' + word : word
       setChatOutputText((prevText) => prevText + textToAppend)
       resolve() // Signal that the promise is done
-    }, 500) // ms delay between each word
+    }, 150) // ms delay between each word
   })
 }
 
@@ -207,8 +241,8 @@ export async function doSubmit({
         break
       case '15M':
         console.log('canister - TinyStories, 15M, LLM')
-        moduleToImport = import('DeclarationsCanisterLlama2')
-        numStepsFetchInference = 10
+        moduleToImport = import('DeclarationsCanisterLlama2_15M')
+        numStepsFetchInference = 100
         break
       case '42M':
         console.log('canister - TinyStories, 42M, LLM')
@@ -228,7 +262,7 @@ export async function doSubmit({
     }
   } else {
     console.log('canister - TinyStories, 15M, LLM')
-    moduleToImport = import('DeclarationsCanisterLlama2')
+    moduleToImport = import('DeclarationsCanisterLlama2_15M')
   }
   const { canisterId, createActor } = await moduleToImport
 
@@ -248,21 +282,21 @@ export async function doSubmit({
   }
 
   try {
-    // Call llama2 canister to check on health
+    // Call llm canister to check on health
     // Force a re-render, showing the WaitAnimation
     setChatDisplay('WaitAnimation')
     console.log('Calling actor_.health ')
     const responseHealth = await actor_.health()
-    console.log('llama2 canister health: ', responseHealth)
+    console.log('llm canister health: ', responseHealth)
 
-    if (responseHealth) {
-      console.log('llama2 canister is healthy: ', responseHealth)
+    if ('Ok' in responseHealth) {
+      console.log('llm canister is healthy: ', responseHealth)
 
       console.log('Calling actor_.ready ')
       const responseReady = await actor_.ready()
-      console.log('llama2 canister ready: ', responseReady)
+      console.log('llm canister ready: ', responseReady)
 
-      if (responseReady) {
+      if ('Ok' in responseReady) {
         // Ok, ready for show time...
         await fetchInference(
           actor_,
@@ -279,10 +313,16 @@ export async function doSubmit({
 
         await waitForQueueToEmpty()
       } else {
-        throw new Error(`LLM canister is not ready`)
+        let ermsg = ''
+        if ('Err' in responseReady && 'Other' in responseReady.Err)
+          ermsg = responseReady.Err.Other
+        throw new Error(`LLM canister is not ready: ` + ermsg)
       }
     } else {
-      throw new Error(`LLM canister is not healthy`)
+      let ermsg = ''
+      if ('Err' in responseHealth && 'Other' in responseHealth.Err)
+        ermsg = responseHealth.Err.Other
+      throw new Error(`LLM canister is not healthy: ` + ermsg)
     }
   } catch (error) {
     console.error(error)
