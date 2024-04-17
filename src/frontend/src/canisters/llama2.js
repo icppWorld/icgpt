@@ -55,9 +55,10 @@ async function fetchInference(
   )
 
   let count = 0
+  let responseNewChat
+  let response
   for (let i = 0; i < numStepsFetchInference; i++) {
     count++
-    let response
 
     // Update the params.prompt to the next chunk of inputString
     if (currentChunkIndex < inputChunks.length) {
@@ -86,20 +87,20 @@ async function fetchInference(
 
       try {
         console.log('Calling inference with prompt: ', params.prompt)
-        response = await actor.inference(params)
-        if ('Ok' in response) {
+        responseNewChat = await actor.inference(params)
+        if ('Ok' in responseNewChat) {
           console.log('Call to inference successful')
           // Now we can force a re-render and switch to an empty output
           setChatNew(false)
-          setChatOutputText('')
-          setInputPlaceholder('The LLM is generating text...')
-
+          // Don't do this yet. We do this after next inference call.
+          // setChatOutputText('')
+          // setInputPlaceholder('The LLM is generating text...')
           // Push the response to the queue and the display loop will pick it up
-          displayQueue.push(response)
+          // displayQueue.push(responseNewChat)
         } else {
           let ermsg = ''
-          if ('Err' in response && 'Other' in response.Err)
-            ermsg = response.Err.Other
+          if ('Err' in responseNewChat && 'Other' in responseNewChat.Err)
+            ermsg = responseNewChat.Err.Other
           throw new Error(`Call to inference failed: ` + ermsg)
         }
       } catch (error) {
@@ -112,6 +113,14 @@ async function fetchInference(
         response = await actor.inference(params)
         if ('Ok' in response) {
           console.log('Call to inference successful')
+
+          if (i === 1) {
+            // Now Push the response of the very first inference of a new chat to the queue
+            // and the display loop will pick it up and start streaming
+            setChatOutputText('')
+            setInputPlaceholder('The LLM is generating text...')
+            displayQueue.push(responseNewChat)
+          }
           // Push the response to the queue and the display loop will pick it up
           displayQueue.push(response)
           // We reached end of story if the number of generated tokens is less than the requested
@@ -207,7 +216,7 @@ async function delayAndAppend(setChatOutputText, word, prependSpace) {
       const textToAppend = prependSpace ? ' ' + word : word
       setChatOutputText((prevText) => prevText + textToAppend)
       resolve() // Signal that the promise is done
-    }, 150) // ms delay between each word
+    }, 200) // ms delay between each word
   })
 }
 
