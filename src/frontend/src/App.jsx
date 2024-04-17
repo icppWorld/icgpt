@@ -32,6 +32,7 @@ export function App() {
 
   // ChatSelectModel
   const [chatNew, setChatNew] = React.useState(true)
+  const [chatDone, setChatDone] = React.useState(false)
   const [modelType, setModelType] = React.useState('TinyStories')
   const [modelSize, setModelSize] = React.useState('15M')
   const [finetuneType, setFinetuneType] = React.useState('LLM')
@@ -51,6 +52,7 @@ export function App() {
   function print_state() {
     console.log('------------------------------------')
     console.log('chatNew           : ' + chatNew)
+    console.log('chatDone          : ' + chatDone)
     console.log('modelType         : ' + modelType)
     console.log('modelSize         : ' + modelSize)
     console.log('finetuneType      : ' + finetuneType)
@@ -66,6 +68,7 @@ export function App() {
     print_state()
   }, [
     chatNew,
+    chatDone,
     modelType,
     modelSize,
     finetuneType,
@@ -97,6 +100,8 @@ export function App() {
           setActorRef,
           chatNew,
           setChatNew,
+          chatDone,
+          setChatDone,
           modelType,
           setModelType,
           modelSize,

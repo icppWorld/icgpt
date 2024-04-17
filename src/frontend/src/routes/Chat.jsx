@@ -17,6 +17,7 @@ export function Chat() {
   const { authClient, setAuthClient } = useOutletContext()
   const { actorRef, setActorRef } = useOutletContext()
   const { chatNew, setChatNew } = useOutletContext()
+  const { chatDone, setChatDone } = useOutletContext()
   const { modelType, setModelType } = useOutletContext()
   const { modelSize, setModelSize } = useOutletContext()
   const { finetuneType, setFinetuneType } = useOutletContext()
@@ -42,7 +43,7 @@ export function Chat() {
             heightChatInput={heightChatInput}
           />
           <WaitAnimation
-            message={`Connecting to canister ${modelType}-${modelSize}-${finetuneType}...`}
+            message={`Calling the on-chain LLM`}
           />
         </>
       )
@@ -103,6 +104,8 @@ export function Chat() {
               setActorRef={setActorRef}
               chatNew={chatNew}
               setChatNew={setChatNew}
+              chatDone={chatDone}
+              setChatDone={setChatDone}
               heightChatInput={heightChatInput}
               setHeightChatInput={setHeightChatInput}
               inputString={inputString}
@@ -122,6 +125,8 @@ export function Chat() {
               setActorRef={setActorRef}
               chatNew={chatNew}
               setChatNew={setChatNew}
+              chatDone={chatDone}
+              setChatDone={setChatDone}
               heightChatInput={heightChatInput}
               setHeightChatInput={setHeightChatInput}
               inputString={inputString}

@@ -4,6 +4,8 @@ const IC_HOST_URL = process.env.IC_HOST_URL
 
 const displayQueue = []
 let isDisplaying = false
+let chatStarted = false
+let chatFinished = false
 
 const params = {
   prompt: '',
@@ -24,6 +26,8 @@ async function fetchInference(
   setChatOutputText,
   chatNew,
   setChatNew,
+  chatDone,
+  setChatDone,
   setChatDisplay,
   inputString,
   setInputString,
@@ -48,6 +52,7 @@ async function fetchInference(
 
   // Start the display loop in the background
   processDisplayQueue(
+    chatDone,
     setChatDisplay,
     setChatOutputText,
     setInputString,
@@ -92,6 +97,9 @@ async function fetchInference(
           console.log('Call to inference successful')
           // Now we can force a re-render and switch to an empty output
           setChatNew(false)
+          setChatDone(false) // react state usage at App level
+          chatStarted = true
+          chatFinished = false // local usage
           // Don't do this yet. We do this after next inference call.
           // setChatOutputText('')
           // setInputPlaceholder('The LLM is generating text...')
@@ -127,11 +135,19 @@ async function fetchInference(
           if (response.Ok.num_tokens < params.steps) {
             // Reset the inputString and provide a new placeHolder
             setInputString('')
+            console.log('-A- setChatDone(true)')
+            setChatDone(true)
+            chatStarted = false
+            chatFinished = true
             setInputPlaceholder('The end!')
             break
-          } else {
-            setInputPlaceholder('The LLM is generating text...')
-          }
+          } 
+          // else {
+          //   console.log('-B- setChatDone(false)')
+          //   setChatDone(false)
+          //   chatFinished = false
+          //   setInputPlaceholder('The LLM is generating text...')
+          // }
         } else {
           let ermsg = ''
           if ('Err' in response && 'Other' in response.Err)
@@ -146,11 +162,15 @@ async function fetchInference(
   }
   if (count >= numStepsFetchInference) {
     setInputString('')
+    setChatDone(true)
+    chatStarted = false
+    chatFinished = true
     setInputPlaceholder('Continue the story...')
   }
 }
 
 async function processDisplayQueue(
+  chatDone,
   setChatDisplay,
   setChatOutputText,
   setInputString,
@@ -169,6 +189,9 @@ async function processDisplayQueue(
       )
       isDisplaying = false
     } else {
+      if (chatStarted && !chatFinished){
+        setChatDisplay('WaitAnimation')
+      }
       await sleep(100)
     }
   }
@@ -216,7 +239,7 @@ async function delayAndAppend(setChatOutputText, word, prependSpace) {
       const textToAppend = prependSpace ? ' ' + word : word
       setChatOutputText((prevText) => prevText + textToAppend)
       resolve() // Signal that the promise is done
-    }, 200) // ms delay between each word
+    }, 125) // ms delay between each word
   })
 }
 
@@ -225,8 +248,10 @@ export async function doSubmit({
   authClient,
   actorRef,
   chatNew,
+  chatDone,
   setActorRef,
   setChatNew,
+  setChatDone,
   inputString,
   setInputString,
   inputPlaceholder,
@@ -280,6 +305,8 @@ export async function doSubmit({
   const { canisterId, createActor } = await moduleToImport
 
   console.log('chatNew : ', chatNew)
+  console.log('chatDone : ', chatDone)
+  console.log('chatFinished : ', chatFinished)
   let actor_ = actorRef.current
   if (chatNew) {
     console.log('Creating identity ')
@@ -316,6 +343,8 @@ export async function doSubmit({
           setChatOutputText,
           chatNew,
           setChatNew,
+          chatDone,
+          setChatDone,
           setChatDisplay,
           inputString,
           setInputString,
@@ -339,6 +368,8 @@ export async function doSubmit({
     }
   } catch (error) {
     console.error(error)
+    setChatDone(true)
+    chatFinished = true
     // Force a re-render, showing the ChatOutput
     setChatDisplay('CanisterError')
   } finally {
@@ -351,8 +382,10 @@ export async function doNewChat({
   authClient,
   actorRef,
   chatNew,
+  chatDone,
   setActorRef,
   setChatNew,
+  setChatDone,
   inputString,
   setInputString,
   inputPlaceholder,
@@ -364,6 +397,8 @@ export async function doNewChat({
 }) {
   console.log('entered llama2.js doNewChat ')
   setChatNew(true)
+  setChatDone(false)
+  chatFinished = false
   setChatOutputText('')
   setChatDisplay('SelectModel')
 }
