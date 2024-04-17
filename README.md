@@ -246,6 +246,25 @@ Step 3: deploy the frontend
   dfx deploy --ic canister_frontend
   ```
 
+## Verify
+
+```bash
+scripts/ready.sh --network [local/ic]
+```
+
+## Check cycle balance
+
+```bash
+scripts/balance.sh --network [local/ic]
+```
+
+## Top up cycles
+
+```bash
+# Edit the value of TOPPED_OFF_BALANCE_T in the script.
+scripts/top-off.sh --network [local/ic]
+```
+
 # Appendix A - NOTES
 
 ## process.env.CANISTER*ID*<NAME>
