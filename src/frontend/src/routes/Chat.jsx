@@ -42,9 +42,7 @@ export function Chat() {
             chatOutputText={chatOutputText}
             heightChatInput={heightChatInput}
           />
-          <WaitAnimation
-            message={`Calling the on-chain LLM`}
-          />
+          <WaitAnimation message={`Calling the on-chain LLM`} />
         </>
       )
       break

@@ -141,7 +141,7 @@ async function fetchInference(
             chatFinished = true
             setInputPlaceholder('The end!')
             break
-          } 
+          }
           // else {
           //   console.log('-B- setChatDone(false)')
           //   setChatDone(false)
@@ -189,7 +189,7 @@ async function processDisplayQueue(
       )
       isDisplaying = false
     } else {
-      if (chatStarted && !chatFinished){
+      if (chatStarted && !chatFinished) {
         setChatDisplay('WaitAnimation')
       }
       await sleep(100)
