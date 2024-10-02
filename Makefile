@@ -124,6 +124,7 @@ dfx-canisters-of-project-ic:
 	@$(eval IC_CANISTER_ID_LLAMA2_15M := $(shell dfx canister --network ic id llama2_15M))
 	@$(eval IC_CANISTER_ID_LLAMA2_42M := $(shell dfx canister --network ic id llama2_42M))
 	@$(eval IC_CANISTER_ID_LLAMA2_110M := $(shell dfx canister --network ic id llama2_110M))
+	@$(eval IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 := $(shell dfx canister --network ic id llama_cpp_qwen25_05b_q8))
 
 	@echo '-------------------------------------------------'
 	@echo "NETWORK                  : ic"
@@ -153,6 +154,9 @@ dfx-canisters-of-project-ic:
 	@echo '-------------------------------------------------'
 	@echo "llama2_110M canister     : $(IC_CANISTER_ID_LLAMA2_110M)"
 	@dfx canister --network=ic status llama2_110M
+	@echo '-------------------------------------------------'
+	@echo "llama_cpp_qwen25_05b_q8 canister      : $(IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8)"
+	@dfx canister --network=ic status llama_cpp_qwen25_05b_q8
 	@echo '-------------------------------------------------'
 	@echo 'View in browser at:'
 	@echo  "canister_frontend (ICGPT) : https://$(CANISTER_FRONTEND).ic0.app/"
@@ -493,6 +497,13 @@ upload-110M-local:
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
     python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
 
+.PHONY: upload-qwen25-05b-q8-local
+upload-qwen25-05b-q8-local:
+	@echo "---"
+	@echo "upload-qwen25-05b-q8-local"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q8 --canister-filename models/qwen2.5-0.5b-instruct-q8_0.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+
 .PHONY: upload-260K-ic
 upload-260K-ic:
 	@echo "---"
@@ -542,3 +553,10 @@ upload-110M-ic:
 	@echo "upload-110M-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
     python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
+
+.PHONY: upload-qwen25-05b-q8-ic
+upload-qwen25-05b-q8-ic:
+	@echo "---"
+	@echo "upload-qwen25-05b-q8-ic"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q8 --canister-filename models/qwen2.5-0.5b-instruct-q8_0.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf

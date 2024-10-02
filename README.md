@@ -163,12 +163,20 @@ Once the files of the backend LLMs are in place, as described in the previous st
 # Start the local network
 dfx start --clean
 
-# In another terminal
+# In another terminal, deploy the canisters
+# IMPORTANT: THIS UPDATES .env FOR local
 
 # Deploy all wasms listed in dfx.json
 dfx deploy
-# Or, with just one LLM (in this order)
-dfx deploy llama2_42M # or: dfx deploy llama2_260K (see dfx.json)
+# Or, one by one... LLM (first LLMs, then ii & frontend !)
+# see dfx.json
+dfx deploy llama2_260K
+dfx deploy llama2_15M
+dfx deploy llama2_42M
+dfx deploy llama2_110M
+dfx deploy llama_cpp_qwen25_05b_q8
+
+
 dfx deploy internet_identity
 dfx deploy canister_frontend
 
@@ -178,6 +186,7 @@ make upload-15M-local
 make upload-charles-42M-local
 # make upload-42M-local
 # make upload-110M-local
+make upload-qwen25-05b-q8-local
 # Or alternatively
 make upload-all-local
 

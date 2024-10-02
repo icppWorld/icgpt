@@ -13,5 +13,8 @@
   },
   "llama2_110M": {
     "ic": "p4tfr-saaaa-aaaag-acgma-cai"
+  },
+  "llama_cpp_qwen25_05b_q8": {
+    "ic": "6uwoh-vaaaa-aaaag-amema-cai"
   }
 }
