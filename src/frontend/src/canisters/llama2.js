@@ -285,7 +285,7 @@ export async function doSubmit({
       case '42M':
         console.log('canister - TinyStories, 42M, LLM')
         moduleToImport = import('DeclarationsCanisterLlama2_42M')
-        numStepsFetchInference = 100
+        numStepsFetchInference = 80
         break
       case '110M':
         console.log('canister - TinyStories, 110M, LLM')
@@ -295,7 +295,7 @@ export async function doSubmit({
       default:
         console.log('canister - TinyStories, 42M, LLM')
         moduleToImport = import('DeclarationsCanisterLlama2_42M')
-        numStepsFetchInference = 100
+        numStepsFetchInference = 80
         break
     }
   } else {

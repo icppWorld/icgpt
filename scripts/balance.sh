@@ -37,7 +37,7 @@ done
 echo "Using network type: $NETWORK_TYPE"
 
 #######################################################################
-canisters=("canister_frontend" "llama2_260K" "llama2_15M")
+canisters=("canister_frontend" "llama2_260K" "llama2_15M" "llama2_42M")
 
 echo -n "- dfx identity             : "; dfx identity whoami
 echo -n "- Wallet balance           : "; dfx wallet --network $NETWORK_TYPE balance
@@ -45,4 +45,5 @@ echo -n "- Wallet balance           : "; dfx wallet --network $NETWORK_TYPE bala
 for canister in "${canisters[@]}"
 do
 	echo -n "- $canister "; dfx canister status $canister --network $NETWORK_TYPE 2>&1 | grep "Balance:"
+    echo
 done

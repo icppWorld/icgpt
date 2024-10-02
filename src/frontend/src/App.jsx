@@ -34,7 +34,7 @@ export function App() {
   const [chatNew, setChatNew] = React.useState(true)
   const [chatDone, setChatDone] = React.useState(false)
   const [modelType, setModelType] = React.useState('TinyStories')
-  const [modelSize, setModelSize] = React.useState('15M')
+  const [modelSize, setModelSize] = React.useState('42M')
   const [finetuneType, setFinetuneType] = React.useState('LLM')
 
   // ChatInput

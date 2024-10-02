@@ -1,14 +1,15 @@
 {
   "name": "icgpt",
   "version": "0.1.0",
-  "description": "icgpt, with llama2.c on-chain at the Internet Computer",
+  "description": "icgpt - on-chain LLMs for the Internet Computer",
   "keywords": [
     "Internet Computer",
     "AI",
     "LLM",
     "C++",
     "icpp-pro",
-    "llama2.c"
+    "llama2.c",
+    "llama.cpp"
   ],
   "scripts": {
     "format:write": "prettier --ignore-path .eslintignore --write .",
@@ -23,9 +24,9 @@
     "deploy:ic": "dfx deploy --network=ic"
   },
   "devDependencies": {
-    "@dfinity/agent": "^0.19.2",
-    "@dfinity/candid": "0.19.2",
-    "@dfinity/principal": "^0.19.2",
+    "@dfinity/agent": "latest",
+    "@dfinity/candid": "latest",
+    "@dfinity/principal": "latest",
     "@typescript-eslint/eslint-plugin": "^5.6.0",
     "@typescript-eslint/parser": "^5.6.0",
     "assert": "2.0.0",
@@ -63,8 +64,8 @@
     "last 2 edge version"
   ],
   "dependencies": {
-    "@dfinity/auth-client": "^0.19.2",
-    "@dfinity/identity": "^0.19.2",
+    "@dfinity/auth-client": "latest",
+    "@dfinity/identity": "latest",
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.1",
     "bootstrap-icons": "^1.11.0",

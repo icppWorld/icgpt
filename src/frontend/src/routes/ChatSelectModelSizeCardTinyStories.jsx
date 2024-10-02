@@ -38,7 +38,7 @@ export function ChatSelectModelSizeCardTinyStories({
         p="2xl"
         m="xs"
         onClick={() => doSetModelSize('42M')}
-        disabled={true}
+        disabled={false}
       >
         <Text color={modelSize === '42M' ? 'black' : 'black'} size="sm">
           42M

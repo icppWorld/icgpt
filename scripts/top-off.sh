@@ -37,10 +37,11 @@ done
 echo "Using network type: $NETWORK_TYPE"
 
 #######################################################################
-canisters=("canister_frontend" "llama2_260K" "llama2_15M")
+# canisters=("canister_frontend" "llama2_260K" "llama2_15M" "llama2_42M")
+canisters=("llama2_42M")
 
 # Define the target balance in cycles
-TOPPED_OFF_BALANCE_T=3  # Adjust this to your desired balance in cycles
+TOPPED_OFF_BALANCE_T=10  # Adjust this to your desired balance in cycles
 TOPPED_OFF_BALANCE=$(echo "$TOPPED_OFF_BALANCE_T * 1000000000000" | bc)
 TOPPED_OFF_BALANCE=$(printf "%.0f" $TOPPED_OFF_BALANCE)
 
@@ -55,7 +56,16 @@ echo "--------------------------------------------------"
 echo "Top off all llms to $TOPPED_OFF_BALANCE_T Tcycles ($TOPPED_OFF_BALANCE cycles)"
 for canister in "${canisters[@]}"
 do
+    # Run this first, to make sure the current balance check has sufficient cycles...
+    CANISTER_ID=$(dfx canister --network $NETWORK_TYPE id $canister)
+    echo "Sending 1000000000 cycles to $canister to fund the CURRENT_BALANCE check"
+    dfx wallet send $CANISTER_ID 1000000000 --network $NETWORK_TYPE
+
+    # This will fail if the balance is too low
     CURRENT_BALANCE=$(dfx canister --network $NETWORK_TYPE status $canister 2>&1 | grep "Balance:" | awk '{gsub("_", ""); print $2}')
+    echo "Current balance for $canister = $CURRENT_BALANCE"
+    
+
     NEED_CYCLES=$(echo "$TOPPED_OFF_BALANCE - $CURRENT_BALANCE" | bc)
     if [ $(echo "$NEED_CYCLES > 0" | bc) -eq 1 ]; then
         CANISTER_ID=$(dfx canister --network $NETWORK_TYPE id $canister)

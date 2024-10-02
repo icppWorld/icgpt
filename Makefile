@@ -473,6 +473,16 @@ upload-42M-local:
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
     python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
 
+.PHONY: upload-charles-42M-local
+upload-charles-42M-local:
+	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_42M set_canister_mode chat-principal --network local
+	@echo "---"
+	@echo "upload-charles-42M-local"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_42M --model ../../charles/models/out-09/model.bin --tokenizer ../../charles/models/out-09/tok4096.bin
+
 .PHONY: upload-110M-local
 upload-110M-local:
 	@echo "---"
@@ -512,6 +522,16 @@ upload-42M-ic:
 	@echo "upload-42M-ic"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
     python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
+
+.PHONY: upload-charles-42M-ic
+upload-charles-42M-ic:
+	@echo "---"
+	@echo "Setting canister_mode to chat-principal"
+	dfx canister call llama2_42M set_canister_mode chat-principal --network ic
+	@echo "---"
+	@echo "upload-charles-42M-ic"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
+    python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_42M --model ../../charles/models/out-09/model.bin --tokenizer ../../charles/models/out-09/tok4096.bin
 
 .PHONY: upload-110M-ic
 upload-110M-ic:

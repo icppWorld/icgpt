@@ -28,7 +28,7 @@ export function ChatSelectModel({
 
     // Setting the default modelSize based on the modelType
     if (type === 'TinyStories') {
-      doSetModelSize('15M')
+      doSetModelSize('42M')
     } else if (type === 'llama2') {
       doSetModelSize('7B')
     }

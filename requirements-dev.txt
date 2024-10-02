@@ -1,3 +1,4 @@
+-r ../../../onicai/repos/llama_cpp_canister/requirements.txt
 -r ../icpp_llm/requirements.txt
 
 black

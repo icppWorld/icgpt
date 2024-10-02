@@ -8,10 +8,11 @@
 
 ---
 
-The full application consists of 2 GitHub repositories:
+The full application consists of 3 GitHub repositories:
 
 1. [icgpt](https://github.com/icppWorld/icgpt) (This repo)
 2. [icpp_llm](https://github.com/icppWorld/icpp_llm)
+3. [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister)
 
 # Setup
 
@@ -32,10 +33,27 @@ conda activate icgpt
 
 ## git
 
+Clone dependency repos:
+
+```bash
+git clone https://github.com/icppWorld/icpp_llm
+# FOLLOW Set Up INSTRUCTIONS OF icpp_llm/llama2_c README !!!
+
+git clone https://github.com/onicai/llama_cpp_canister
+# FOLLOW Set Up INSTRUCTIONS OF llama_cpp_canister README !!!
+```
+
+Clone icgpt repo:
+
 ```bash
 git clone git@github.com:icppWorld/icgpt.git
 cd icgpt
 ```
+
+## Update requirements-dev.txt
+
+We install python requirements from the icpp_llm & llama_cpp_canister repos.
+Make sure that requirements-dev.txt is pointing to the correct locations.
 
 ### pre-commit
 
@@ -82,8 +100,9 @@ make all-static-check
 
 ## The backend LLM canisters
 
-ICGPT includes LLM backend canisters of [icpp_lmm](https://github.com/icppWorld/icpp_llm):
+ICGPT includes LLM backend canisters from [icpp_lmm](https://github.com/icppWorld/icpp_llm) & [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister)
 
+### Setup for icpp_llm
 - Clone [icpp_lmm](https://github.com/icppWorld/icpp_llm) as a sibling to this repo
 - Follow instructions of [llama2_c](https://github.com/icppWorld/icpp_llm/tree/main/llama2_c) to :
   - Build the wasm
@@ -92,25 +111,51 @@ ICGPT includes LLM backend canisters of [icpp_lmm](https://github.com/icppWorld/
 The following files are used by the ICGPT deployment steps:
 
 ```
+# See: dfx.json 
 ../icpp_llm/llama2_c/src/llama2.did
 ../icpp_llm/llama2_c/build/llama2.wasm
-../icpp_llm/llama2_c/scripts/upload.py
 
-#
-# For each of the backend canisters you're including
-#
+# See: Makefile
+../icpp_llm/llama2_c/scripts/upload.py
+```
+
+The following models will be uploaded as ICGPT backend canisters:
+```
 ../icpp_llm/llama2_c/stories260K/stories260K.bin
 ../icpp_llm/llama2_c/stories260K/tok512.bin
 
 ../icpp_llm/llama2_c/tokenizers/tok4096.bin
 ../icpp_llm/llama2_c/models/stories15Mtok4096.bin
 
-../icpp_llm/llama2_c/tokenizers/tokenizer.bin
-../icpp_llm/llama2_c/models/stories42M.bin
-../icpp_llm/llama2_c/models/stories110M.bin
+# Charles: 42M with tok4096  (Not yet public)
+../charles/models/out-09/model.bin
+../charles/models/out-09/tok4096.bin
 ```
 
-## Deploy to local network
+### Setup for llama_cpp_canister
+- Clone [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister):
+- Follow instructions of the [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister) to :
+  - Build the wasm
+  - Download the GGUF modelsfrom Huggingface
+
+The following files are used by the ICGPT deployment steps:
+
+```
+# See: dfx.json 
+../../../onicai/repos/llama_cpp_canister/src/llama_cpp.did
+../../../onicai/repos/llama_cpp_canister/build/llama_cpp.wasm
+
+# See: Makefile
+../../../onicai/repos/llama_cpp_canister/scripts/upload.py
+```
+
+The following models will be uploaded as ICGPT backend canisters:
+```
+../../../onicai/repos/llama_cpp_canister/models/storiesICP42Mtok4096.gguf
+../../../onicai/repos/llama_cpp_canister/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+```
+
+## Deploy ICGPT to local network
 
 Once the files of the backend LLMs are in place, as described in the previous step, you can deploy everything with:
 
@@ -122,12 +167,17 @@ dfx start --clean
 
 # Deploy all wasms listed in dfx.json
 dfx deploy
+# Or, with just one LLM (in this order)
+dfx deploy llama2_42M # or: dfx deploy llama2_260K (see dfx.json)
+dfx deploy internet_identity
+dfx deploy canister_frontend
 
-# Upload the LLM models to the backend canisters
+# Upload the LLM models to the deployed backend canisters
 make upload-260K-local
 make upload-15M-local
-make upload-42M-local
-make upload-110M-local
+make upload-charles-42M-local
+# make upload-42M-local
+# make upload-110M-local
 # Or alternatively
 make upload-all-local
 
@@ -137,11 +187,9 @@ dfx stop
 
 After the deployment steps described above, the full application is now deployed to the local network, including the front-end canister, the LLM back-end canisters, and the internet_identity canister:
 
-You can now open the front-end in the browser at the URL printed by the deploy script:
+However, you can not run it locally like this, due to CORS restrictions.
 
-![icgpt-login-screen](./images/icgpt-login-screen.png)
-
-When you login, just create a new II, and once login completed, you will see the start screen shown at the top of this README. Now you can play with it and have some fun !
+Run it locally as described in the next section, `Front-end Development`
 
 ## Front-end Development
 
@@ -162,9 +210,19 @@ The front-end is a react application with a webpack based build pipeline. Webpac
   npm run build
   ```
 
-- Open the browser at the URL printed & open the browser devtools for debugging
+- When you login, just create a new II, and once login completed, you will see the start screen shown at the top of this README.
+
+- Open the browser devtools for debugging
 
 - Make changes to the front-end code in your favorite editor, and when you save it, everything will auto-rebuild and auto-reload
+
+### Update to latest Internet Identity
+
+We use `latest` for all `@dfinity/...` packages in package.json, so to update to the latest version just run:
+
+```
+npm update
+```
 
 ### Styling with Dracula UI
 
@@ -197,8 +255,9 @@ Step 2: Deploy the backend canisters
   # Upload the LLM models to the backend canisters
   make upload-260K-ic
   make upload-15M-ic
-  make upload-42M-ic
-  make upload-110M-ic
+  make upload-charles-42M-ic
+  # make upload-42M-ic
+  # make upload-110M-ic
   # Or, alternatively
   make upload-all-ic
 

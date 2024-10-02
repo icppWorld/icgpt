@@ -38,7 +38,7 @@ echo "Using network type: $NETWORK_TYPE"
 
 #######################################################################
 
-canisters=("llama2_260K" "llama2_15M")
+canisters=("llama2_260K" "llama2_15M" "llama2_42M")
 
 # verify readiness of all backend canisters in sequential mode
 echo " "
