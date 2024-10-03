@@ -4,7 +4,9 @@ import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 
 import { ChatSelectModelSizeCardTinyStories } from './ChatSelectModelSizeCardTinyStories'
-import { ChatSelectModelSizeCardLlama2 } from './ChatSelectModelSizeCardLlama2'
+import { ChatSelectModelSizeCardQwen2_5 } from './ChatSelectModelSizeCardQwen2_5'
+import { ChatSelectFinetuneTypeCardTinyStories } from './ChatSelectFinetuneTypeCardTinyStories'
+import { ChatSelectFinetuneTypeCardQwen2_5 } from './ChatSelectFinetuneTypeCardQwen2_5'
 
 export function ChatSelectModel({
   modelType,
@@ -29,9 +31,18 @@ export function ChatSelectModel({
     // Setting the default modelSize based on the modelType
     if (type === 'TinyStories') {
       doSetModelSize('42M')
-    } else if (type === 'llama2') {
-      doSetModelSize('7B')
+      doSetFinetuneType('Raw LLM')
+    } else if (type === 'Qwen2.5') {
+      doSetModelSize('0.5B')
+      doSetFinetuneType('Instruct')
     }
+
+    // Setting the default finetuneType based on the modelType
+    // if (type === 'TinyStories') {
+    //   doSetFinetuneType('Raw LLM')
+    // } else if (type === 'Qwen2.5') {
+    //   doSetFinetuneType('Instruct')
+    // }
   }
 
   function doSetModelSize(size) {
@@ -56,8 +67,8 @@ export function ChatSelectModel({
     if (finetuneType === 'LLM') {
       if (modelType === 'TinyStories') {
         placeholder = 'Start your story (pretend to be 4 years old...)'
-      } else if (modelType === 'llama2') {
-        placeholder = 'Start your sentence...'
+      } else if (modelType === 'Qwen2.5') {
+        placeholder = 'Ask me anything...'
       }
     }
     handleSetInputPlaceholder(placeholder)
@@ -89,15 +100,15 @@ export function ChatSelectModel({
             </Text>
           </Button>
           <Button
-            color={modelType === 'llama2' ? 'cyan' : 'white'}
+            color={modelType === 'Qwen2.5' ? 'cyan' : 'white'}
             size="sm"
             p="xs"
             m="xs"
-            onClick={() => doSetModelType('llama2')}
-            disabled={true}
+            onClick={() => doSetModelType('Qwen2.5')}
+            disabled={false}
           >
-            <Text color={modelType === 'llama2' ? 'black' : 'black'} size="sm">
-              llama2
+            <Text color={modelType === 'Qwen2.5' ? 'black' : 'black'} size="sm">
+              Qwen2.5
             </Text>
           </Button>
         </Box>
@@ -112,8 +123,8 @@ export function ChatSelectModel({
             modelSize={modelSize}
             doSetModelSize={doSetModelSize}
           />
-        ) : modelType === 'llama2' ? (
-          <ChatSelectModelSizeCardLlama2
+        ) : modelType === 'Qwen2.5' ? (
+          <ChatSelectModelSizeCardQwen2_5
             modelSize={modelSize}
             doSetModelSize={doSetModelSize}
           />
@@ -123,32 +134,18 @@ export function ChatSelectModel({
       <Divider></Divider>
 
       <Box>
-        <Text color="white">finetuned: </Text>
-        <Box>
-          <Button
-            color={finetuneType === 'LLM' ? 'cyan' : 'white'}
-            size="sm"
-            p="xs"
-            m="xs"
-            onClick={() => doSetFinetuneType('LLM')}
-          >
-            <Text color={modelType === 'LLM' ? 'black' : 'black'} size="sm">
-              LLM
-            </Text>
-          </Button>
-          <Button
-            color={finetuneType === 'Chat' ? 'cyan' : 'white'}
-            size="sm"
-            p="xs"
-            m="xs"
-            onClick={() => doSetFinetuneType('Chat')}
-            disabled={true}
-          >
-            <Text color={modelType === 'Chat' ? 'black' : 'black'} size="sm">
-              Chat
-            </Text>
-          </Button>
-        </Box>
+        <Text color="white">finetune type: </Text>
+        {modelType === 'TinyStories' ? (
+          <ChatSelectFinetuneTypeCardTinyStories
+            finetuneType={finetuneType}
+            doSetFinetuneType={doSetFinetuneType}
+          />
+        ) : modelType === 'Qwen2.5' ? (
+          <ChatSelectFinetuneTypeCardQwen2_5
+            finetuneType={finetuneType}
+            doSetFinetuneType={doSetFinetuneType}
+          />
+        ) : null}
       </Box>
     </Card>
   )
