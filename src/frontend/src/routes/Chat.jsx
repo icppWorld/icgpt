@@ -13,6 +13,8 @@ import { ChatOutput } from './ChatOutput'
 import { ChatNewChat } from './ChatNewChat'
 import { ChatInput } from './ChatInput'
 
+const DEBUG = true
+
 export function Chat() {
   const { authClient, setAuthClient } = useOutletContext()
   const { actorRef, setActorRef } = useOutletContext()
@@ -30,7 +32,11 @@ export function Chat() {
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
-  console.log('principal  : ' + principal)
+
+  if (DEBUG) {
+    console.log('DEBUG-FLOW: entered Chat.jsx Chat ')
+    console.log('principal  : ' + principal)
+  }
 
   let DisplayComponent
 
@@ -115,6 +121,7 @@ export function Chat() {
               chatOutputText={chatOutputText}
               setChatOutputText={setChatOutputText}
               setChatDisplay={setChatDisplay}
+              modelType={modelType}
             />
             <ChatInput
               authClient={authClient}

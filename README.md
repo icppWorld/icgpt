@@ -16,6 +16,10 @@ The full application consists of 3 GitHub repositories:
 
 # Setup
 
+## Nodejs
+
+Make sure you have nodejs installed on your system.
+
 ## Conda
 
 [Download MiniConda](https://docs.conda.io/en/latest/miniconda.html#linux-installers) and then install it:
@@ -24,10 +28,10 @@ The full application consists of 3 GitHub repositories:
 bash Miniconda3-xxxxx.sh
 ```
 
-Create a conda environment with NodeJS & Python 3.11:
+Create a conda environment with Python 3.11:
 
 ```bash
-conda create --name icgpt nodejs python=3.11
+conda create --name icgpt python=3.11
 conda activate icgpt
 ```
 
@@ -190,19 +194,24 @@ make upload-qwen25-05b-q8-local
 # Or alternatively
 make upload-all-local
 
+# NOTE: when re-deploying the model, you do NOT need to re-upload the model
+#       the model is stored in stable memory
+#       However, you do need to load it into working memory, with the command:
+make load-model-qwen25-05b-q8-local
+
 # Note: you can stop the local network with
 dfx stop
 ```
 
 After the deployment steps described above, the full application is now deployed to the local network, including the front-end canister, the LLM back-end canisters, and the internet_identity canister:
 
-However, you can not run it locally like this, due to CORS restrictions.
+However, you can not run the frontend served from the local IC network, due to CORS restrictions.
 
-Run it locally as described in the next section, `Front-end Development`
+Just run it locally as described in the next section, `Front-end Development`
 
 ## Front-end Development
 
-The front-end is a react application with a webpack based build pipeline. Webpack builds with sourcemaps, you can also use the following front-end development workflow:
+The front-end is a react application with a webpack based build pipeline. Webpack builds with sourcemaps, so you can use the following front-end development workflow:
 
 - Deploy the full application to the local network, as described in previous step
 - Do not open the front-end deployed to the local network, but instead run the front-end with the npm development server:

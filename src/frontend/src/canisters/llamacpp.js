@@ -1,4 +1,4 @@
-// Functions to interact with the llama2_c canister
+// Functions to interact with the llama2_cpp_canister
 
 const IC_HOST_URL = process.env.IC_HOST_URL
 
@@ -7,19 +7,49 @@ let isDisplaying = false
 let chatStarted = false
 let chatFinished = false
 
-const params = {
-  prompt: '',
-  steps: 60,
-  temperature: 0.1,
-  topp: 0.9,
-  rng_seed: 0,
+function buildNewChatInput() {
+  // TODO: prompt.cache as a variable to save/delete chats
+  // '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+  return {
+    args: ['--prompt-cache', 'my_cache/prompt.cache'],
+  }
+}
+
+function buildRunUpdateInput(inputString, promptRemaining) {
+  let fullPrompt
+  if (promptRemaining === '') {
+    console.log('buildRunUpdateInput - promptRemaining is now empty')
+    fullPrompt = ''
+  } else {
+    // TODO: system prompt as a variable
+    const systemPrompt =
+      '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+    const userPrompt = '<|im_start|>user\n' + inputString + '<|im_end|>\n'
+    fullPrompt = systemPrompt + userPrompt + '<|im_start|>assistant\n'
+  }
+
+  // TODO: number of tokens to predict as a variable
+  const numtokens = '512'
+  // '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })'
+  return {
+    args: [
+      '--prompt-cache',
+      'my_cache/prompt.cache',
+      '--prompt-cache-all',
+      '-sp',
+      '-p',
+      fullPrompt,
+      '-n',
+      numtokens,
+    ],
+  }
 }
 
 const DEBUG = true
 
 async function waitForQueueToEmpty() {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llama2.js waitForQueueToEmpty ')
+    console.log('DEBUG-FLOW: entered llamacpp.js waitForQueueToEmpty ')
   }
   while (displayQueue.length > 0) {
     await sleep(100)
@@ -41,22 +71,24 @@ async function fetchInference(
   numStepsFetchInference
 ) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llama2.js fetchInference ')
+    console.log('DEBUG-FLOW: entered llamacpp.js fetchInference ')
   }
-  // Helper function to split the inputString into chunks of 20 words
-  // Use 30, to avoid going over 60 max steps (tokens)
-  const splitIntoChunks = (str) => {
-    const words = str.split(/\s+/)
-    const chunks = []
-    for (let i = 0; i < words.length; i += 20) {
-      chunks.push(words.slice(i, i + 20).join(' '))
-    }
-    return chunks
-  }
+  // TODO - REMOVE START
+  // // Helper function to split the inputString into chunks of 20 words
+  // // Use 30, to avoid going over 60 max steps (tokens)
+  // const splitIntoChunks = (str) => {
+  //   const words = str.split(/\s+/)
+  //   const chunks = []
+  //   for (let i = 0; i < words.length; i += 20) {
+  //     chunks.push(words.slice(i, i + 20).join(' '))
+  //   }
+  //   return chunks
+  // }
 
-  // Chunk the inputString and save for processing
-  const inputChunks = splitIntoChunks(inputString)
-  let currentChunkIndex = 0
+  // // Chunk the inputString and save for processing
+  // const inputChunks = splitIntoChunks(inputString)
+  // let currentChunkIndex = 0
+  // TODO - REMOVE END
 
   // Start the display loop in the background
   processDisplayQueue(
@@ -68,25 +100,30 @@ async function fetchInference(
   )
 
   let count = 0
-  let responseNewChat
   let response
+  let promptRemaining = inputString
   for (let i = 0; i < numStepsFetchInference; i++) {
     count++
 
-    // Update the params.prompt to the next chunk of inputString
-    if (currentChunkIndex < inputChunks.length) {
-      params.prompt = inputChunks[currentChunkIndex]
-      currentChunkIndex++
-    } else {
-      params.prompt = '' // Reset to empty if no chunks left
-    }
+    // TODO - REMOVE START
+    // // Update the params.prompt to the next chunk of inputString
+    // if (currentChunkIndex < inputChunks.length) {
+    //   params.prompt = inputChunks[currentChunkIndex]
+    //   currentChunkIndex++
+    // } else {
+    //   params.prompt = '' // Reset to empty if no chunks left
+    // }
+    // TODO - REMOVE START
+
+    // TODO: We do not chunk the input, but once prompt fully processed, send an empty prompt
 
     if (i === 0 && chatNew) {
       try {
-        console.log('llama2.js - Calling new_chat ')
-        const response = await actor.new_chat()
+        const newChatInput = buildNewChatInput()
+        console.log('Calling new_chat with input: ', newChatInput)
+        const response = await actor.new_chat(newChatInput)
         if ('Ok' in response) {
-          console.log('Call to new_chat successful')
+          console.log('Call to new_chat successful with response: ', response)
         } else {
           let ermsg = ''
           if ('Err' in response && 'Other' in response.Err)
@@ -97,56 +134,26 @@ async function fetchInference(
         // caught by caller and printed to console there
         throw new Error(`Error: ${error.message}`)
       }
-
-      try {
-        console.log(
-          'llama2.js - Calling inference with prompt: ',
-          params.prompt
-        )
-        responseNewChat = await actor.inference(params)
-        if ('Ok' in responseNewChat) {
-          console.log('Call to inference successful')
-          // Now we can force a re-render and switch to an empty output
-          setChatNew(false)
-          setChatDone(false) // react state usage at App level
-          chatStarted = true
-          chatFinished = false // local usage
-          // Don't do this yet. We do this after next inference call.
-          // setChatOutputText('')
-          // setInputPlaceholder('The LLM is generating text...')
-          // Push the response to the queue and the display loop will pick it up
-          // displayQueue.push(responseNewChat)
-        } else {
-          let ermsg = ''
-          if ('Err' in responseNewChat && 'Other' in responseNewChat.Err)
-            ermsg = responseNewChat.Err.Other
-          throw new Error(`Call to inference failed: ` + ermsg)
-        }
-      } catch (error) {
-        // caught by caller and printed to console there
-        throw new Error(`Error: ${error.message}`)
-      }
     } else {
       try {
-        console.log(
-          'llama2.js - Calling inference with prompt: ',
-          params.prompt
-        )
-        response = await actor.inference(params)
+        const runUpdateInput = buildRunUpdateInput(inputString, promptRemaining)
+        console.log('Calling run_update with input: ', runUpdateInput)
+        response = await actor.run_update(runUpdateInput)
         if ('Ok' in response) {
-          console.log('Call to inference successful')
+          console.log(
+            'Call to run_update successful, with response: ',
+            response
+          )
+          promptRemaining = response.Ok.promptRemaining
 
           if (i === 1) {
-            // Now Push the response of the very first inference of a new chat to the queue
-            // and the display loop will pick it up and start streaming
             setChatOutputText('')
             setInputPlaceholder('The LLM is generating text...')
-            displayQueue.push(responseNewChat)
           }
-          // Push the response to the queue and the display loop will pick it up
+          // Push the output to the queue and the display loop will pick it up
           displayQueue.push(response)
-          // We reached end of story if the number of generated tokens is less than the requested
-          if (response.Ok.num_tokens < params.steps) {
+          // We reached end of story if the LLM says so
+          if (response.Ok.generated_eog) {
             // Reset the inputString and provide a new placeHolder
             setInputString('')
             console.log('-A- setChatDone(true)')
@@ -156,17 +163,10 @@ async function fetchInference(
             setInputPlaceholder('The end!')
             break
           }
-          // else {
-          //   console.log('-B- setChatDone(false)')
-          //   setChatDone(false)
-          //   chatFinished = false
-          //   setInputPlaceholder('The LLM is generating text...')
-          // }
         } else {
           let ermsg = ''
-          if ('Err' in response && 'Other' in response.Err)
-            ermsg = response.Err.Other
-          throw new Error(`Call to inference failed: ` + ermsg)
+          if ('Err' in response) ermsg = response.Err.error
+          throw new Error(`Call to run_update failed: ` + ermsg)
         }
       } catch (error) {
         // caught by caller and printed to console there
@@ -179,7 +179,7 @@ async function fetchInference(
     setChatDone(true)
     chatStarted = false
     chatFinished = true
-    setInputPlaceholder('Continue the story...')
+    setInputPlaceholder('Message ICGPT')
   }
 }
 
@@ -191,7 +191,7 @@ async function processDisplayQueue(
   setInputPlaceholder
 ) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llama2.js processDisplayQueue ')
+    console.log('DEBUG-FLOW: entered llamacpp.js processDisplayQueue ')
   }
   while (true) {
     if (displayQueue.length > 0 && !isDisplaying) {
@@ -222,14 +222,14 @@ function displayResponse(
   setInputPlaceholder
 ) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llama2.js displayResponse ')
+    console.log('DEBUG-FLOW: entered llamacpp.js displayResponse ')
   }
   // force a re-render showing the ChatOutput
   setChatDisplay('ChatOutput')
 
-  console.log('response from inference:', response)
+  console.log('response to display:', response)
 
-  const responseString = response.Ok.inference
+  const responseString = response.Ok.output
 
   if (typeof responseString !== 'string') {
     console.error('Received unexpected response format:', response)
@@ -249,7 +249,7 @@ function displayResponse(
 
 function sleep(ms) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llama2.js sleep ')
+    console.log('DEBUG-FLOW: entered llamacpp.js sleep ')
   }
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -257,7 +257,7 @@ function sleep(ms) {
 // Function to add a delay and then update the chat output.
 async function delayAndAppend(setChatOutputText, word, prependSpace) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llama2.js delayAndAppend ')
+    console.log('DEBUG-FLOW: entered llamacpp.js delayAndAppend ')
   }
   return new Promise((resolve) => {
     setTimeout(() => {
@@ -270,7 +270,7 @@ async function delayAndAppend(setChatOutputText, word, prependSpace) {
 }
 
 // Called when user clicks 'submit' button
-export async function doSubmit({
+export async function doSubmitLlamacpp({
   authClient,
   actorRef,
   chatNew,
@@ -291,44 +291,23 @@ export async function doSubmit({
   finetuneType,
 }) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llama2.js doSubmit ')
+    console.log('DEBUG-FLOW: entered llamacpp.js doSubmitLlamacpp ')
   }
   setIsSubmitting(true)
 
   // Based on the values of modelType, modelSize, and finetuneType, determine the module to import
   let moduleToImport
-  let numStepsFetchInference = 10
-  if (modelType === 'TinyStories' && finetuneType === 'Raw LLM') {
+  const numStepsFetchInference = 1000 // Basically, just keep going...
+  if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
     switch (modelSize) {
-      case '260K':
-        console.log('canister - TinyStories, 260K, Raw LLM')
-        moduleToImport = import('DeclarationsCanisterLlama2_260K')
-        numStepsFetchInference = 10
-        break
-      case '15M':
-        console.log('canister - TinyStories, 15M, Raw LLM')
-        moduleToImport = import('DeclarationsCanisterLlama2_15M')
-        numStepsFetchInference = 100
-        break
-      case '42M':
-        console.log('canister - TinyStories, 42M, Raw LLM')
-        moduleToImport = import('DeclarationsCanisterLlama2_42M')
-        numStepsFetchInference = 80
-        break
-      case '110M':
-        console.log('canister - TinyStories, 110M, Raw LLM')
-        moduleToImport = import('DeclarationsCanisterLlama2_110M')
-        numStepsFetchInference = 100
-        break
-      default:
-        console.log('canister - TinyStories, 42M, Raw LLM')
-        moduleToImport = import('DeclarationsCanisterLlama2_42M')
-        numStepsFetchInference = 80
+      case '0.5B':
+        console.log('canister - Qwen2.5, 0.5B, Instruct')
+        moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
         break
     }
   } else {
-    console.log('canister - TinyStories, 15M, Raw LLM')
-    moduleToImport = import('DeclarationsCanisterLlama2_15M')
+    console.log('canister - Qwen2.5, 0.5B, Instruct')
+    moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
   }
   const { canisterId, createActor } = await moduleToImport
 
@@ -406,7 +385,7 @@ export async function doSubmit({
 }
 
 // Called when user clicks '+ New chat' button
-export async function doNewChat({
+export async function doNewChatLlamacpp({
   authClient,
   actorRef,
   chatNew,
@@ -424,7 +403,7 @@ export async function doNewChat({
   setChatDisplay,
 }) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llama2.js doNewChat ')
+    console.log('DEBUG-FLOW: entered llamacpp.js doNewChat ')
   }
   setChatNew(true)
   setChatDone(false)

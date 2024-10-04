@@ -3,6 +3,7 @@ import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 import { doSubmit } from '../canisters/llama2'
+import { doSubmitLlamacpp } from '../canisters/llamacpp.js'
 
 const II_URL = process.env.II_URL
 const IC_HOST_URL = process.env.IC_HOST_URL
@@ -87,30 +88,55 @@ export function ChatInput({
         p="none"
         mr="none"
         disabled={isSubmitting} // Always wait until current submit is done
-        onClick={() =>
-          doSubmit({
-            authClient,
-            actorRef,
-            chatNew,
-            chatDone,
-            setActorRef,
-            setChatNew,
-            setChatDone,
-            inputString,
-            setInputString,
-            inputPlaceholder,
-            setInputPlaceholder,
-            isSubmitting,
-            setIsSubmitting,
-            setChatOutputText,
-            setChatDisplay,
-            isSubmitting,
-            setIsSubmitting,
-            modelType,
-            modelSize,
-            finetuneType,
-          })
-        }
+        onClick={() => {
+          if (modelType === 'TinyStories') {
+            doSubmit({
+              authClient,
+              actorRef,
+              chatNew,
+              chatDone,
+              setActorRef,
+              setChatNew,
+              setChatDone,
+              inputString,
+              setInputString,
+              inputPlaceholder,
+              setInputPlaceholder,
+              isSubmitting,
+              setIsSubmitting,
+              setChatOutputText,
+              setChatDisplay,
+              isSubmitting,
+              setIsSubmitting,
+              modelType,
+              modelSize,
+              finetuneType,
+            })
+          } else if (modelType === 'Qwen2.5') {
+            doSubmitLlamacpp({
+              authClient,
+              actorRef,
+              chatNew,
+              chatDone,
+              setActorRef,
+              setChatNew,
+              setChatDone,
+              inputString,
+              setInputString,
+              inputPlaceholder,
+              setInputPlaceholder,
+              isSubmitting,
+              setIsSubmitting,
+              setChatOutputText,
+              setChatDisplay,
+              isSubmitting,
+              setIsSubmitting,
+              modelType,
+              modelSize,
+              finetuneType,
+            })
+          }
+        }}
       >
         {/* https://icons.getbootstrap.com/ */}
         <i className="bi bi-caret-right"></i>

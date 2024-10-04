@@ -37,12 +37,7 @@ export function ChatSelectModel({
       doSetFinetuneType('Instruct')
     }
 
-    // Setting the default finetuneType based on the modelType
-    // if (type === 'TinyStories') {
-    //   doSetFinetuneType('Raw LLM')
-    // } else if (type === 'Qwen2.5') {
-    //   doSetFinetuneType('Instruct')
-    // }
+    doSetInputPlaceholder()
   }
 
   function doSetModelSize(size) {
@@ -50,6 +45,7 @@ export function ChatSelectModel({
       setModelSize(size_) // update parent's state
     }
     handleSetModelSize(size)
+    doSetInputPlaceholder()
   }
 
   function doSetFinetuneType(type) {
@@ -57,6 +53,7 @@ export function ChatSelectModel({
       setFinetuneType(finetuneType) // update parent's state
     }
     handleSetFinetuneType(type)
+    doSetInputPlaceholder()
   }
 
   function doSetInputPlaceholder() {
@@ -64,11 +61,17 @@ export function ChatSelectModel({
       setInputPlaceholder(placeholder) // update parent's state
     }
     let placeholder = 'Send a message'
-    if (finetuneType === 'LLM') {
+    if (finetuneType === 'Raw LLM') {
       if (modelType === 'TinyStories') {
-        placeholder = 'Start your story (pretend to be 4 years old...)'
+        placeholder = 'Start your story (pretend to be 4 years old)'
       } else if (modelType === 'Qwen2.5') {
-        placeholder = 'Ask me anything...'
+        placeholder = 'Start a sentence and I will continue it'
+      }
+    } else if (finetuneType === 'Instruct') {
+      if (modelType === 'TinyStories') {
+        placeholder = 'Describe your story (pretend to be 4 years old)'
+      } else if (modelType === 'Qwen2.5') {
+        placeholder = 'Message ICGPT'
       }
     }
     handleSetInputPlaceholder(placeholder)

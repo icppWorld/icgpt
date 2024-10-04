@@ -35,7 +35,7 @@ export function App() {
   const [chatDone, setChatDone] = React.useState(false)
   const [modelType, setModelType] = React.useState('TinyStories')
   const [modelSize, setModelSize] = React.useState('42M')
-  const [finetuneType, setFinetuneType] = React.useState('LLM')
+  const [finetuneType, setFinetuneType] = React.useState('Raw LLM')
 
   // ChatInput
   const [heightChatInput, setHeightChatInput] = React.useState(0)

@@ -140,6 +140,11 @@ module.exports = (env = {}, args = {}) => {
 
       // Use these aliases in import statements
       alias: {
+        DeclarationsCanisterLlamacpp_Qwen25_05B_Q8: path.resolve(
+          __dirname,
+          'src/declarations',
+          'llama_cpp_qwen25_05b_q8'
+        ),
         DeclarationsCanisterLlama2_42M: path.resolve(
           __dirname,
           'src/declarations',

@@ -3,6 +3,9 @@ import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 import { doNewChat } from '../canisters/llama2'
+import { doNewChatLlamacpp } from '../canisters/llamacpp.js'
+
+const DEBUG = true
 
 export function ChatNewChat({
   authClient,
@@ -24,13 +27,22 @@ export function ChatNewChat({
   chatOutputText,
   setChatOutputText,
   setChatDisplay,
+  modelType,
 }) {
+  if (DEBUG) {
+    console.log('DEBUG-FLOW: entered ChatNewChat.jsx ChatNewChat ')
+  }
   // -----------------------------------------------------------------
   // Adjust button position based on height of the chatInput Card
   const [buttonPosition, setButtonPosition] = React.useState('10px') // Initial position
 
   React.useEffect(() => {
     function updatePosition() {
+      if (DEBUG) {
+        console.log(
+          'DEBUG-FLOW: entered ChatNewChat.jsx ChatNewChat.updatePosition '
+        )
+      }
       const calculatedBottomPosition = heightChatInput + 30
       setButtonPosition(`${calculatedBottomPosition}px`)
     }
@@ -66,25 +78,45 @@ export function ChatNewChat({
         color="white"
         size="sm"
         disabled={isSubmitting} // Always wait until current submit is done
-        onClick={() =>
-          doNewChat({
-            authClient,
-            actorRef,
-            chatNew,
-            chatDone,
-            setActorRef,
-            setChatNew,
-            setChatDone,
-            inputString,
-            setInputString,
-            inputPlaceholder,
-            setInputPlaceholder,
-            isSubmitting,
-            setIsSubmitting,
-            setChatOutputText,
-            setChatDisplay,
-          })
-        }
+        onClick={() => {
+          if (modelType === 'TinyStories') {
+            doNewChat({
+              authClient,
+              actorRef,
+              chatNew,
+              chatDone,
+              setActorRef,
+              setChatNew,
+              setChatDone,
+              inputString,
+              setInputString,
+              inputPlaceholder,
+              setInputPlaceholder,
+              isSubmitting,
+              setIsSubmitting,
+              setChatOutputText,
+              setChatDisplay,
+            })
+          } else if (modelType === 'Qwen2.5') {
+            doNewChatLlamacpp({
+              authClient,
+              actorRef,
+              chatNew,
+              chatDone,
+              setActorRef,
+              setChatNew,
+              setChatDone,
+              inputString,
+              setInputString,
+              inputPlaceholder,
+              setInputPlaceholder,
+              isSubmitting,
+              setIsSubmitting,
+              setChatOutputText,
+              setChatDisplay,
+            })
+          }
+        }}
         style={buttonStyle}
       >
         New chat
