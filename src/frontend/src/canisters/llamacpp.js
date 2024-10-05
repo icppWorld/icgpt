@@ -73,22 +73,6 @@ async function fetchInference(
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered llamacpp.js fetchInference ')
   }
-  // TODO - REMOVE START
-  // // Helper function to split the inputString into chunks of 20 words
-  // // Use 30, to avoid going over 60 max steps (tokens)
-  // const splitIntoChunks = (str) => {
-  //   const words = str.split(/\s+/)
-  //   const chunks = []
-  //   for (let i = 0; i < words.length; i += 20) {
-  //     chunks.push(words.slice(i, i + 20).join(' '))
-  //   }
-  //   return chunks
-  // }
-
-  // // Chunk the inputString and save for processing
-  // const inputChunks = splitIntoChunks(inputString)
-  // let currentChunkIndex = 0
-  // TODO - REMOVE END
 
   // Start the display loop in the background
   processDisplayQueue(
@@ -104,18 +88,6 @@ async function fetchInference(
   let promptRemaining = inputString
   for (let i = 0; i < numStepsFetchInference; i++) {
     count++
-
-    // TODO - REMOVE START
-    // // Update the params.prompt to the next chunk of inputString
-    // if (currentChunkIndex < inputChunks.length) {
-    //   params.prompt = inputChunks[currentChunkIndex]
-    //   currentChunkIndex++
-    // } else {
-    //   params.prompt = '' // Reset to empty if no chunks left
-    // }
-    // TODO - REMOVE START
-
-    // TODO: We do not chunk the input, but once prompt fully processed, send an empty prompt
 
     if (i === 0 && chatNew) {
       try {

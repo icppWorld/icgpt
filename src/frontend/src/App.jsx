@@ -29,6 +29,9 @@ export function App() {
 
   // Chat
   const [chatDisplay, setChatDisplay] = React.useState('SelectModel')
+  const [waitAnimationMessage, setWaitAnimationMessage] = React.useState(
+    'Calling the on-chain LLM'
+  )
 
   // ChatSelectModel
   const [chatNew, setChatNew] = React.useState(true)
@@ -51,16 +54,17 @@ export function App() {
   // ---------------------------------------------------------
   function print_state() {
     console.log('------------------------------------')
-    console.log('chatNew           : ' + chatNew)
-    console.log('chatDone          : ' + chatDone)
-    console.log('modelType         : ' + modelType)
-    console.log('modelSize         : ' + modelSize)
-    console.log('finetuneType      : ' + finetuneType)
+    console.log('chatNew              : ' + chatNew)
+    console.log('chatDone             : ' + chatDone)
+    console.log('modelType            : ' + modelType)
+    console.log('modelSize            : ' + modelSize)
+    console.log('finetuneType         : ' + finetuneType)
     // console.log('inputString       : ' + inputString)
-    console.log('inputPlaceholder  : ' + inputPlaceholder)
-    console.log('chatDisplay       : ' + chatDisplay)
-    console.log('heightChatInput   : ' + heightChatInput)
-    console.log('isSubmitting      : ' + isSubmitting)
+    console.log('inputPlaceholder     : ' + inputPlaceholder)
+    console.log('chatDisplay          : ' + chatDisplay)
+    console.log('waitAnimationMessage : ' + waitAnimationMessage)
+    console.log('heightChatInput      : ' + heightChatInput)
+    console.log('isSubmitting         : ' + isSubmitting)
   }
 
   // state updates are asynchronous, so call dependent ones with useEffect
@@ -74,6 +78,7 @@ export function App() {
     finetuneType,
     inputPlaceholder,
     chatDisplay,
+    waitAnimationMessage,
     heightChatInput,
     isSubmitting,
   ])
@@ -120,6 +125,8 @@ export function App() {
           setChatOutputText,
           chatDisplay,
           setChatDisplay,
+          waitAnimationMessage,
+          setWaitAnimationMessage,
         }}
       />
       {/* <StagingBanner /> */}

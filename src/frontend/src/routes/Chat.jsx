@@ -29,6 +29,7 @@ export function Chat() {
   const { isSubmitting, setIsSubmitting } = useOutletContext()
   const { chatOutputText, setChatOutputText } = useOutletContext()
   const { chatDisplay, setChatDisplay } = useOutletContext()
+  const { waitAnimationMessage, setWaitAnimationMessage } = useOutletContext()
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
@@ -48,7 +49,7 @@ export function Chat() {
             chatOutputText={chatOutputText}
             heightChatInput={heightChatInput}
           />
-          <WaitAnimation message={`Calling the on-chain LLM`} />
+          <WaitAnimation message={waitAnimationMessage} />
         </>
       )
       break
