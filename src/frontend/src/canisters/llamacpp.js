@@ -6,6 +6,7 @@ const displayQueue = []
 let isDisplaying = false
 let chatStarted = false
 let chatFinished = false
+// let displayedResponseString = ''
 
 function buildNewChatInput() {
   // TODO: prompt.cache as a variable to save/delete chats
@@ -15,13 +16,23 @@ function buildNewChatInput() {
   }
 }
 
-function buildRunUpdateInput(inputString, promptRemaining) {
+function buildRunUpdateInput(inputString, response) {
+  let promptRemaining = inputString
+  let output = ''
+  if (response && 'Ok' in response) {
+    promptRemaining = response.Ok.prompt_remaining
+    output = response.Ok.output
+  }
+  console.log('buildRunUpdateInput - response = ', response)
+  console.log('buildRunUpdateInput - inputString = ', inputString)
+  console.log('buildRunUpdateInput - promptRemaining = ', promptRemaining)
+  console.log('buildRunUpdateInput - output = ', output)
   let fullPrompt
   if (promptRemaining === '') {
     console.log('buildRunUpdateInput - promptRemaining is now empty')
     fullPrompt = ''
   } else {
-    // TODO: system prompt as a variable
+    // We're still feeding the original prompt
     const systemPrompt =
       '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
     const userPrompt = '<|im_start|>user\n' + inputString + '<|im_end|>\n'
@@ -64,6 +75,7 @@ async function fetchInference(
   chatDone,
   setChatDone,
   setChatDisplay,
+  setWaitAnimationMessage,
   inputString,
   setInputString,
   inputPlaceholder,
@@ -74,18 +86,22 @@ async function fetchInference(
     console.log('DEBUG-FLOW: entered llamacpp.js fetchInference ')
   }
 
+  displayQueue.length = 0 // Reset the displayQueue
+  // displayedResponseString = '' // Reset the displayedResponseString
+  setChatOutputText('') // Reset the output text box
+
   // Start the display loop in the background
   processDisplayQueue(
     chatDone,
     setChatDisplay,
+    setWaitAnimationMessage,
     setChatOutputText,
     setInputString,
     setInputPlaceholder
   )
 
   let count = 0
-  let response
-  let promptRemaining = inputString
+  let response = null
   for (let i = 0; i < numStepsFetchInference; i++) {
     count++
 
@@ -108,7 +124,7 @@ async function fetchInference(
       }
     } else {
       try {
-        const runUpdateInput = buildRunUpdateInput(inputString, promptRemaining)
+        const runUpdateInput = buildRunUpdateInput(inputString, response)
         console.log('Calling run_update with input: ', runUpdateInput)
         response = await actor.run_update(runUpdateInput)
         if ('Ok' in response) {
@@ -116,12 +132,11 @@ async function fetchInference(
             'Call to run_update successful, with response: ',
             response
           )
-          promptRemaining = response.Ok.promptRemaining
 
-          if (i === 1) {
-            setChatOutputText('')
-            setInputPlaceholder('The LLM is generating text...')
-          }
+          // if (i === 1) {
+          //   setChatOutputText('')
+          //   setInputPlaceholder('The LLM is generating text...')
+          // }
           // Push the output to the queue and the display loop will pick it up
           displayQueue.push(response)
           // We reached end of story if the LLM says so
@@ -158,30 +173,51 @@ async function fetchInference(
 async function processDisplayQueue(
   chatDone,
   setChatDisplay,
+  setWaitAnimationMessage,
   setChatOutputText,
   setInputString,
   setInputPlaceholder
 ) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered llamacpp.js processDisplayQueue ')
+    console.log('- displayQueue.length = ', displayQueue.length)
+    console.log('- isDisplaying        = ', isDisplaying)
   }
   while (true) {
+    if (chatStarted && chatFinished) {
+      break
+    }
     if (displayQueue.length > 0 && !isDisplaying) {
+      if (DEBUG) {
+        console.log('DEBUG-FLOW: llamacpp.js processDisplayQueue - A')
+      }
       isDisplaying = true
       const response = displayQueue.shift()
       await displayResponse(
         response,
         setChatDisplay,
+        setWaitAnimationMessage,
         setChatOutputText,
         setInputString,
         setInputPlaceholder
       )
       isDisplaying = false
-    } else {
-      if (chatStarted && !chatFinished) {
+      if (!chatFinished) {
         setChatDisplay('WaitAnimation')
+        setWaitAnimationMessage('Calling LLM canister - generating tokens')
       }
-      await sleep(100)
+    } else {
+      if (DEBUG) {
+        console.log('DEBUG-FLOW: llamacpp.js processDisplayQueue - B')
+      }
+      if (chatStarted && !chatFinished) {
+        if (DEBUG) {
+          console.log('DEBUG-FLOW: llamacpp.js processDisplayQueue - C')
+        }
+        setChatDisplay('WaitAnimation')
+        setWaitAnimationMessage('Calling LLM canister - ingesting prompt')
+      }
+      await sleep(1000)
     }
   }
 }
@@ -189,6 +225,7 @@ async function processDisplayQueue(
 function displayResponse(
   response,
   setChatDisplay,
+  setWaitAnimationMessage,
   setChatOutputText,
   setInputString,
   setInputPlaceholder
@@ -200,8 +237,29 @@ function displayResponse(
   setChatDisplay('ChatOutput')
 
   console.log('response to display:', response)
+  console.log('- response.Ok.output =', response.Ok.output)
 
   const responseString = response.Ok.output
+
+  // TODO: remove displayedResponseString everywhere
+  // let responseString = ""
+  // // response.Ok.output should start with displayedResponseString
+  // if (response.Ok.output.startsWith(displayedResponseString)) {
+  //   // Extract the remaining part of the string
+  //   responseString = response.Ok.output.substring(displayedResponseString.length)
+  //   displayedResponseString = response.Ok.output
+  // } else {
+  //   // This situation should not happen...
+  //   console.log("WARNING: llamacpp.js displayResonse: response.Ok.output does not start with displayedResponseString")
+  //   console.log("- displayedResponseString = ", displayedResponseString)
+  //   console.log("- response.Ok.output = ", response.Ok.output)
+  //   console.log("-> Resetting things... ")
+  //   responseString = response.Ok.output
+  //   displayedResponseString = response.Ok.output
+  //   setChatOutputText('')
+  // }
+  // console.log('- responseString =', responseString)
+  // console.log('- displayedResponseString =', displayedResponseString)
 
   if (typeof responseString !== 'string') {
     console.error('Received unexpected response format:', response)
@@ -237,7 +295,7 @@ async function delayAndAppend(setChatOutputText, word, prependSpace) {
       const textToAppend = prependSpace ? ' ' + word : word
       setChatOutputText((prevText) => prevText + textToAppend)
       resolve() // Signal that the promise is done
-    }, 125) // ms delay between each word
+    }, 250) // ms delay between each word
   })
 }
 
@@ -258,6 +316,7 @@ export async function doSubmitLlamacpp({
   setInputPlaceholder,
   setChatOutputText,
   setChatDisplay,
+  setWaitAnimationMessage,
   modelType,
   modelSize,
   finetuneType,
@@ -303,17 +362,21 @@ export async function doSubmitLlamacpp({
   try {
     // Call llm canister to check on health
     // Force a re-render, showing the WaitAnimation
+    setWaitAnimationMessage('Checking health of LLM canister')
     setChatDisplay('WaitAnimation')
     console.log('Calling actor_.health ')
     const responseHealth = await actor_.health()
     console.log('llm canister health: ', responseHealth)
+    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
 
     if ('Ok' in responseHealth) {
       console.log('llm canister is healthy: ', responseHealth)
 
+      setWaitAnimationMessage('Checking readiness of LLM canister')
       console.log('Calling actor_.ready ')
       const responseReady = await actor_.ready()
       console.log('llm canister ready: ', responseReady)
+      setWaitAnimationMessage('Calling LLM canister') // Reset it to default
 
       if ('Ok' in responseReady) {
         // Ok, ready for show time...
@@ -325,6 +388,7 @@ export async function doSubmitLlamacpp({
           chatDone,
           setChatDone,
           setChatDisplay,
+          setWaitAnimationMessage,
           inputString,
           setInputString,
           inputPlaceholder,
@@ -373,9 +437,10 @@ export async function doNewChatLlamacpp({
   setInputPlaceholder,
   setChatOutputText,
   setChatDisplay,
+  setWaitAnimationMessage,
 }) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js doNewChat ')
+    console.log('DEBUG-FLOW: entered llamacpp.js doNewChatLlamacpp ')
   }
   setChatNew(true)
   setChatDone(false)

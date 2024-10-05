@@ -119,9 +119,9 @@ export function Chat() {
               setInputPlaceholder={setInputPlaceholder}
               isSubmitting={isSubmitting}
               setIsSubmitting={setIsSubmitting}
-              chatOutputText={chatOutputText}
               setChatOutputText={setChatOutputText}
               setChatDisplay={setChatDisplay}
+              setWaitAnimationMessage={setWaitAnimationMessage}
               modelType={modelType}
             />
             <ChatInput
@@ -141,9 +141,9 @@ export function Chat() {
               setInputPlaceholder={setInputPlaceholder}
               isSubmitting={isSubmitting}
               setIsSubmitting={setIsSubmitting}
-              chatOutputText={chatOutputText}
               setChatOutputText={setChatOutputText}
               setChatDisplay={setChatDisplay}
+              setWaitAnimationMessage={setWaitAnimationMessage}
               modelType={modelType}
               modelSize={modelSize}
               finetuneType={finetuneType}

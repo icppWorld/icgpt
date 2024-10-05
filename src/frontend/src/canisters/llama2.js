@@ -194,6 +194,9 @@ async function processDisplayQueue(
     console.log('DEBUG-FLOW: entered llama2.js processDisplayQueue ')
   }
   while (true) {
+    if (chatStarted && chatFinished) {
+      break
+    }
     if (displayQueue.length > 0 && !isDisplaying) {
       isDisplaying = true
       const response = displayQueue.shift()
@@ -286,6 +289,7 @@ export async function doSubmit({
   setInputPlaceholder,
   setChatOutputText,
   setChatDisplay,
+  setWaitAnimationMessage,
   modelType,
   modelSize,
   finetuneType,
@@ -422,6 +426,7 @@ export async function doNewChat({
   setInputPlaceholder,
   setChatOutputText,
   setChatDisplay,
+  setWaitAnimationMessage,
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered llama2.js doNewChat ')

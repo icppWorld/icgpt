@@ -24,9 +24,9 @@ export function ChatNewChat({
   setInputPlaceholder,
   isSubmitting,
   setIsSubmitting,
-  chatOutputText,
   setChatOutputText,
   setChatDisplay,
+  setWaitAnimationMessage,
   modelType,
 }) {
   if (DEBUG) {
@@ -96,6 +96,7 @@ export function ChatNewChat({
               setIsSubmitting,
               setChatOutputText,
               setChatDisplay,
+              setWaitAnimationMessage,
             })
           } else if (modelType === 'Qwen2.5') {
             doNewChatLlamacpp({
@@ -114,6 +115,7 @@ export function ChatNewChat({
               setIsSubmitting,
               setChatOutputText,
               setChatDisplay,
+              setWaitAnimationMessage,
             })
           }
         }}

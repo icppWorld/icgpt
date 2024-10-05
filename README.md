@@ -209,6 +209,63 @@ However, you can not run the frontend served from the local IC network, due to C
 
 Just run it locally as described in the next section, `Front-end Development`
 
+## Test Qwen2.5 backend with dfx
+
+It is handy to be able to verify the Qwen2.5 backend canister with dfx:
+
+- Chat with the LLM:
+
+    Details how to use the Qwen models with llama.cpp:
+    https://qwen.readthedocs.io/en/latest/run_locally/llama.cpp.html
+
+    ```bash
+    # Start a new chat - this resets the prompt-cache for this conversation
+    dfx canister call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+
+    # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
+
+    # Example of a longer prompt
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+
+    # Example of a very short prompt
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    ...
+
+    # Once prompt_remaining is empty, repeat this call, with an empty prompt, until the `generated_eog=true`:
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+
+    ...
+
+    # Once generated_eog = true, the LLM is done generating
+
+    # this is the output after several update calls and it has reached eog:
+    (
+      variant {
+        Ok = record {
+          output = " level of complexity than the original text.<|im_end|>";
+          conversation = "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\nLLMs are large language models, or generative models, that can generate text based on a given input. These models are trained on a large corpus of text and are able to generate text that is similar to the input. They can be used for a wide range of applications, such as language translation, question answering, and text generation for various tasks. LLMs are often referred to as \"artificial general intelligence\" because they can generate text that is not only similar to the input but also has a higher level of complexity than the original text.<|im_end|>";
+          error = "";
+          status_code = 200 : nat16;
+          prompt_remaining = "";
+          generated_eog = true;
+        }
+      },
+    )
+
+    # NOTE: This is the equivalent llama-cli call, when running llama.cpp locally
+    ./llama-cli -m /models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf -sp -p "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"  -fa -ngl 80 -n 512 --prompt-cache prompt.cache --prompt-cache-all
+
+    ########################################
+    # Tip. Add this to the args vec if you #
+    #      want to see how many tokens the #
+    #      canister can generate before it #
+    #      hits the instruction limit      #
+    #                                      #
+    #      ;"--print-token-count"; "1"     #
+    ########################################
+
+    ```
+
 ## Front-end Development
 
 The front-end is a react application with a webpack based build pipeline. Webpack builds with sourcemaps, so you can use the following front-end development workflow:
