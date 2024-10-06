@@ -7,75 +7,27 @@ export function ChatSelectModelSizeCardQwen2_5({ modelSize, doSetModelSize }) {
   return (
     <Box>
       <Button
-        color={modelSize === '0.5B' ? 'cyan' : 'white'}
+        color={modelSize === '0.5b_q4_k_m' ? 'cyan' : 'white'}
         size="sm"
         p="xs"
         m="xs"
-        onClick={() => doSetModelSize('0.5B')}
+        onClick={() => doSetModelSize('0.5b_q4_k_m')}
         disabled={false}
       >
-        <Text color={modelSize === '0.5B' ? 'black' : 'black'} size="sm">
-          0.5B
+        <Text color={modelSize === '0.5b_q4_k_m' ? 'black' : 'black'} size="sm">
+        0.5b_q4_k_m
         </Text>
       </Button>
       <Button
-        color={modelSize === '1.5B' ? 'cyan' : 'white'}
+        color={modelSize === '0.5b_q8_0' ? 'cyan' : 'white'}
         size="sm"
         p="xs"
         m="xs"
-        onClick={() => doSetModelSize('1.5B')}
-        disabled={true}
+        onClick={() => doSetModelSize('0.5b_q8_0')}
+        disabled={false}
       >
-        <Text color={modelSize === '1.5B' ? 'black' : 'black'} size="sm">
-          1.5B
-        </Text>
-      </Button>
-      <Button
-        color={modelSize === '3B' ? 'cyan' : 'white'}
-        size="sm"
-        p="xs"
-        m="xs"
-        onClick={() => doSetModelSize('3B')}
-        disabled={true}
-      >
-        <Text color={modelSize === '3B' ? 'black' : 'black'} size="sm">
-          3B
-        </Text>
-      </Button>
-      <Button
-        color={modelSize === '7B' ? 'cyan' : 'white'}
-        size="sm"
-        p="xs"
-        m="xs"
-        onClick={() => doSetModelSize('7B')}
-        disabled={true}
-      >
-        <Text color={modelSize === '7B' ? 'black' : 'black'} size="sm">
-          7B
-        </Text>
-      </Button>
-      <Button
-        color={modelSize === '32B' ? 'cyan' : 'white'}
-        size="sm"
-        p="xs"
-        m="xs"
-        onClick={() => doSetModelSize('32B')}
-        disabled={true}
-      >
-        <Text color={modelSize === '32B' ? 'black' : 'black'} size="sm">
-          32B
-        </Text>
-      </Button>
-      <Button
-        color={modelSize === '72B' ? 'cyan' : 'white'}
-        size="sm"
-        p="xs"
-        m="xs"
-        onClick={() => doSetModelSize('72B')}
-        disabled={true}
-      >
-        <Text color={modelSize === '72B' ? 'black' : 'black'} size="sm">
-          72B
+        <Text color={modelSize === '0.5b_q8_0' ? 'black' : 'black'} size="sm">
+        0.5b_q8_0
         </Text>
       </Button>
     </Box>

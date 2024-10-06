@@ -503,7 +503,15 @@ upload-qwen25-05b-q8-local:
 	@echo "upload-qwen25-05b-q8-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q8 --canister-filename models/qwen2.5-0.5b-instruct-q8_0.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
-	dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })'
+	dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+
+.PHONY: upload-qwen25-05b-q4-k-m-local
+upload-qwen25-05b-q4-k-m-local:
+	@echo "---"
+	@echo "upload-qwen25-05b-q4-k-m-local"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q4_k_m --canister-filename models/qwen2.5-0.5b-instruct-q4_k_m.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q4_k_m.gguf
+	dfx canister call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
 
 .PHONY: load-model-qwen25-05b-q8-local
 load-model-qwen25-05b-q8-local:
@@ -562,17 +570,25 @@ upload-110M-ic:
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
     python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
 
+.PHONY: upload-qwen25-05b-q4-k-m-ic
+upload-qwen25-05b-q4-k-m-ic:
+	@echo "---"
+	@echo "upload-qwen25-05b-q4-k-m-ic"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q4_k_m --canister-filename models/qwen2.5-0.5b-instruct-q4_k_m.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q4_k_m.gguf
+	dfx canister --ic call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+
 .PHONY: upload-qwen25-05b-q8-ic
 upload-qwen25-05b-q8-ic:
 	@echo "---"
 	@echo "upload-qwen25-05b-q8-ic"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q8 --canister-filename models/qwen2.5-0.5b-instruct-q8_0.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
-	dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })'
-
-.PHONY: load-model-qwen25-05b-q8-ic
-load-model-qwen25-05b-q8-ic:
-	@echo "---"
-	@echo "load-model-qwen25-05b-q8-ic"
-	dfx canister --ic call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf";} })'
 	dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+
+# .PHONY: load-model-qwen25-05b-q8-ic
+# load-model-qwen25-05b-q8-ic:
+# 	@echo "---"
+# 	@echo "load-model-qwen25-05b-q8-ic"
+# 	dfx canister --ic call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf";} })'
+# 	dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'

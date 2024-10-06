@@ -6,7 +6,6 @@ const displayQueue = []
 let isDisplaying = false
 let chatStarted = false
 let chatFinished = false
-// let displayedResponseString = ''
 
 function buildNewChatInput() {
   // TODO: prompt.cache as a variable to save/delete chats
@@ -16,19 +15,32 @@ function buildNewChatInput() {
   }
 }
 
-function buildRunUpdateInput(inputString, response) {
+function buildRunUpdateInput(inputString, responseUpdate, setWaitAnimationMessage) {
   let promptRemaining = inputString
   let output = ''
-  if (response && 'Ok' in response) {
-    promptRemaining = response.Ok.prompt_remaining
-    output = response.Ok.output
+  // TODO: REMOVE THIS
+  // WE NO LONGER LOAD THE MODEL FROM ICGPT -- WE PRIME IT ONCE AS PART OF DEPLOYMENT
+  // let modelArgs = []
+  // if (!responseUpdate) {
+  //   setWaitAnimationMessage('Calling LLM canister - Loading gguf model')
+  //   //
+  //   // TODO: Pass the model in via webpack setting
+  //   // NOTE: We only do it like this, because the load_model function is broken.
+  //   modelArgs = ['--model', 'models/qwen2.5-0.5b-instruct-q8_0.gguf']
+  // }
+  if (responseUpdate && 'Ok' in responseUpdate) {
+    promptRemaining = responseUpdate.Ok.prompt_remaining
+    output = responseUpdate.Ok.output
   }
-  console.log('buildRunUpdateInput - response = ', response)
+  console.log('buildRunUpdateInput - responseUpdate = ', responseUpdate)
   console.log('buildRunUpdateInput - inputString = ', inputString)
   console.log('buildRunUpdateInput - promptRemaining = ', promptRemaining)
   console.log('buildRunUpdateInput - output = ', output)
   let fullPrompt
   if (promptRemaining === '') {
+    if (responseUpdate) {
+      setWaitAnimationMessage('Calling LLM canister - Generating tokens')
+    }
     console.log('buildRunUpdateInput - promptRemaining is now empty')
     fullPrompt = ''
   } else {
@@ -52,8 +64,21 @@ function buildRunUpdateInput(inputString, response) {
       fullPrompt,
       '-n',
       numtokens,
-    ],
+    ]
   }
+  // TODO: REMOVE
+  // return {
+  //   args: modelArgs.concat([
+  //     '--prompt-cache',
+  //     'my_cache/prompt.cache',
+  //     '--prompt-cache-all',
+  //     '-sp',
+  //     '-p',
+  //     fullPrompt,
+  //     '-n',
+  //     numtokens,
+  //   ])
+  // }
 }
 
 const DEBUG = true
@@ -87,7 +112,6 @@ async function fetchInference(
   }
 
   displayQueue.length = 0 // Reset the displayQueue
-  // displayedResponseString = '' // Reset the displayedResponseString
   setChatOutputText('') // Reset the output text box
 
   // Start the display loop in the background
@@ -101,7 +125,8 @@ async function fetchInference(
   )
 
   let count = 0
-  let response = null
+  let responseUpdate = null
+  setWaitAnimationMessage('Calling LLM canister - Ingesting the prompt tokens')
   for (let i = 0; i < numStepsFetchInference; i++) {
     count++
 
@@ -109,28 +134,31 @@ async function fetchInference(
       try {
         const newChatInput = buildNewChatInput()
         console.log('Calling new_chat with input: ', newChatInput)
-        const response = await actor.new_chat(newChatInput)
-        if ('Ok' in response) {
-          console.log('Call to new_chat successful with response: ', response)
+        const responseNewChat = await actor.new_chat(newChatInput)
+        if ('Ok' in responseNewChat) {
+          console.log('Call to new_chat successful with responseNewChat: ', responseNewChat)
         } else {
+          console.log('Call to new_chat failed with responseNewChat: ', responseNewChat)
           let ermsg = ''
-          if ('Err' in response && 'Other' in response.Err)
-            ermsg = response.Err.Other
+          if ('Err' in responseNewChat && 'Other' in responseNewChat.Err)
+            ermsg = responseNewChat.Err.Other
           throw new Error(`Call to new_chat failed: ` + ermsg)
         }
       } catch (error) {
         // caught by caller and printed to console there
         throw new Error(`Error: ${error.message}`)
       }
+
+      
     } else {
       try {
-        const runUpdateInput = buildRunUpdateInput(inputString, response)
+        const runUpdateInput = buildRunUpdateInput(inputString, responseUpdate, setWaitAnimationMessage)
         console.log('Calling run_update with input: ', runUpdateInput)
-        response = await actor.run_update(runUpdateInput)
-        if ('Ok' in response) {
+        responseUpdate = await actor.run_update(runUpdateInput)
+        if ('Ok' in responseUpdate) {
           console.log(
-            'Call to run_update successful, with response: ',
-            response
+            'Call to run_update successful, with responseUpdate: ',
+            responseUpdate
           )
 
           // if (i === 1) {
@@ -138,9 +166,9 @@ async function fetchInference(
           //   setInputPlaceholder('The LLM is generating text...')
           // }
           // Push the output to the queue and the display loop will pick it up
-          displayQueue.push(response)
+          displayQueue.push(responseUpdate)
           // We reached end of story if the LLM says so
-          if (response.Ok.generated_eog) {
+          if (responseUpdate.Ok.generated_eog) {
             // Reset the inputString and provide a new placeHolder
             setInputString('')
             console.log('-A- setChatDone(true)')
@@ -151,8 +179,12 @@ async function fetchInference(
             break
           }
         } else {
+          console.log(
+            'Call to run_update failed, with responseUpdate: ',
+            responseUpdate
+          )
           let ermsg = ''
-          if ('Err' in response) ermsg = response.Err.error
+          if ('Err' in responseUpdate) ermsg = responseUpdate.Err.error
           throw new Error(`Call to run_update failed: ` + ermsg)
         }
       } catch (error) {
@@ -204,7 +236,6 @@ async function processDisplayQueue(
       isDisplaying = false
       if (!chatFinished) {
         setChatDisplay('WaitAnimation')
-        setWaitAnimationMessage('Calling LLM canister - generating tokens')
       }
     } else {
       if (DEBUG) {
@@ -215,7 +246,6 @@ async function processDisplayQueue(
           console.log('DEBUG-FLOW: llamacpp.js processDisplayQueue - C')
         }
         setChatDisplay('WaitAnimation')
-        setWaitAnimationMessage('Calling LLM canister - ingesting prompt')
       }
       await sleep(1000)
     }
@@ -240,26 +270,6 @@ function displayResponse(
   console.log('- response.Ok.output =', response.Ok.output)
 
   const responseString = response.Ok.output
-
-  // TODO: remove displayedResponseString everywhere
-  // let responseString = ""
-  // // response.Ok.output should start with displayedResponseString
-  // if (response.Ok.output.startsWith(displayedResponseString)) {
-  //   // Extract the remaining part of the string
-  //   responseString = response.Ok.output.substring(displayedResponseString.length)
-  //   displayedResponseString = response.Ok.output
-  // } else {
-  //   // This situation should not happen...
-  //   console.log("WARNING: llamacpp.js displayResonse: response.Ok.output does not start with displayedResponseString")
-  //   console.log("- displayedResponseString = ", displayedResponseString)
-  //   console.log("- response.Ok.output = ", response.Ok.output)
-  //   console.log("-> Resetting things... ")
-  //   responseString = response.Ok.output
-  //   displayedResponseString = response.Ok.output
-  //   setChatOutputText('')
-  // }
-  // console.log('- responseString =', responseString)
-  // console.log('- displayedResponseString =', displayedResponseString)
 
   if (typeof responseString !== 'string') {
     console.error('Received unexpected response format:', response)
@@ -331,14 +341,18 @@ export async function doSubmitLlamacpp({
   const numStepsFetchInference = 1000 // Basically, just keep going...
   if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
     switch (modelSize) {
-      case '0.5B':
-        console.log('canister - Qwen2.5, 0.5B, Instruct')
+      case '0.5b_q4_k_m':
+        console.log('canister - Qwen2.5, 0.5b_q4_k_m, Instruct')
+        moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q4_k_m')
+        break
+      case '0.5b_q8_0':
+        console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
         moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
         break
     }
   } else {
-    console.log('canister - Qwen2.5, 0.5B, Instruct')
-    moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
+    console.log('canister - Qwen2.5, 0.5b_q4_k_m, Instruct')
+    moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q4_k_m')
   }
   const { canisterId, createActor } = await moduleToImport
 
@@ -362,24 +376,23 @@ export async function doSubmitLlamacpp({
   try {
     // Call llm canister to check on health
     // Force a re-render, showing the WaitAnimation
-    setWaitAnimationMessage('Checking health of LLM canister')
     setChatDisplay('WaitAnimation')
     console.log('Calling actor_.health ')
     const responseHealth = await actor_.health()
     console.log('llm canister health: ', responseHealth)
-    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
 
     if ('Ok' in responseHealth) {
       console.log('llm canister is healthy: ', responseHealth)
 
-      setWaitAnimationMessage('Checking readiness of LLM canister')
-      console.log('Calling actor_.ready ')
-      const responseReady = await actor_.ready()
-      console.log('llm canister ready: ', responseReady)
-      setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+      // setWaitAnimationMessage('Checking readiness of LLM canister')
+      // console.log('Calling actor_.ready ')
+      // const responseReady = await actor_.ready()
+      // console.log('llm canister ready: ', responseReady)
+      // setWaitAnimationMessage('Calling LLM canister') // Reset it to default
 
-      if ('Ok' in responseReady) {
+      // if ('Ok' in responseReady) {
         // Ok, ready for show time...
+        setWaitAnimationMessage('Calling LLM canister - generating tokens')
         await fetchInference(
           actor_,
           setChatOutputText,
@@ -395,27 +408,31 @@ export async function doSubmitLlamacpp({
           setInputPlaceholder,
           numStepsFetchInference
         )
+        setWaitAnimationMessage('Calling LLM canister') // Reset it to default
 
         await waitForQueueToEmpty()
-      } else {
-        let ermsg = ''
-        if ('Err' in responseReady && 'Other' in responseReady.Err)
-          ermsg = responseReady.Err.Other
-        throw new Error(`LLM canister is not ready: ` + ermsg)
-      }
+      // } else {
+      //   let ermsg = ''
+      //   if ('Err' in responseReady && 'Other' in responseReady.Err)
+      //     ermsg = responseReady.Err.Other
+      //   throw new Error(`LLM canister is not ready: ` + ermsg)
+      // }
     } else {
+      setWaitAnimationMessage('Calling LLM canister') // Reset it to default
       let ermsg = ''
       if ('Err' in responseHealth && 'Other' in responseHealth.Err)
         ermsg = responseHealth.Err.Other
       throw new Error(`LLM canister is not healthy: ` + ermsg)
     }
   } catch (error) {
+    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
     console.error(error)
     setChatDone(true)
     chatFinished = true
     // Force a re-render, showing the ChatOutput
     setChatDisplay('CanisterError')
   } finally {
+    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
     setIsSubmitting(false)
   }
 }

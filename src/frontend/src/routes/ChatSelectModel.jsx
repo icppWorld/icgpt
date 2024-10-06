@@ -33,7 +33,7 @@ export function ChatSelectModel({
       doSetModelSize('42M')
       doSetFinetuneType('Raw LLM')
     } else if (type === 'Qwen2.5') {
-      doSetModelSize('0.5B')
+      doSetModelSize('0.5b_q4_k_m')
       doSetFinetuneType('Instruct')
     }
 

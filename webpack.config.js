@@ -31,6 +31,7 @@ console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
 // (3) nmp run start
 const DFX_VERSION = `${process.env.DFX_VERSION}`
 const DFX_NETWORK = `${process.env.DFX_NETWORK}`
+const CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M = `${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M}`
 const CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 = `${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
 const CANISTER_ID_LLAMA2_42M = `${process.env.CANISTER_ID_LLAMA2_42M}`
 const CANISTER_ID_LLAMA2_260K = `${process.env.CANISTER_ID_LLAMA2_260K}`
@@ -40,6 +41,9 @@ const CANISTER_ID_INTERNET_IDENTITY = `${process.env.CANISTER_ID_INTERNET_IDENTI
 const CANISTER_ID_CANISTER_FRONTEND = `${process.env.CANISTER_ID_CANISTER_FRONTEND}`
 console.warn(`DFX_VERSION: ${DFX_VERSION}`)
 console.warn(`DFX_NETWORK: ${DFX_NETWORK}`)
+console.warn(
+  `CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M: ${CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M}`
+)
 console.warn(
   `CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8: ${CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
 )
@@ -140,6 +144,11 @@ module.exports = (env = {}, args = {}) => {
 
       // Use these aliases in import statements
       alias: {
+        DeclarationsCanisterLlamacpp_Qwen25_05B_Q4_k_m: path.resolve(
+          __dirname,
+          'src/declarations',
+          'llama_cpp_qwen25_05b_q4_k_m'
+        ),
         DeclarationsCanisterLlamacpp_Qwen25_05B_Q8: path.resolve(
           __dirname,
           'src/declarations',
@@ -234,6 +243,7 @@ module.exports = (env = {}, args = {}) => {
         // }),
         DFX_VERSION,
         DFX_NETWORK,
+        CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M,
         CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8,
         CANISTER_ID_LLAMA2_42M,
         CANISTER_ID_LLAMA2_260K,
