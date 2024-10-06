@@ -15,7 +15,11 @@ function buildNewChatInput() {
   }
 }
 
-function buildRunUpdateInput(inputString, responseUpdate, setWaitAnimationMessage) {
+function buildRunUpdateInput(
+  inputString,
+  responseUpdate,
+  setWaitAnimationMessage
+) {
   let promptRemaining = inputString
   let output = ''
   // TODO: REMOVE THIS
@@ -64,7 +68,7 @@ function buildRunUpdateInput(inputString, responseUpdate, setWaitAnimationMessag
       fullPrompt,
       '-n',
       numtokens,
-    ]
+    ],
   }
   // TODO: REMOVE
   // return {
@@ -136,9 +140,15 @@ async function fetchInference(
         console.log('Calling new_chat with input: ', newChatInput)
         const responseNewChat = await actor.new_chat(newChatInput)
         if ('Ok' in responseNewChat) {
-          console.log('Call to new_chat successful with responseNewChat: ', responseNewChat)
+          console.log(
+            'Call to new_chat successful with responseNewChat: ',
+            responseNewChat
+          )
         } else {
-          console.log('Call to new_chat failed with responseNewChat: ', responseNewChat)
+          console.log(
+            'Call to new_chat failed with responseNewChat: ',
+            responseNewChat
+          )
           let ermsg = ''
           if ('Err' in responseNewChat && 'Other' in responseNewChat.Err)
             ermsg = responseNewChat.Err.Other
@@ -148,11 +158,13 @@ async function fetchInference(
         // caught by caller and printed to console there
         throw new Error(`Error: ${error.message}`)
       }
-
-      
     } else {
       try {
-        const runUpdateInput = buildRunUpdateInput(inputString, responseUpdate, setWaitAnimationMessage)
+        const runUpdateInput = buildRunUpdateInput(
+          inputString,
+          responseUpdate,
+          setWaitAnimationMessage
+        )
         console.log('Calling run_update with input: ', runUpdateInput)
         responseUpdate = await actor.run_update(runUpdateInput)
         if ('Ok' in responseUpdate) {
@@ -343,7 +355,9 @@ export async function doSubmitLlamacpp({
     switch (modelSize) {
       case '0.5b_q4_k_m':
         console.log('canister - Qwen2.5, 0.5b_q4_k_m, Instruct')
-        moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q4_k_m')
+        moduleToImport = import(
+          'DeclarationsCanisterLlamacpp_Qwen25_05B_Q4_k_m'
+        )
         break
       case '0.5b_q8_0':
         console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
@@ -391,26 +405,26 @@ export async function doSubmitLlamacpp({
       // setWaitAnimationMessage('Calling LLM canister') // Reset it to default
 
       // if ('Ok' in responseReady) {
-        // Ok, ready for show time...
-        setWaitAnimationMessage('Calling LLM canister - generating tokens')
-        await fetchInference(
-          actor_,
-          setChatOutputText,
-          chatNew,
-          setChatNew,
-          chatDone,
-          setChatDone,
-          setChatDisplay,
-          setWaitAnimationMessage,
-          inputString,
-          setInputString,
-          inputPlaceholder,
-          setInputPlaceholder,
-          numStepsFetchInference
-        )
-        setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+      // Ok, ready for show time...
+      setWaitAnimationMessage('Calling LLM canister - generating tokens')
+      await fetchInference(
+        actor_,
+        setChatOutputText,
+        chatNew,
+        setChatNew,
+        chatDone,
+        setChatDone,
+        setChatDisplay,
+        setWaitAnimationMessage,
+        inputString,
+        setInputString,
+        inputPlaceholder,
+        setInputPlaceholder,
+        numStepsFetchInference
+      )
+      setWaitAnimationMessage('Calling LLM canister') // Reset it to default
 
-        await waitForQueueToEmpty()
+      await waitForQueueToEmpty()
       // } else {
       //   let ermsg = ''
       //   if ('Err' in responseReady && 'Other' in responseReady.Err)

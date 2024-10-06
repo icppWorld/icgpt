@@ -15,7 +15,7 @@ export function ChatSelectModelSizeCardQwen2_5({ modelSize, doSetModelSize }) {
         disabled={false}
       >
         <Text color={modelSize === '0.5b_q4_k_m' ? 'black' : 'black'} size="sm">
-        0.5b_q4_k_m
+          0.5b_q4_k_m
         </Text>
       </Button>
       <Button
@@ -27,7 +27,7 @@ export function ChatSelectModelSizeCardQwen2_5({ modelSize, doSetModelSize }) {
         disabled={false}
       >
         <Text color={modelSize === '0.5b_q8_0' ? 'black' : 'black'} size="sm">
-        0.5b_q8_0
+          0.5b_q8_0
         </Text>
       </Button>
     </Box>
