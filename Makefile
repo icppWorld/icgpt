@@ -497,28 +497,31 @@ upload-110M-local:
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
     python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
 
-.PHONY: upload-qwen25-05b-q8-local
-upload-qwen25-05b-q8-local:
-	@echo "---"
-	@echo "upload-qwen25-05b-q8-local"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
-	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q8 --canister-filename models/qwen2.5-0.5b-instruct-q8_0.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
-	dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
-
 .PHONY: upload-qwen25-05b-q4-k-m-local
 upload-qwen25-05b-q4-k-m-local:
 	@echo "---"
 	@echo "upload-qwen25-05b-q4-k-m-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q4_k_m --canister-filename models/qwen2.5-0.5b-instruct-q4_k_m.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q4_k_m.gguf
+	@echo "Setting max tokens"
 	dfx canister call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
+	dfx canister call llama_cpp_qwen25_05b_q4_k_m new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+	@echo "Dummy inference call"
+	dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
 
-.PHONY: load-model-qwen25-05b-q8-local
-load-model-qwen25-05b-q8-local:
+.PHONY: upload-qwen25-05b-q8-local
+upload-qwen25-05b-q8-local:
 	@echo "---"
-	@echo "load-model-qwen25-05b-q8-local"
-	dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf";} })'
-	dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+	@echo "upload-qwen25-05b-q8-local"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q8 --canister-filename models/qwen2.5-0.5b-instruct-q8_0.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+	@echo "Setting max tokens"
+	dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
+	dfx canister call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+	@echo "Dummy inference call"
+	dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
 
 .PHONY: upload-260K-ic
 upload-260K-ic:
@@ -576,7 +579,16 @@ upload-qwen25-05b-q4-k-m-ic:
 	@echo "upload-qwen25-05b-q4-k-m-ic"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q4_k_m --canister-filename models/qwen2.5-0.5b-instruct-q4_k_m.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q4_k_m.gguf
+	
+.PHONY: initialize-qwen25-05b-q4-k-m-ic
+initialize-qwen25-05b-q4-k-m-ic:
+	@echo "Setting max tokens"
 	dfx canister --ic call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
+	dfx canister --ic call llama_cpp_qwen25_05b_q4_k_m new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+	@echo "Dummy inference call"
+	dfx canister --ic call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
+
 
 .PHONY: upload-qwen25-05b-q8-ic
 upload-qwen25-05b-q8-ic:
@@ -584,11 +596,12 @@ upload-qwen25-05b-q8-ic:
 	@echo "upload-qwen25-05b-q8-ic"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q8 --canister-filename models/qwen2.5-0.5b-instruct-q8_0.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+	
+.PHONY: initialize-qwen25-05b-q8-ic
+initialize-qwen25-05b-q8-ic:
+	@echo "Setting max tokens"
 	dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
-
-# .PHONY: load-model-qwen25-05b-q8-ic
-# load-model-qwen25-05b-q8-ic:
-# 	@echo "---"
-# 	@echo "load-model-qwen25-05b-q8-ic"
-# 	dfx canister --ic call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf";} })'
-# 	dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
+	dfx canister --ic call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+	@echo "Dummy inference call"
+	dfx canister --ic call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'

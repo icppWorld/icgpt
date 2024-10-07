@@ -186,30 +186,20 @@ dfx deploy llama2_110M
 make upload-110M-local
 
 # qwen2.5 0.5b q4_k_m (491 Mb)
-dfx deploy llama_cpp_qwen25_05b_q4_k_m
+dfx deploy llama_cpp_qwen25_05b_q4_k_m -m [upgrade/reinstall] # upgrade preserves model in stable memory
 dfx canister update-settings llama_cpp_qwen25_05b_q4_k_m --wasm-memory-limit 4GiB
 dfx canister status llama_cpp_qwen25_05b_q4_k_m
 dfx canister call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
-make upload-qwen25-05b-q4-k-m-local
-  # Prime the model by doing a dummy inference, which loads the model into OP memory
-  # Start a new chat - this resets the prompt-cache for this conversation
-  dfx canister call llama_cpp_qwen25_05b_q4_k_m new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
-
-  # Dummy inference call
-  dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })' 
+make upload-qwen25-05b-q4-k-m-local # Not needed after an upgrade, only after initial or reinstall
+make initialize-qwen25-05b-q4-k-m-local # This sets max tokens & "primes" the model. Always run this after deploy.
 
 # qwen2.5 0.5b q8 (676 Mb)
-dfx deploy llama_cpp_qwen25_05b_q8
+dfx deploy llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
 dfx canister update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
 dfx canister status llama_cpp_qwen25_05b_q8
 dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
-make upload-qwen25-05b-q8-local
-  # Prime the model by doing a dummy inference, which loads the model into OP memory
-  # Start a new chat - this resets the prompt-cache for this conversation
-  dfx canister call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
-
-  # Dummy inference call
-  dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })' 
+make upload-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
+make initialize-qwen25-05b-q8-local # This sets max tokens & "primes" the model. Always run this after deploy.
 
 dfx deploy internet_identity # REQUIRED: it installs II
 dfx deploy canister_frontend # REQUIRED: it creates src/declarations
@@ -394,20 +384,45 @@ Step 2: Deploy the backend canisters
 - Note that **dfx.json** points to the wasm files build during Step 1
 
   ```bash
-  # Deploy
+  # Deploy & upload models
   dfx deploy --ic llama2_260K -m reinstall
-  dfx deploy --ic llama2_15M -m reinstall
-  dfx deploy --ic llama2_42M -m reinstall
-  dfx deploy --ic llama2_110M -m reinstall
-
-  # Upload the LLM models to the backend canisters
   make upload-260K-ic
+
+  dfx deploy --ic llama2_15M -m reinstall
   make upload-15M-ic
+
+  dfx deploy --ic llama2_42M -m reinstall
   make upload-charles-42M-ic
   # make upload-42M-ic
-  # make upload-110M-ic
-  # Or, alternatively
-  make upload-all-ic
+
+  dfx deploy --ic llama2_110M -m reinstall
+  make upload-110M-ic
+
+  # qwen2.5 0.5b q4_k_m (491 Mb)
+  dfx deploy --ic --subnet w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae llama_cpp_qwen25_05b_q4_k_m -m [upgrade/reinstall] # upgrade preserves model in stable memory
+  dfx canister --ic update-settings llama_cpp_qwen25_05b_q4_k_m --wasm-memory-limit 4GiB
+  dfx canister --ic status llama_cpp_qwen25_05b_q4_k_m
+  dfx canister --ic call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+  # To be able to upload the model, I change the 
+  # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
+  dfx canister status --ic llama_cpp_qwen25_05b_q4_k_m  
+  dfx canister update-settings --ic llama_cpp_qwen25_05b_q4_k_m --compute-allocation 50 # (costs a rental fee)
+  make upload-qwen25-05b-q4-k-m-ic # Not needed after an upgrade, only after initial or reinstall
+  make initialize-qwen25-05b-q4-k-m-ic # This sets max tokens & "primes" the model. Always run this after deploy.
+  dfx canister update-settings --ic llama_cpp_qwen25_05b_q4_k_m --compute-allocation 1 # (Reduce the rental fee)
+
+  # qwen2.5 0.5b q8 (676 Mb)
+  dfx deploy --ic llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
+  dfx canister --ic update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
+  dfx canister --ic status llama_cpp_qwen25_05b_q8
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+  # To be able to upload the model, I change the 
+  # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
+  dfx canister status --ic llama_cpp_qwen25_05b_q8  
+  dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 50 # (costs a rental fee)
+  make upload-qwen25-05b-q8-ic  # Not needed after an upgrade, only after initial or reinstall
+  make initialize-qwen25-05b-q8-ic # This also sets max tokens & "primes" the model. Always run this after deploy.
+  dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (Reduce the rental fee)
 
   #--------------------------------------------------------------------------
   # IMPORTANT: ic-py might throw a timeout => patch it here:
@@ -492,3 +507,15 @@ When deploying locally, the internet_identity canister will be installed automat
 When deploying to IC, it will NOT be deployed.
 
 For details, see this [forum post](https://forum.dfinity.org/t/problem-insalling-internet-identity-in-local-setup/20417/18).
+
+
+## Subnet overload
+
+References: 
+- [Subnets with heavy compute load: what can you do now & next steps](https://forum.dfinity.org/t/subnets-with-heavy-compute-load-what-can-you-do-now-next-steps/35762/1)
+- [Dashboard of subnets](https://dashboard.internetcomputer.org/subnets?sort=asc-canisters)
+
+The canisters are in an affected subnet, but I was not able yet to move them.
+
+| name | canister-id | subnet-id |
+| | | |
