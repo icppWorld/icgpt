@@ -1,20 +1,7 @@
 {
-  "canister_frontend": {
-    "ic": "4v3v2-lyaaa-aaaag-abzna-cai"
-  },
-  "llama2_260K": {
-    "ic": "otmmw-3yaaa-aaaag-ab2na-cai"
-  },
-  "llama2_15M": {
-    "ic": "4c4bn-daaaa-aaaag-abvcq-cai"
-  },
-  "llama2_42M": {
-    "ic": "ounkc-waaaa-aaaag-ab2nq-cai"
-  },
-  "llama2_110M": {
-    "ic": "p4tfr-saaaa-aaaag-acgma-cai"
-  },
+  "llama_cpp_charles_42m": {},
+  "llama_cpp_qwen25_05b_q4_k_m": {},
   "llama_cpp_qwen25_05b_q8": {
-    "ic": "6uwoh-vaaaa-aaaag-amema-cai"
+    "ic": "l6oaj-maaaa-aaaah-qpt4a-cai"
   }
 }

@@ -22,16 +22,6 @@ function buildRunUpdateInput(
 ) {
   let promptRemaining = inputString
   let output = ''
-  // TODO: REMOVE THIS
-  // WE NO LONGER LOAD THE MODEL FROM ICGPT -- WE PRIME IT ONCE AS PART OF DEPLOYMENT
-  // let modelArgs = []
-  // if (!responseUpdate) {
-  //   setWaitAnimationMessage('Calling LLM canister - Loading gguf model')
-  //   //
-  //   // TODO: Pass the model in via webpack setting
-  //   // NOTE: We only do it like this, because the load_model function is broken.
-  //   modelArgs = ['--model', 'models/qwen2.5-0.5b-instruct-q8_0.gguf']
-  // }
   if (responseUpdate && 'Ok' in responseUpdate) {
     promptRemaining = responseUpdate.Ok.prompt_remaining
     output = responseUpdate.Ok.output
@@ -68,6 +58,8 @@ function buildRunUpdateInput(
       fullPrompt,
       '-n',
       numtokens,
+      '--print-token-count', // TODO: outcomment
+      '1',
     ],
   }
   // TODO: REMOVE
@@ -345,6 +337,9 @@ export async function doSubmitLlamacpp({
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered llamacpp.js doSubmitLlamacpp ')
+    console.log('- modelType ', modelType)
+    console.log('- modelSize ', modelSize)
+    console.log('- modelTfinetuneTypepe ', finetuneType)
   }
   setIsSubmitting(true)
 
@@ -362,6 +357,13 @@ export async function doSubmitLlamacpp({
       case '0.5b_q8_0':
         console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
         moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
+        break
+    }
+  } else if (modelType === 'llama.cpp Charles' && finetuneType === 'Raw LLM') {
+    switch (modelSize) {
+      case '42M':
+        console.log('canister - llama cpp Charles 42M, Raw LLM')
+        moduleToImport = import('DeclarationsCanisterLlamacpp_Charles_42m')
         break
     }
   } else {

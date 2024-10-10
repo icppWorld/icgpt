@@ -137,6 +137,30 @@ export function ChatInput({
               modelSize,
               finetuneType,
             })
+          } else if (modelType === 'llama.cpp Charles') {
+            doSubmitLlamacpp({
+              authClient,
+              actorRef,
+              chatNew,
+              chatDone,
+              setActorRef,
+              setChatNew,
+              setChatDone,
+              inputString,
+              setInputString,
+              inputPlaceholder,
+              setInputPlaceholder,
+              isSubmitting,
+              setIsSubmitting,
+              setChatOutputText,
+              setChatDisplay,
+              setWaitAnimationMessage,
+              isSubmitting,
+              setIsSubmitting,
+              modelType,
+              modelSize,
+              finetuneType,
+            })
           }
         }}
       >

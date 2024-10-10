@@ -185,21 +185,29 @@ make upload-charles-42M-local
 dfx deploy llama2_110M
 make upload-110M-local
 
-# qwen2.5 0.5b q4_k_m (491 Mb)
+# llama.cpp qwen2.5 0.5b q4_k_m (491 Mb)
 dfx deploy llama_cpp_qwen25_05b_q4_k_m -m [upgrade/reinstall] # upgrade preserves model in stable memory
 dfx canister update-settings llama_cpp_qwen25_05b_q4_k_m --wasm-memory-limit 4GiB
 dfx canister status llama_cpp_qwen25_05b_q4_k_m
 dfx canister call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
-make upload-qwen25-05b-q4-k-m-local # Not needed after an upgrade, only after initial or reinstall
-make initialize-qwen25-05b-q4-k-m-local # This sets max tokens & "primes" the model. Always run this after deploy.
+make upload-llama-cpp-qwen25-05b-q4-k-m-local # Not needed after an upgrade, only after initial or reinstall
+make initialize-llama-cpp-qwen25-05b-q4-k-m-local # This sets max tokens & "primes" the model. Always run this after deploy.
 
-# qwen2.5 0.5b q8 (676 Mb)
+# llama.cpp qwen2.5 0.5b q8 (676 Mb)
 dfx deploy llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
 dfx canister update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
 dfx canister status llama_cpp_qwen25_05b_q8
 dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
-make upload-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
-make initialize-qwen25-05b-q8-local # This sets max tokens & "primes" the model. Always run this after deploy.
+make upload-llama-cpp-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
+make initialize-llama-cpp-qwen25-05b-q8-local # This sets max tokens & "primes" the model. Always run this after deploy.
+
+# llama.cpp charles 42m (118 Mb)
+dfx deploy llama_cpp_charles_42m -m [upgrade/reinstall] # upgrade preserves model in stable memory
+dfx canister update-settings llama_cpp_charles_42m --wasm-memory-limit 4GiB
+dfx canister status llama_cpp_charles_42m
+dfx canister call llama_cpp_charles_42m set_max_tokens '(record { max_tokens_query = 50 : nat64; max_tokens_update = 50 : nat64 })'
+make upload-llama-cpp-charles-42m-local # Not needed after an upgrade, only after initial or reinstall
+make initialize-llama-cpp-charles-42m-local # This sets max tokens & "primes" the model. Always run this after deploy.
 
 dfx deploy internet_identity # REQUIRED: it installs II
 dfx deploy canister_frontend # REQUIRED: it creates src/declarations
@@ -329,6 +337,59 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
 
     ```
 
+## Test Charles 42M backend with dfx
+
+It is handy to be able to verify the Charles 42M backend canister with dfx:
+
+- Chat with the LLM:
+
+    This is a RAW type LLM. Just start a sentence, and the bot will continue it.
+
+    ```bash
+    # Start a new chat - this resets the prompt-cache for this conversation
+    dfx canister call llama_cpp_charles_42m new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+
+    # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
+
+    # Example of a longer prompt
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "Charles loves eating ice cream "; "-n"; "512" } })' 
+ 
+     ...
+    # Once prompt_remaining is empty, repeat this call, with an empty prompt, until the `generated_eog=true`:
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+
+    ...
+
+    # Once generated_eog = true, the LLM is done generating
+
+    # this is the output after several update calls and it has reached eog:
+    (
+      variant {
+        Ok = record {
+          output = " ...";
+          conversation = ".....";
+          error = "";
+          status_code = 200 : nat16;
+          prompt_remaining = "";
+          generated_eog = true;
+        }
+      },
+    )
+
+    # NOTE: This is the equivalent llama-cli call, when running llama.cpp locally
+    ./llama-cli -m /models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf -sp -p "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"  -fa -ngl 80 -n 512 --prompt-cache prompt.cache --prompt-cache-all
+
+    ########################################
+    # Tip. Add this to the args vec if you #
+    #      want to see how many tokens the #
+    #      canister can generate before it #
+    #      hits the instruction limit      #
+    #                                      #
+    #      ;"--print-token-count"; "1"     #
+    ########################################
+
+    ```
+
 ## Front-end Development
 
 The front-end is a react application with a webpack based build pipeline. Webpack builds with sourcemaps, so you can use the following front-end development workflow:
@@ -399,7 +460,7 @@ Step 2: Deploy the backend canisters
   make upload-110M-ic
 
   # qwen2.5 0.5b q4_k_m (491 Mb)
-  dfx deploy --ic --subnet w4asl-4nmyj-qnr7c-6cqq4-tkwmt-o26di-iupkq-vx4kt-asbrx-jzuxh-4ae llama_cpp_qwen25_05b_q4_k_m -m [upgrade/reinstall] # upgrade preserves model in stable memory
+  dfx deploy --ic --subnet <subnet-id> llama_cpp_qwen25_05b_q4_k_m -m [upgrade/reinstall] # upgrade preserves model in stable memory
   dfx canister --ic update-settings llama_cpp_qwen25_05b_q4_k_m --wasm-memory-limit 4GiB
   dfx canister --ic status llama_cpp_qwen25_05b_q4_k_m
   dfx canister --ic call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
@@ -407,8 +468,8 @@ Step 2: Deploy the backend canisters
   # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
   dfx canister status --ic llama_cpp_qwen25_05b_q4_k_m  
   dfx canister update-settings --ic llama_cpp_qwen25_05b_q4_k_m --compute-allocation 50 # (costs a rental fee)
-  make upload-qwen25-05b-q4-k-m-ic # Not needed after an upgrade, only after initial or reinstall
-  make initialize-qwen25-05b-q4-k-m-ic # This sets max tokens & "primes" the model. Always run this after deploy.
+  make upload-llama-cpp-qwen25-05b-q4-k-m-ic # Not needed after an upgrade, only after initial or reinstall
+  make initialize-llama-cpp-qwen25-05b-q4-k-m-ic # This sets max tokens & "primes" the model. Always run this after deploy.
   dfx canister update-settings --ic llama_cpp_qwen25_05b_q4_k_m --compute-allocation 1 # (Reduce the rental fee)
 
   # qwen2.5 0.5b q8 (676 Mb)
@@ -420,8 +481,8 @@ Step 2: Deploy the backend canisters
   # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
   dfx canister status --ic llama_cpp_qwen25_05b_q8  
   dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 50 # (costs a rental fee)
-  make upload-qwen25-05b-q8-ic  # Not needed after an upgrade, only after initial or reinstall
-  make initialize-qwen25-05b-q8-ic # This also sets max tokens & "primes" the model. Always run this after deploy.
+  make upload-llama-cpp-qwen25-05b-q8-ic  # Not needed after an upgrade, only after initial or reinstall
+  make initialize-llama-cpp-qwen25-05b-q8-ic # This also sets max tokens & "primes" the model. Always run this after deploy.
   dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (Reduce the rental fee)
 
   #--------------------------------------------------------------------------
@@ -509,13 +570,67 @@ When deploying to IC, it will NOT be deployed.
 For details, see this [forum post](https://forum.dfinity.org/t/problem-insalling-internet-identity-in-local-setup/20417/18).
 
 
-## Subnet overload
+## Dealing with subnet overload due to bob.fun
 
 References: 
 - [Subnets with heavy compute load: what can you do now & next steps](https://forum.dfinity.org/t/subnets-with-heavy-compute-load-what-can-you-do-now-next-steps/35762/1)
+- [Dashboard of canisters](https://dashboard.internetcomputer.org/canisters)
 - [Dashboard of subnets](https://dashboard.internetcomputer.org/subnets?sort=asc-canisters)
+- [Overview of pulic subnets](https://dashboard.internetcomputer.org/proposal/132409)
 
-The canisters are in an affected subnet, but I was not able yet to move them.
+- The main affected subnets are
 
-| name | canister-id | subnet-id |
-| | | |
+lspz2 → Yral
+fuqsr → old Bob/other miner?
+6pbhf → Yral
+e66qm → Yral
+bkfrj → current Bob
+3hhby → Yral
+nl6hn → Yral
+opn46 → Yral
+lhg73 → Yral
+k44fs → Yral
+
+The original ICGPT canisters were in an overloaded subnet: lspz2-jx4pu-k3e7p-znm7j-q4yum-ork6e-6w4q6-pijwq-znehu-4jabe-kqe
+
+| name                    | canister-id                 | canister details                                                            |
+| ----------------------- | --------------------------- | --------------------------------------------------------------------------- |
+| canister_frontend       | 4v3v2-lyaaa-aaaag-abzna-cai | https://dashboard.internetcomputer.org/canister/4v3v2-lyaaa-aaaag-abzna-cai |
+| llama2_260K             | otmmw-3yaaa-aaaag-ab2na-cai | https://dashboard.internetcomputer.org/canister/otmmw-3yaaa-aaaag-ab2na-cai |
+| llama2_15M              | 4c4bn-daaaa-aaaag-abvcq-cai | https://dashboard.internetcomputer.org/canister/4c4bn-daaaa-aaaag-abvcq-cai |
+| llama2_42M              | ounkc-waaaa-aaaag-ab2nq-cai | https://dashboard.internetcomputer.org/canister/ounkc-waaaa-aaaag-ab2nq-cai |
+| llama2_110M             | p4tfr-saaaa-aaaag-acgma-cai | https://dashboard.internetcomputer.org/canister/p4tfr-saaaa-aaaag-acgma-cai |
+| llama_cpp_qwen25_05b_q8 | 6uwoh-vaaaa-aaaag-amema-cai | https://dashboard.internetcomputer.org/canister/6uwoh-vaaaa-aaaag-amema-cai |
+
+I canister_ids.json to canister_ids_orig.json
+Once we switch icgpt.com to the new canister_frontend in the less loaded subnet, delete all dfx-orig.json canisters !
+
+Finding a better subnet, using the references above:
+1. Searched for a less loaded subnet
+2. Made sure it is a public subnet where we are allowed to create canisters
+3. Created all new canisters with the commands below
+4. Deployed everything as described above.
+
+I selected the public network with the least amount of canisters, not impacted by Bob/Yral, and tried it out: 
+- yinp6-35cfo-wgcd2-oc4ty-2kqpf-t4dul-rfk33-fsq3r-mfmua-m2ngh-jqe (Failed)
+- 4ecnw-byqwz-dtgss-ua2mh-pfvs7-c3lct-gtf4e-hnu75-j7eek-iifqm-sqe (Failed)
+- fuqsr-in2lc-zbcjj-ydmcw-pzq7h-4xm2z-pto4i-dcyee-5z4rz-x63ji-nae (Failed!) (Initial success, but Yral)
+- jtdsg-3h6gi-hs7o5-z2soi-43w3z-soyl3-ajnp3-ekni5-sw553-5kw67-nqe (Failed)
+- 3hhby-wmtmw-umt4t-7ieyg-bbiig-xiylg-sblrt-voxgt-bqckd-a75bf-rqe (Failed)
+- pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae (Success) (ONly one, then failed)
+
+
+
+```
+dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae canister_frontend
+dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama2_260K
+dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama2_15M
+dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama2_42M
+dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama_cpp_qwen25_05b_q8      (Ok)
+dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama_cpp_qwen25_05b_q4_k_m
+dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama_cpp_charles_42m
+
+# OK to fuqsr, but that is affected by Yral. Deleted, and then redeployed on next subnet
+dfx canister create --ic --subnet fuqsr-in2lc-zbcjj-ydmcw-pzq7h-4xm2z-pto4i-dcyee-5z4rz-x63ji-nae llama_cpp_qwen25_05b_q4_k_m  (Deleted)
+dfx canister create --ic --subnet fuqsr-in2lc-zbcjj-ydmcw-pzq7h-4xm2z-pto4i-dcyee-5z4rz-x63ji-nae llama_cpp_charles_42m        (Deleted)
+```

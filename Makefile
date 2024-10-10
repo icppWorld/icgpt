@@ -124,7 +124,9 @@ dfx-canisters-of-project-ic:
 	@$(eval IC_CANISTER_ID_LLAMA2_15M := $(shell dfx canister --network ic id llama2_15M))
 	@$(eval IC_CANISTER_ID_LLAMA2_42M := $(shell dfx canister --network ic id llama2_42M))
 	@$(eval IC_CANISTER_ID_LLAMA2_110M := $(shell dfx canister --network ic id llama2_110M))
+	@$(eval IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M := $(shell dfx canister --network ic id llama_cpp_qwen25_05b_q4_k_m))
 	@$(eval IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 := $(shell dfx canister --network ic id llama_cpp_qwen25_05b_q8))
+	@$(eval IC_CANISTER_ID_LLAMA_CPP_CHARLES_42M := $(shell dfx canister --network ic id llama_cpp_charles_42m))
 
 	@echo '-------------------------------------------------'
 	@echo "NETWORK                  : ic"
@@ -155,8 +157,14 @@ dfx-canisters-of-project-ic:
 	@echo "llama2_110M canister     : $(IC_CANISTER_ID_LLAMA2_110M)"
 	@dfx canister --network=ic status llama2_110M
 	@echo '-------------------------------------------------'
+	@echo "llama_cpp_qwen25_05b_q4_k_m canister      : $(IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M)"
+	@dfx canister --network=ic status llama_cpp_qwen25_05b_q4_k_m
+	@echo '-------------------------------------------------'
 	@echo "llama_cpp_qwen25_05b_q8 canister      : $(IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8)"
 	@dfx canister --network=ic status llama_cpp_qwen25_05b_q8
+	@echo '-------------------------------------------------'
+	@echo "llama_cpp_charles_42m canister      : $(IC_CANISTER_ID_LLAMA_CPP_CHARLES_42M)"
+	@dfx canister --network=ic status llama_cpp_charles_42m
 	@echo '-------------------------------------------------'
 	@echo 'View in browser at:'
 	@echo  "canister_frontend (ICGPT) : https://$(CANISTER_FRONTEND).ic0.app/"
@@ -497,12 +505,15 @@ upload-110M-local:
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
     python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
 
-.PHONY: upload-qwen25-05b-q4-k-m-local
-upload-qwen25-05b-q4-k-m-local:
+.PHONY: upload-llama-cpp-qwen25-05b-q4-k-m-local
+upload-llama-cpp-qwen25-05b-q4-k-m-local:
 	@echo "---"
-	@echo "upload-qwen25-05b-q4-k-m-local"
+	@echo "upload-llama-cpp-qwen25-05b-q4-k-m-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q4_k_m --canister-filename models/qwen2.5-0.5b-instruct-q4_k_m.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q4_k_m.gguf
+
+.PHONY: initialize-llama-cpp-qwen25-05b-q4-k-m-local
+initialize-llama-cpp-qwen25-05b-q4-k-m-local:
 	@echo "Setting max tokens"
 	dfx canister call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
 	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
@@ -510,18 +521,37 @@ upload-qwen25-05b-q4-k-m-local:
 	@echo "Dummy inference call"
 	dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
 
-.PHONY: upload-qwen25-05b-q8-local
-upload-qwen25-05b-q8-local:
+.PHONY: upload-llama-cpp-qwen25-05b-q8-local
+upload-llama-cpp-qwen25-05b-q8-local:
 	@echo "---"
-	@echo "upload-qwen25-05b-q8-local"
+	@echo "upload-llama-cpp-qwen25-05b-q8-local"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q8 --canister-filename models/qwen2.5-0.5b-instruct-q8_0.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+	
+.PHONY: initialize-llama-cpp-qwen25-05b-q8-local
+initialize-llama-cpp-qwen25-05b-q8-local:
 	@echo "Setting max tokens"
 	dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
 	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
 	dfx canister call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
 	@echo "Dummy inference call"
 	dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
+
+.PHONY: upload-llama-cpp-charles-42m-local
+upload-llama-cpp-charles-42m-local:
+	@echo "---"
+	@echo "upload-llama-cpp-charles-42m-local"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_charles_42m --canister-filename models/storiesICP42Mtok4096.gguf models/storiesICP42Mtok4096.gguf
+
+.PHONY: initialize-llama-cpp-charles-42m-local
+initialize-llama-cpp-charles-42m-local:
+	@echo "Setting max tokens"
+	dfx canister call llama_cpp_charles_42m set_max_tokens '(record { max_tokens_query = 50 : nat64; max_tokens_update = 50 : nat64 })'
+	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
+	dfx canister call llama_cpp_charles_42m new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+	@echo "Dummy inference call"
+	dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "models/storiesICP42Mtok4096.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "Charles loves ice-cream"; "-n"; "1" } })'
 
 .PHONY: upload-260K-ic
 upload-260K-ic:
@@ -573,15 +603,15 @@ upload-110M-ic:
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
     python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_110M --model models/stories110M.bin --tokenizer tokenizers/tokenizer.bin
 
-.PHONY: upload-qwen25-05b-q4-k-m-ic
-upload-qwen25-05b-q4-k-m-ic:
+.PHONY: upload-llama-cpp-qwen25-05b-q4-k-m-ic
+upload-llama-cpp-qwen25-05b-q4-k-m-ic:
 	@echo "---"
-	@echo "upload-qwen25-05b-q4-k-m-ic"
+	@echo "upload-llama-cpp-qwen25-05b-q4-k-m-ic"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q4_k_m --canister-filename models/qwen2.5-0.5b-instruct-q4_k_m.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q4_k_m.gguf
 	
-.PHONY: initialize-qwen25-05b-q4-k-m-ic
-initialize-qwen25-05b-q4-k-m-ic:
+.PHONY: initialize-llama-cpp-qwen25-05b-q4-k-m-ic
+initialize-llama-cpp-qwen25-05b-q4-k-m-ic:
 	@echo "Setting max tokens"
 	dfx canister --ic call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
 	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
@@ -590,18 +620,34 @@ initialize-qwen25-05b-q4-k-m-ic:
 	dfx canister --ic call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
 
 
-.PHONY: upload-qwen25-05b-q8-ic
-upload-qwen25-05b-q8-ic:
+.PHONY: upload-llama-cpp-qwen25-05b-q8-ic
+upload-llama-cpp-qwen25-05b-q8-ic:
 	@echo "---"
-	@echo "upload-qwen25-05b-q8-ic"
+	@echo "upload-llama-cpp-qwen25-05b-q8-ic"
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q8 --canister-filename models/qwen2.5-0.5b-instruct-q8_0.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
 	
-.PHONY: initialize-qwen25-05b-q8-ic
-initialize-qwen25-05b-q8-ic:
+.PHONY: initialize-llama-cpp-qwen25-05b-q8-ic
+initialize-llama-cpp-qwen25-05b-q8-ic:
 	@echo "Setting max tokens"
 	dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
 	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
 	dfx canister --ic call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
 	@echo "Dummy inference call"
 	dfx canister --ic call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nHi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
+
+.PHONY: upload-llama-cpp-charles-42m-ic
+upload-llama-cpp-charles-42m-ic:
+	@echo "---"
+	@echo "upload-llama-cpp-charles-42m-ic"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_charles_42m --canister-filename models/storiesICP42Mtok4096.gguf models/storiesICP42Mtok4096.gguf
+
+.PHONY: initialize-llama-cpp-charles-42m-ic
+initialize-llama-cpp-charles-42m-ic:
+	@echo "Setting max tokens"
+	dfx canister --ic call llama_cpp_charles_42m set_max_tokens '(record { max_tokens_query = 50 : nat64; max_tokens_update = 50 : nat64 })'
+	@echo "Prime the model by doing a dummy inference, which loads the model into OP memory"
+	dfx canister --ic call llama_cpp_charles_42m new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+	@echo "Dummy inference call"
+	dfx canister --ic call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "models/storiesICP42Mtok4096.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "Charles loves ice-cream"; "-n"; "1" } })'

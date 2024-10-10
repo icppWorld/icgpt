@@ -33,6 +33,7 @@ const DFX_VERSION = `${process.env.DFX_VERSION}`
 const DFX_NETWORK = `${process.env.DFX_NETWORK}`
 const CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M = `${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M}`
 const CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 = `${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
+const CANISTER_ID_LLAMA_CPP_CHARLES_42M = `${process.env.CANISTER_ID_LLAMA_CPP_CHARLES_42M}`
 const CANISTER_ID_LLAMA2_42M = `${process.env.CANISTER_ID_LLAMA2_42M}`
 const CANISTER_ID_LLAMA2_260K = `${process.env.CANISTER_ID_LLAMA2_260K}`
 const CANISTER_ID_LLAMA2_110M = `${process.env.CANISTER_ID_LLAMA2_110M}`
@@ -46,6 +47,9 @@ console.warn(
 )
 console.warn(
   `CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8: ${CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
+)
+console.warn(
+  `CANISTER_ID_LLAMA_CPP_CHARLES_42M: ${CANISTER_ID_LLAMA_CPP_CHARLES_42M}`
 )
 console.warn(`CANISTER_ID_LLAMA2_42M: ${CANISTER_ID_LLAMA2_42M}`)
 console.warn(`CANISTER_ID_LLAMA2_260K: ${CANISTER_ID_LLAMA2_260K}`)
@@ -154,6 +158,11 @@ module.exports = (env = {}, args = {}) => {
           'src/declarations',
           'llama_cpp_qwen25_05b_q8'
         ),
+        DeclarationsCanisterLlamacpp_Charles_42m: path.resolve(
+          __dirname,
+          'src/declarations',
+          'llama_cpp_charles_42m'
+        ),
         DeclarationsCanisterLlama2_42M: path.resolve(
           __dirname,
           'src/declarations',
@@ -245,6 +254,7 @@ module.exports = (env = {}, args = {}) => {
         DFX_NETWORK,
         CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q4_K_M,
         CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8,
+        CANISTER_ID_LLAMA_CPP_CHARLES_42M,
         CANISTER_ID_LLAMA2_42M,
         CANISTER_ID_LLAMA2_260K,
         CANISTER_ID_LLAMA2_110M,

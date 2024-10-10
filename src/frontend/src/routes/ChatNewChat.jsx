@@ -117,6 +117,25 @@ export function ChatNewChat({
               setChatDisplay,
               setWaitAnimationMessage,
             })
+          } else if (modelType === 'llama.cpp Charles') {
+            doNewChatLlamacpp({
+              authClient,
+              actorRef,
+              chatNew,
+              chatDone,
+              setActorRef,
+              setChatNew,
+              setChatDone,
+              inputString,
+              setInputString,
+              inputPlaceholder,
+              setInputPlaceholder,
+              isSubmitting,
+              setIsSubmitting,
+              setChatOutputText,
+              setChatDisplay,
+              setWaitAnimationMessage,
+            })
           }
         }}
         style={buttonStyle}
