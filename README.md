@@ -239,14 +239,14 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
     # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
 
     # Example of a longer prompt
-    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
     # Example of a very short prompt
-    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
      ...
     # Once prompt_remaining is empty, repeat this call, with an empty prompt, until the `generated_eog=true`:
-    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
 
     ...
 
@@ -296,14 +296,14 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
     # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
 
     # Example of a longer prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
     # Example of a very short prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
      ...
     # Once prompt_remaining is empty, repeat this call, with an empty prompt, until the `generated_eog=true`:
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
 
     ...
 
@@ -343,41 +343,33 @@ It is handy to be able to verify the Charles 42M backend canister with dfx:
 
 - Chat with the LLM:
 
-    This is a RAW type LLM. Just start a sentence, and the bot will continue it.
-
     ```bash
     # Start a new chat - this resets the prompt-cache for this conversation
     dfx canister call llama_cpp_charles_42m new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
 
-    # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
+    # Create 50 tokens from a prompt, with caching
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "models/storiesICP42Mtok4096.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Dominic loves writing stories"} })'
 
-    # Example of a longer prompt
-    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "Charles loves eating ice cream "; "-n"; "512" } })' 
- 
-     ...
-    # Once prompt_remaining is empty, repeat this call, with an empty prompt, until the `generated_eog=true`:
-    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+    # This is an interesting prompt that will lead to more than 128 tokens. A good test:
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "models/storiesICP42Mtok4096.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Once upon a time, there was a small village. In the village, there was a village. The village was very nice. The people in the village were very good friends. They always played together and had fun. The village was very nice, and everyone was happy.\nOne day, a big storm came. The storm was very strong. The wind blew very hard. The houses shook. The people were scared. They did not know what to do. Then, they saw"; "--print-token-count"; "1"} })'
+    
 
-    ...
+    # Create another 50 tokens, using the cache - just continue, no new prompt provided
+    # Repeat until the LLM says it is done
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "models/storiesICP42Mtok4096.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50";} })'
 
-    # Once generated_eog = true, the LLM is done generating
-
-    # this is the output after several update calls and it has reached eog:
+    # After a couple of calls, you will get something like this as output, unless you hit the context limit error:
     (
       variant {
         Ok = record {
-          output = " ...";
-          conversation = ".....";
-          error = "";
           status_code = 200 : nat16;
-          prompt_remaining = "";
-          generated_eog = true;
+          output = "";
+          error = "";
+          input = " Dominic loves writing stories. He wanted to share his love with others, so he built a fun website on the Internet Computer. With his ckBTC, he bought a cool new book with new characters. Every night before bed, Dominic read his favorite stories with his favorite characters. The end.";
         }
       },
     )
-
-    # NOTE: This is the equivalent llama-cli call, when running llama.cpp locally
-    ./llama-cli -m /models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf -sp -p "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"  -fa -ngl 80 -n 512 --prompt-cache prompt.cache --prompt-cache-all
+    
 
     ########################################
     # Tip. Add this to the args vec if you #
@@ -387,8 +379,9 @@ It is handy to be able to verify the Charles 42M backend canister with dfx:
     #                                      #
     #      ;"--print-token-count"; "1"     #
     ########################################
-
     ```
+
+
 
 ## Front-end Development
 
