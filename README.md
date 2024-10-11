@@ -239,14 +239,14 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
     # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
 
     # Example of a longer prompt
-    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
     # Example of a very short prompt
-    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
      ...
     # Once prompt_remaining is empty, repeat this call, with an empty prompt, until the `generated_eog=true`:
-    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q4_k_m.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
 
     ...
 
@@ -296,14 +296,14 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
     # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
 
     # Example of a longer prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
     # Example of a very short prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
      ...
     # Once prompt_remaining is empty, repeat this call, with an empty prompt, until the `generated_eog=true`:
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "models/qwen2.5-0.5b-instruct-q8_0.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
 
     ...
 
@@ -348,15 +348,15 @@ It is handy to be able to verify the Charles 42M backend canister with dfx:
     dfx canister call llama_cpp_charles_42m new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
 
     # Create 50 tokens from a prompt, with caching
-    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "models/storiesICP42Mtok4096.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Dominic loves writing stories"} })'
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Dominic loves writing stories"} })'
 
     # This is an interesting prompt that will lead to more than 128 tokens. A good test:
-    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "models/storiesICP42Mtok4096.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Once upon a time, there was a small village. In the village, there was a village. The village was very nice. The people in the village were very good friends. They always played together and had fun. The village was very nice, and everyone was happy.\nOne day, a big storm came. The storm was very strong. The wind blew very hard. The houses shook. The people were scared. They did not know what to do. Then, they saw"; "--print-token-count"; "1"} })'
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Once upon a time, there was a small village. In the village, there was a village. The village was very nice. The people in the village were very good friends. They always played together and had fun. The village was very nice, and everyone was happy.\nOne day, a big storm came. The storm was very strong. The wind blew very hard. The houses shook. The people were scared. They did not know what to do. Then, they saw"; "--print-token-count"; "1"} })'
     
 
     # Create another 50 tokens, using the cache - just continue, no new prompt provided
     # Repeat until the LLM says it is done
-    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "models/storiesICP42Mtok4096.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50";} })'
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50";} })'
 
     # After a couple of calls, you will get something like this as output, unless you hit the context limit error:
     (

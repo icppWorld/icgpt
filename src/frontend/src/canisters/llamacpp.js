@@ -18,7 +18,9 @@ function buildNewChatInput() {
 function buildRunUpdateInput(
   inputString,
   responseUpdate,
-  setWaitAnimationMessage
+  setWaitAnimationMessage,
+  modelType,
+  finetuneType
 ) {
   let promptRemaining = inputString
   let output = ''
@@ -30,6 +32,8 @@ function buildRunUpdateInput(
   console.log('buildRunUpdateInput - inputString = ', inputString)
   console.log('buildRunUpdateInput - promptRemaining = ', promptRemaining)
   console.log('buildRunUpdateInput - output = ', output)
+  let systemPrompt
+  let userPrompt
   let fullPrompt
   if (promptRemaining === '') {
     if (responseUpdate) {
@@ -39,17 +43,28 @@ function buildRunUpdateInput(
     fullPrompt = ''
   } else {
     // We're still feeding the original prompt
-    const systemPrompt =
-      '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
-    const userPrompt = '<|im_start|>user\n' + inputString + '<|im_end|>\n'
-    fullPrompt = systemPrompt + userPrompt + '<|im_start|>assistant\n'
+    if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
+      systemPrompt =
+        '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+      userPrompt = '<|im_start|>user\n' + inputString + '<|im_end|>\n'
+      fullPrompt = systemPrompt + userPrompt + '<|im_start|>assistant\n'
+    } else if (
+      modelType === 'llama.cpp Charles' &&
+      finetuneType === 'Raw LLM'
+    ) {
+      systemPrompt = ''
+      userPrompt = inputString
+      fullPrompt = systemPrompt + userPrompt
+    } else {
+      console.log('buildRunUpdateInput - UNKNOWN modeType & finetuneType')
+    }
   }
 
-  // TODO: number of tokens to predict as a variable
   const numtokens = '512'
-  // '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })'
   return {
     args: [
+      '--model',
+      'model.gguf',
       '--prompt-cache',
       'my_cache/prompt.cache',
       '--prompt-cache-all',
@@ -101,7 +116,9 @@ async function fetchInference(
   setInputString,
   inputPlaceholder,
   setInputPlaceholder,
-  numStepsFetchInference
+  numStepsFetchInference,
+  modelType,
+  finetuneType
 ) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered llamacpp.js fetchInference ')
@@ -155,7 +172,9 @@ async function fetchInference(
         const runUpdateInput = buildRunUpdateInput(
           inputString,
           responseUpdate,
-          setWaitAnimationMessage
+          setWaitAnimationMessage,
+          modelType,
+          finetuneType
         )
         console.log('Calling run_update with input: ', runUpdateInput)
         responseUpdate = await actor.run_update(runUpdateInput)
@@ -219,6 +238,7 @@ async function processDisplayQueue(
     console.log('- displayQueue.length = ', displayQueue.length)
     console.log('- isDisplaying        = ', isDisplaying)
   }
+
   while (true) {
     if (chatStarted && chatFinished) {
       break
@@ -422,7 +442,9 @@ export async function doSubmitLlamacpp({
         setInputString,
         inputPlaceholder,
         setInputPlaceholder,
-        numStepsFetchInference
+        numStepsFetchInference,
+        modelType,
+        finetuneType
       )
       setWaitAnimationMessage('Calling LLM canister') // Reset it to default
 
