@@ -210,8 +210,8 @@ make upload-llama-cpp-charles-42m-local # Not needed after an upgrade, only afte
 make initialize-llama-cpp-charles-42m-local # This sets max tokens & "primes" the model. Always run this after deploy.
 
 dfx deploy internet_identity # REQUIRED: it installs II
-dfx deploy canister_frontend # REQUIRED: it creates src/declarations
-                             #           used by webpack.config.js
+dfx deploy canister_frontend # REQUIRED: redeploy each time backend candid interface is modified.
+                             #           it creates src/declarations used by webpack.config.js
 
 # Note: you can stop the local network with
 dfx stop

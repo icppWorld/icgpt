@@ -24,14 +24,20 @@ function buildRunUpdateInput(
 ) {
   let promptRemaining = inputString
   let output = ''
+  let nSessionTokensWritten = 0
   if (responseUpdate && 'Ok' in responseUpdate) {
     promptRemaining = responseUpdate.Ok.prompt_remaining
     output = responseUpdate.Ok.output
+    nSessionTokensWritten = responseUpdate.Ok.n_session_tokens_written
   }
   console.log('buildRunUpdateInput - responseUpdate = ', responseUpdate)
   console.log('buildRunUpdateInput - inputString = ', inputString)
   console.log('buildRunUpdateInput - promptRemaining = ', promptRemaining)
   console.log('buildRunUpdateInput - output = ', output)
+  console.log(
+    'buildRunUpdateInput - nSessionTokensWritten = ',
+    nSessionTokensWritten
+  )
   let systemPrompt
   let userPrompt
   let fullPrompt
@@ -56,9 +62,26 @@ function buildRunUpdateInput(
       userPrompt = inputString
       fullPrompt = systemPrompt + userPrompt
     } else {
-      console.log('buildRunUpdateInput - UNKNOWN modeType & finetuneType')
+      console.log('buildRunUpdateInput - UNKNOWN modelType & finetuneType')
     }
   }
+
+  // TODO: get ctxTrain from the model. For now, just hardcode it
+  let ctxTrain = 0
+  if (modelType === 'Qwen2.5') {
+    ctxTrain = 2048
+  } else if (modelType === 'llama.cpp Charles') {
+    ctxTrain = 128
+  } else {
+    console.log('buildRunUpdateInput - UNKNOWN modelType to set ctxTrain')
+  }
+
+  // When 0, llama.cpp reads context size from the model
+  let ctxSize = 0
+  if (nSessionTokensWritten > ctxTrain) {
+    ctxSize = nSessionTokensWritten
+  }
+  const ctxSizeStr = String(ctxSize)
 
   const numtokens = '512'
   return {
@@ -73,6 +96,8 @@ function buildRunUpdateInput(
       fullPrompt,
       '-n',
       numtokens,
+      '--ctx-size',
+      ctxSizeStr,
       '--print-token-count', // TODO: outcomment
       '1',
     ],
@@ -251,11 +276,13 @@ async function processDisplayQueue(
     console.log('- isDisplaying        = ', isDisplaying)
   }
 
-  let loopCounter=0
+  let loopCounter = 0
   while (true) {
     loopCounter++
     if (DEBUG) {
-      console.log('DEBUG-FLOW: entered llamacpp.js processDisplayQueue is still looping')
+      console.log(
+        'DEBUG-FLOW: entered llamacpp.js processDisplayQueue is still looping'
+      )
       console.log('- loopCounter         = ', loopCounter)
       console.log('- displayQueue.length = ', displayQueue.length)
       console.log('- isDisplaying        = ', isDisplaying)
