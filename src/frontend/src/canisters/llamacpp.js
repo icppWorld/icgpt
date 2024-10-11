@@ -157,13 +157,14 @@ async function fetchInference(
           // This is a little hacky, but works like a charm
           if (finetuneType === 'Raw LLM') {
             if (DEBUG) {
-              console.log('DEBUG-FLOW: llamacpp.js adding inputString to processQueue')
+              console.log(
+                'DEBUG-FLOW: llamacpp.js adding inputString to processQueue'
+              )
             }
             responseNewChat.Ok.output = inputString
             // Push the output to the queue and the display loop will pick it up
-            displayQueue.push(responseNewChat)            
+            displayQueue.push(responseNewChat)
           }
-        
         } else {
           console.log(
             'Call to new_chat failed with responseNewChat: ',
@@ -250,7 +251,17 @@ async function processDisplayQueue(
     console.log('- isDisplaying        = ', isDisplaying)
   }
 
+  let loopCounter=0
   while (true) {
+    loopCounter++
+    if (DEBUG) {
+      console.log('DEBUG-FLOW: entered llamacpp.js processDisplayQueue is still looping')
+      console.log('- loopCounter         = ', loopCounter)
+      console.log('- displayQueue.length = ', displayQueue.length)
+      console.log('- isDisplaying        = ', isDisplaying)
+      console.log('- chatStarted         = ', chatStarted)
+      console.log('- chatFinished        = ', chatFinished)
+    }
     if (chatStarted && chatFinished) {
       break
     }
