@@ -191,7 +191,7 @@ dfx canister update-settings llama_cpp_qwen25_05b_q4_k_m --wasm-memory-limit 4Gi
 dfx canister status llama_cpp_qwen25_05b_q4_k_m
 dfx canister call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
 make upload-llama-cpp-qwen25-05b-q4-k-m-local # Not needed after an upgrade, only after initial or reinstall
-make initialize-llama-cpp-qwen25-05b-q4-k-m-local # This sets max tokens & "primes" the model. Always run this after deploy.
+# DO NOT DO THIS ... make initialize-llama-cpp-qwen25-05b-q4-k-m-local # This sets max tokens & "primes" the model. Always run this after deploy.
 
 # llama.cpp qwen2.5 0.5b q8 (676 Mb)
 dfx deploy llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
@@ -199,7 +199,7 @@ dfx canister update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
 dfx canister status llama_cpp_qwen25_05b_q8
 dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
 make upload-llama-cpp-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
-make initialize-llama-cpp-qwen25-05b-q8-local # This sets max tokens & "primes" the model. Always run this after deploy.
+# RUN THIS ONLY AFTER RE-DEPLOY: make initialize-llama-cpp-qwen25-05b-q8-local # This sets max tokens & "primes" the model
 
 # llama.cpp charles 42m (118 Mb)
 dfx deploy llama_cpp_charles_42m -m [upgrade/reinstall] # upgrade preserves model in stable memory
@@ -207,7 +207,7 @@ dfx canister update-settings llama_cpp_charles_42m --wasm-memory-limit 4GiB
 dfx canister status llama_cpp_charles_42m
 dfx canister call llama_cpp_charles_42m set_max_tokens '(record { max_tokens_query = 50 : nat64; max_tokens_update = 50 : nat64 })'
 make upload-llama-cpp-charles-42m-local # Not needed after an upgrade, only after initial or reinstall
-make initialize-llama-cpp-charles-42m-local # This sets max tokens & "primes" the model. Always run this after deploy.
+# DO NOT DO THIS ... make initialize-llama-cpp-charles-42m-local # This sets max tokens & "primes" the model. Always run this after deploy.
 
 dfx deploy internet_identity # REQUIRED: it installs II
 dfx deploy canister_frontend # REQUIRED: redeploy each time backend candid interface is modified.
@@ -239,14 +239,14 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
     # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
 
     # Example of a longer prompt
-    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are an on-chain LLM.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
     # Example of a very short prompt
-    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are an on-chain LLM.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
      ...
     # Once prompt_remaining is empty, repeat this call, with an empty prompt, until the `generated_eog=true`:
-    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+    dfx canister call llama_cpp_qwen25_05b_q4_k_m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
 
     ...
 
@@ -257,7 +257,7 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
       variant {
         Ok = record {
           output = " level of complexity than the original text.<|im_end|>";
-          conversation = "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\nLLMs are large language models, or generative models, that can generate text based on a given input. These models are trained on a large corpus of text and are able to generate text that is similar to the input. They can be used for a wide range of applications, such as language translation, question answering, and text generation for various tasks. LLMs are often referred to as \"artificial general intelligence\" because they can generate text that is not only similar to the input but also has a higher level of complexity than the original text.<|im_end|>";
+          conversation = "<|im_start|>system\nYou are an on-chain LLM.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\nLLMs are large language models, or generative models, that can generate text based on a given input. These models are trained on a large corpus of text and are able to generate text that is similar to the input. They can be used for a wide range of applications, such as language translation, question answering, and text generation for various tasks. LLMs are often referred to as \"artificial general intelligence\" because they can generate text that is not only similar to the input but also has a higher level of complexity than the original text.<|im_end|>";
           error = "";
           status_code = 200 : nat16;
           prompt_remaining = "";
@@ -267,7 +267,7 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
     )
 
     # NOTE: This is the equivalent llama-cli call, when running llama.cpp locally
-    ./llama-cli -m /models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q4_k_m.gguf -sp -p "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"  -fa -ngl 80 -n 512 --prompt-cache prompt.cache --prompt-cache-all
+    ./llama-cli -m /models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q4_k_m.gguf -sp -p "<|im_start|>system\nYou are an on-chain LLM.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"  -fa -ngl 80 -n 512 --prompt-cache prompt.cache --prompt-cache-all
 
     ########################################
     # Tip. Add this to the args vec if you #
@@ -296,14 +296,14 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
     # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
 
     # Example of a longer prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are an on-chain LLM.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
     # Example of a very short prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are an on-chain LLM.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
 
      ...
-    # Once prompt_remaining is empty, repeat this call, with an empty prompt, until the `generated_eog=true`:
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+    # Once prompt_remaining is empty, repeat this call, with an empty prompt, until `generated_eog=true`:
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
 
     ...
 
@@ -314,7 +314,7 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
       variant {
         Ok = record {
           output = " level of complexity than the original text.<|im_end|>";
-          conversation = "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\nLLMs are large language models, or generative models, that can generate text based on a given input. These models are trained on a large corpus of text and are able to generate text that is similar to the input. They can be used for a wide range of applications, such as language translation, question answering, and text generation for various tasks. LLMs are often referred to as \"artificial general intelligence\" because they can generate text that is not only similar to the input but also has a higher level of complexity than the original text.<|im_end|>";
+          conversation = "<|im_start|>system\nYou are an on-chain LLM.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\nLLMs are large language models, or generative models, that can generate text based on a given input. These models are trained on a large corpus of text and are able to generate text that is similar to the input. They can be used for a wide range of applications, such as language translation, question answering, and text generation for various tasks. LLMs are often referred to as \"artificial general intelligence\" because they can generate text that is not only similar to the input but also has a higher level of complexity than the original text.<|im_end|>";
           error = "";
           status_code = 200 : nat16;
           prompt_remaining = "";
@@ -324,7 +324,7 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
     )
 
     # NOTE: This is the equivalent llama-cli call, when running llama.cpp locally
-    ./llama-cli -m /models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf -sp -p "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"  -fa -ngl 80 -n 512 --prompt-cache prompt.cache --prompt-cache-all
+    ./llama-cli -m /models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf -sp -p "<|im_start|>system\nYou are an on-chain LLM.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"  -fa -ngl 80 -n 512 --prompt-cache prompt.cache --prompt-cache-all
 
     ########################################
     # Tip. Add this to the args vec if you #
@@ -348,15 +348,15 @@ It is handy to be able to verify the Charles 42M backend canister with dfx:
     dfx canister call llama_cpp_charles_42m new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
 
     # Create 50 tokens from a prompt, with caching
-    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Dominic loves writing stories"} })'
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Dominic loves writing stories"} })'
 
     # This is an interesting prompt that will lead to more than 128 tokens. A good test:
-    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Once upon a time, there was a small village. In the village, there was a village. The village was very nice. The people in the village were very good friends. They always played together and had fun. The village was very nice, and everyone was happy.\nOne day, a big storm came. The storm was very strong. The wind blew very hard. The houses shook. The people were scared. They did not know what to do. Then, they saw"; "--print-token-count"; "1"} })'
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50"; "-p"; "Once upon a time, there was a small village. In the village, there was a village. The village was very nice. The people in the village were very good friends. They always played together and had fun. The village was very nice, and everyone was happy.\nOne day, a big storm came. The storm was very strong. The wind blew very hard. The houses shook. The people were scared. They did not know what to do. Then, they saw"; "--print-token-count"; "1"} })'
     
 
     # Create another 50 tokens, using the cache - just continue, no new prompt provided
     # Repeat until the LLM says it is done
-    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--model"; "model.gguf"; "--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50";} })'
+    dfx canister call llama_cpp_charles_42m run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all";"--samplers"; "top_p"; "--temp"; "0.1"; "--top-p"; "0.9"; "-n"; "50";} })'
 
     # After a couple of calls, you will get something like this as output, unless you hit the context limit error:
     (
@@ -473,10 +473,10 @@ Step 2: Deploy the backend canisters
   # To be able to upload the model, I change the 
   # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
   dfx canister status --ic llama_cpp_qwen25_05b_q8  
-  dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 50 # (costs a rental fee)
+  # NOT NEEDED dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 50 # (costs a rental fee)
   make upload-llama-cpp-qwen25-05b-q8-ic  # Not needed after an upgrade, only after initial or reinstall
-  make initialize-llama-cpp-qwen25-05b-q8-ic # This also sets max tokens & "primes" the model. Always run this after deploy.
-  dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (Reduce the rental fee)
+  # ONLY AFTER UPGRADE: make initialize-llama-cpp-qwen25-05b-q8-ic # This also sets max tokens & "primes" the model. Always run this after deploy.
+  # NOT NEEDED dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (Reduce the rental fee)
 
   #--------------------------------------------------------------------------
   # IMPORTANT: ic-py might throw a timeout => patch it here:

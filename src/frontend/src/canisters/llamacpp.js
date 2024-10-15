@@ -52,6 +52,7 @@ function buildRunUpdateInput(
     if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
       systemPrompt =
         '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+      // systemPrompt = '<|im_start|>system<|im_end|>\n'
       userPrompt = '<|im_start|>user\n' + inputString + '<|im_end|>\n'
       fullPrompt = systemPrompt + userPrompt + '<|im_start|>assistant\n'
     } else if (
@@ -65,29 +66,9 @@ function buildRunUpdateInput(
       console.log('buildRunUpdateInput - UNKNOWN modelType & finetuneType')
     }
   }
-
-  // TODO: get ctxTrain from the model. For now, just hardcode it
-  let ctxTrain = 0
-  if (modelType === 'Qwen2.5') {
-    ctxTrain = 2048
-  } else if (modelType === 'llama.cpp Charles') {
-    ctxTrain = 128
-  } else {
-    console.log('buildRunUpdateInput - UNKNOWN modelType to set ctxTrain')
-  }
-
-  // When 0, llama.cpp reads context size from the model
-  let ctxSize = 0
-  if (nSessionTokensWritten > ctxTrain) {
-    ctxSize = nSessionTokensWritten
-  }
-  const ctxSizeStr = String(ctxSize)
-
   const numtokens = '512'
   return {
     args: [
-      '--model',
-      'model.gguf',
       '--prompt-cache',
       'my_cache/prompt.cache',
       '--prompt-cache-all',
@@ -95,16 +76,30 @@ function buildRunUpdateInput(
       '-p',
       fullPrompt,
       '-n',
-      numtokens,
-      '--ctx-size',
-      ctxSizeStr,
-      '--print-token-count', // TODO: outcomment
-      '1',
+      numtokens
     ],
   }
-  // TODO: REMOVE
+
+  // // TODO: get ctxTrain from the model. For now, just hardcode it
+  // let ctxTrain = 0
+  // if (modelType === 'Qwen2.5') {
+  //   ctxTrain = 2048
+  // } else if (modelType === 'llama.cpp Charles') {
+  //   ctxTrain = 128
+  // } else {
+  //   console.log('buildRunUpdateInput - UNKNOWN modelType to set ctxTrain')
+  // }
+  
+  // When 0, llama.cpp reads context size from the model
+  // let ctxSize = 0
+  // if (nSessionTokensWritten > ctxTrain) {
+  //   ctxSize = nSessionTokensWritten
+  // }
+  // const ctxSizeStr = String(ctxSize)
   // return {
-  //   args: modelArgs.concat([
+  //   args: [
+  //     '--model',
+  //     'model.gguf',
   //     '--prompt-cache',
   //     'my_cache/prompt.cache',
   //     '--prompt-cache-all',
@@ -113,7 +108,11 @@ function buildRunUpdateInput(
   //     fullPrompt,
   //     '-n',
   //     numtokens,
-  //   ])
+  //     '--ctx-size',
+  //     ctxSizeStr,
+  //     '--print-token-count', // TODO: outcomment
+  //     '1',
+  //   ],
   // }
 }
 

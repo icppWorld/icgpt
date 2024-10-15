@@ -12,7 +12,7 @@ export function ChatSelectModelSizeCardQwen2_5({ modelSize, doSetModelSize }) {
         p="xs"
         m="xs"
         onClick={() => doSetModelSize('0.5b_q4_k_m')}
-        disabled={false}
+        disabled={true}
       >
         <Text color={modelSize === '0.5b_q4_k_m' ? 'black' : 'black'} size="sm">
           0.5b_q4_k_m

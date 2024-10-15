@@ -35,7 +35,7 @@ export function ChatSelectModel({
       doSetModelSize('42M')
       doSetFinetuneType('Raw LLM')
     } else if (type === 'Qwen2.5') {
-      doSetModelSize('0.5b_q4_k_m')
+      doSetModelSize('0.5b_q8_0')
       doSetFinetuneType('Instruct')
     } else if (type === 'llama.cpp Charles') {
       doSetModelSize('42M')
@@ -121,11 +121,11 @@ export function ChatSelectModel({
             disabled={false}
           >
             <Text color={modelType === 'Qwen2.5' ? 'black' : 'black'} size="sm">
-              Qwen2.5
+              llama.cpp Qwen2.5
             </Text>
           </Button>
 
-          <Button
+          {/* <Button
             color={modelType === 'llama.cpp Charles' ? 'cyan' : 'white'}
             size="sm"
             p="xs"
@@ -139,7 +139,7 @@ export function ChatSelectModel({
             >
               llama.cpp Charles
             </Text>
-          </Button>
+          </Button> */}
         </Box>
       </Box>
 
