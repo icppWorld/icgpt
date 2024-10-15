@@ -76,7 +76,7 @@ function buildRunUpdateInput(
       '-p',
       fullPrompt,
       '-n',
-      numtokens
+      numtokens,
     ],
   }
 
@@ -89,7 +89,7 @@ function buildRunUpdateInput(
   // } else {
   //   console.log('buildRunUpdateInput - UNKNOWN modelType to set ctxTrain')
   // }
-  
+
   // When 0, llama.cpp reads context size from the model
   // let ctxSize = 0
   // if (nSessionTokensWritten > ctxTrain) {
