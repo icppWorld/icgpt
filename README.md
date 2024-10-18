@@ -1,10 +1,6 @@
 # ICGPT
 
-<img src="./images/icgpt-start-screen.png" alt="icgpt-start-screen" width="600">
-
----
-
-[Try it out on the IC](https://icgpt.icpp.world) !
+[Try it out](https://icgpt.icpp.world) !
 
 ---
 
@@ -140,7 +136,7 @@ The following models will be uploaded as ICGPT backend canisters:
 - Clone [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister):
 - Follow instructions of the [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister) to :
   - Build the wasm
-  - Download the GGUF modelsfrom Huggingface
+  - Download the GGUF model from Huggingface
 
 The following files are used by the ICGPT deployment steps:
 
@@ -155,7 +151,6 @@ The following files are used by the ICGPT deployment steps:
 
 The following models will be uploaded as ICGPT backend canisters:
 ```
-../../../onicai/repos/llama_cpp_canister/models/storiesICP42Mtok4096.gguf
 ../../../onicai/repos/llama_cpp_canister/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
 ```
 
@@ -185,29 +180,15 @@ make upload-charles-42M-local
 dfx deploy llama2_110M
 make upload-110M-local
 
-# llama.cpp qwen2.5 0.5b q4_k_m (491 Mb)
-dfx deploy llama_cpp_qwen25_05b_q4_k_m -m [upgrade/reinstall] # upgrade preserves model in stable memory
-dfx canister update-settings llama_cpp_qwen25_05b_q4_k_m --wasm-memory-limit 4GiB
-dfx canister status llama_cpp_qwen25_05b_q4_k_m
-dfx canister call llama_cpp_qwen25_05b_q4_k_m set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
-make upload-llama-cpp-qwen25-05b-q4-k-m-local # Not needed after an upgrade, only after initial or reinstall
-# DO NOT DO THIS ... make initialize-llama-cpp-qwen25-05b-q4-k-m-local # This sets max tokens & "primes" the model. Always run this after deploy.
-
 # llama.cpp qwen2.5 0.5b q8 (676 Mb)
 dfx deploy llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
 dfx canister update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
 dfx canister status llama_cpp_qwen25_05b_q8
 dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
 make upload-llama-cpp-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
-# RUN THIS ONLY AFTER RE-DEPLOY: make initialize-llama-cpp-qwen25-05b-q8-local # This sets max tokens & "primes" the model
+# After `dfx deploy -m upgrade` only:
+dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; } })'
 
-# llama.cpp charles 42m (118 Mb)
-dfx deploy llama_cpp_charles_42m -m [upgrade/reinstall] # upgrade preserves model in stable memory
-dfx canister update-settings llama_cpp_charles_42m --wasm-memory-limit 4GiB
-dfx canister status llama_cpp_charles_42m
-dfx canister call llama_cpp_charles_42m set_max_tokens '(record { max_tokens_query = 50 : nat64; max_tokens_update = 50 : nat64 })'
-make upload-llama-cpp-charles-42m-local # Not needed after an upgrade, only after initial or reinstall
-# DO NOT DO THIS ... make initialize-llama-cpp-charles-42m-local # This sets max tokens & "primes" the model. Always run this after deploy.
 
 dfx deploy internet_identity # REQUIRED: it installs II
 dfx deploy canister_frontend # REQUIRED: redeploy each time backend candid interface is modified.

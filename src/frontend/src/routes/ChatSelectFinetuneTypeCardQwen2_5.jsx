@@ -9,7 +9,7 @@ export function ChatSelectFinetuneTypeCardQwen2_5({
 }) {
   return (
     <Box>
-      <Button
+      {/* <Button
         color={finetuneType === 'Raw LLM' ? 'cyan' : 'white'}
         size="sm"
         p="xs"
@@ -20,7 +20,7 @@ export function ChatSelectFinetuneTypeCardQwen2_5({
         <Text color={finetuneType === 'Raw LLM' ? 'black' : 'black'} size="sm">
           Raw LLM
         </Text>
-      </Button>
+      </Button> */}
       <Button
         color={finetuneType === 'Instruct' ? 'cyan' : 'white'}
         size="sm"

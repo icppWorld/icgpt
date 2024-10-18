@@ -44,7 +44,7 @@ export function ChatSelectModelSizeCardTinyStories({
           42M
         </Text>
       </Button>
-      <Button
+      {/* <Button
         color={modelSize === '110M' ? 'cyan' : 'white'}
         size="sm"
         p="2xl"
@@ -55,7 +55,7 @@ export function ChatSelectModelSizeCardTinyStories({
         <Text color={modelSize === '110M' ? 'black' : 'black'} size="sm">
           110M
         </Text>
-      </Button>
+      </Button> */}
     </Box>
   )
 }

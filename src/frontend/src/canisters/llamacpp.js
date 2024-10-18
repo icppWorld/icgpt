@@ -416,12 +416,6 @@ export async function doSubmitLlamacpp({
   const numStepsFetchInference = 1000 // Basically, just keep going...
   if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
     switch (modelSize) {
-      case '0.5b_q4_k_m':
-        console.log('canister - Qwen2.5, 0.5b_q4_k_m, Instruct')
-        moduleToImport = import(
-          'DeclarationsCanisterLlamacpp_Qwen25_05B_Q4_k_m'
-        )
-        break
       case '0.5b_q8_0':
         console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
         moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
@@ -435,8 +429,8 @@ export async function doSubmitLlamacpp({
         break
     }
   } else {
-    console.log('canister - Qwen2.5, 0.5b_q4_k_m, Instruct')
-    moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q4_k_m')
+    console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
+    moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
   }
   const { canisterId, createActor } = await moduleToImport
 

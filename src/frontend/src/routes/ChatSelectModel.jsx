@@ -95,8 +95,21 @@ export function ChatSelectModel({
       m="none"
     >
       <Box>
-        <Text color="white">model data: </Text>
+        <Text color="white">Select LLM: </Text>
         <Box>
+          <Button
+            color={modelType === 'Qwen2.5' ? 'cyan' : 'white'}
+            size="sm"
+            p="xs"
+            m="xs"
+            onClick={() => doSetModelType('Qwen2.5')}
+            disabled={false}
+          >
+            <Text color={modelType === 'Qwen2.5' ? 'black' : 'black'} size="sm">
+              Qwen2.5
+            </Text>
+          </Button>
+
           <Button
             color={modelType === 'TinyStories' ? 'cyan' : 'white'}
             size="sm"
@@ -109,19 +122,6 @@ export function ChatSelectModel({
               size="sm"
             >
               TinyStories
-            </Text>
-          </Button>
-
-          <Button
-            color={modelType === 'Qwen2.5' ? 'cyan' : 'white'}
-            size="sm"
-            p="xs"
-            m="xs"
-            onClick={() => doSetModelType('Qwen2.5')}
-            disabled={false}
-          >
-            <Text color={modelType === 'Qwen2.5' ? 'black' : 'black'} size="sm">
-              llama.cpp Qwen2.5
             </Text>
           </Button>
 
