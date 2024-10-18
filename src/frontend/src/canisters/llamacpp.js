@@ -18,28 +18,28 @@ function buildNewChatInput() {
 function buildRunUpdateInput(
   inputString,
   responseUpdate,
-  setWaitAnimationMessage
+  setWaitAnimationMessage,
+  modelType,
+  finetuneType
 ) {
   let promptRemaining = inputString
   let output = ''
-  // TODO: REMOVE THIS
-  // WE NO LONGER LOAD THE MODEL FROM ICGPT -- WE PRIME IT ONCE AS PART OF DEPLOYMENT
-  // let modelArgs = []
-  // if (!responseUpdate) {
-  //   setWaitAnimationMessage('Calling LLM canister - Loading gguf model')
-  //   //
-  //   // TODO: Pass the model in via webpack setting
-  //   // NOTE: We only do it like this, because the load_model function is broken.
-  //   modelArgs = ['--model', 'models/qwen2.5-0.5b-instruct-q8_0.gguf']
-  // }
+  let nSessionTokensWritten = 0
   if (responseUpdate && 'Ok' in responseUpdate) {
     promptRemaining = responseUpdate.Ok.prompt_remaining
     output = responseUpdate.Ok.output
+    nSessionTokensWritten = responseUpdate.Ok.n_session_tokens_written
   }
   console.log('buildRunUpdateInput - responseUpdate = ', responseUpdate)
   console.log('buildRunUpdateInput - inputString = ', inputString)
   console.log('buildRunUpdateInput - promptRemaining = ', promptRemaining)
   console.log('buildRunUpdateInput - output = ', output)
+  console.log(
+    'buildRunUpdateInput - nSessionTokensWritten = ',
+    nSessionTokensWritten
+  )
+  let systemPrompt
+  let userPrompt
   let fullPrompt
   if (promptRemaining === '') {
     if (responseUpdate) {
@@ -49,15 +49,24 @@ function buildRunUpdateInput(
     fullPrompt = ''
   } else {
     // We're still feeding the original prompt
-    const systemPrompt =
-      '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
-    const userPrompt = '<|im_start|>user\n' + inputString + '<|im_end|>\n'
-    fullPrompt = systemPrompt + userPrompt + '<|im_start|>assistant\n'
+    if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
+      systemPrompt =
+        '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+      // systemPrompt = '<|im_start|>system<|im_end|>\n'
+      userPrompt = '<|im_start|>user\n' + inputString + '<|im_end|>\n'
+      fullPrompt = systemPrompt + userPrompt + '<|im_start|>assistant\n'
+    } else if (
+      modelType === 'llama.cpp Charles' &&
+      finetuneType === 'Raw LLM'
+    ) {
+      systemPrompt = ''
+      userPrompt = inputString
+      fullPrompt = systemPrompt + userPrompt
+    } else {
+      console.log('buildRunUpdateInput - UNKNOWN modelType & finetuneType')
+    }
   }
-
-  // TODO: number of tokens to predict as a variable
   const numtokens = '512'
-  // '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })'
   return {
     args: [
       '--prompt-cache',
@@ -70,9 +79,27 @@ function buildRunUpdateInput(
       numtokens,
     ],
   }
-  // TODO: REMOVE
+
+  // // TODO: get ctxTrain from the model. For now, just hardcode it
+  // let ctxTrain = 0
+  // if (modelType === 'Qwen2.5') {
+  //   ctxTrain = 2048
+  // } else if (modelType === 'llama.cpp Charles') {
+  //   ctxTrain = 128
+  // } else {
+  //   console.log('buildRunUpdateInput - UNKNOWN modelType to set ctxTrain')
+  // }
+
+  // When 0, llama.cpp reads context size from the model
+  // let ctxSize = 0
+  // if (nSessionTokensWritten > ctxTrain) {
+  //   ctxSize = nSessionTokensWritten
+  // }
+  // const ctxSizeStr = String(ctxSize)
   // return {
-  //   args: modelArgs.concat([
+  //   args: [
+  //     '--model',
+  //     'model.gguf',
   //     '--prompt-cache',
   //     'my_cache/prompt.cache',
   //     '--prompt-cache-all',
@@ -81,7 +108,11 @@ function buildRunUpdateInput(
   //     fullPrompt,
   //     '-n',
   //     numtokens,
-  //   ])
+  //     '--ctx-size',
+  //     ctxSizeStr,
+  //     '--print-token-count', // TODO: outcomment
+  //     '1',
+  //   ],
   // }
 }
 
@@ -109,7 +140,9 @@ async function fetchInference(
   setInputString,
   inputPlaceholder,
   setInputPlaceholder,
-  numStepsFetchInference
+  numStepsFetchInference,
+  modelType,
+  finetuneType
 ) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered llamacpp.js fetchInference ')
@@ -144,6 +177,18 @@ async function fetchInference(
             'Call to new_chat successful with responseNewChat: ',
             responseNewChat
           )
+
+          // This is a little hacky, but works like a charm
+          if (finetuneType === 'Raw LLM') {
+            if (DEBUG) {
+              console.log(
+                'DEBUG-FLOW: llamacpp.js adding inputString to processQueue'
+              )
+            }
+            responseNewChat.Ok.output = inputString
+            // Push the output to the queue and the display loop will pick it up
+            displayQueue.push(responseNewChat)
+          }
         } else {
           console.log(
             'Call to new_chat failed with responseNewChat: ',
@@ -163,7 +208,9 @@ async function fetchInference(
         const runUpdateInput = buildRunUpdateInput(
           inputString,
           responseUpdate,
-          setWaitAnimationMessage
+          setWaitAnimationMessage,
+          modelType,
+          finetuneType
         )
         console.log('Calling run_update with input: ', runUpdateInput)
         responseUpdate = await actor.run_update(runUpdateInput)
@@ -227,7 +274,20 @@ async function processDisplayQueue(
     console.log('- displayQueue.length = ', displayQueue.length)
     console.log('- isDisplaying        = ', isDisplaying)
   }
+
+  let loopCounter = 0
   while (true) {
+    loopCounter++
+    if (DEBUG) {
+      console.log(
+        'DEBUG-FLOW: entered llamacpp.js processDisplayQueue is still looping'
+      )
+      console.log('- loopCounter         = ', loopCounter)
+      console.log('- displayQueue.length = ', displayQueue.length)
+      console.log('- isDisplaying        = ', isDisplaying)
+      console.log('- chatStarted         = ', chatStarted)
+      console.log('- chatFinished        = ', chatFinished)
+    }
     if (chatStarted && chatFinished) {
       break
     }
@@ -345,6 +405,9 @@ export async function doSubmitLlamacpp({
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered llamacpp.js doSubmitLlamacpp ')
+    console.log('- modelType ', modelType)
+    console.log('- modelSize ', modelSize)
+    console.log('- modelTfinetuneTypepe ', finetuneType)
   }
   setIsSubmitting(true)
 
@@ -362,6 +425,13 @@ export async function doSubmitLlamacpp({
       case '0.5b_q8_0':
         console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
         moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
+        break
+    }
+  } else if (modelType === 'llama.cpp Charles' && finetuneType === 'Raw LLM') {
+    switch (modelSize) {
+      case '42M':
+        console.log('canister - llama cpp Charles 42M, Raw LLM')
+        moduleToImport = import('DeclarationsCanisterLlamacpp_Charles_42m')
         break
     }
   } else {
@@ -420,7 +490,9 @@ export async function doSubmitLlamacpp({
         setInputString,
         inputPlaceholder,
         setInputPlaceholder,
-        numStepsFetchInference
+        numStepsFetchInference,
+        modelType,
+        finetuneType
       )
       setWaitAnimationMessage('Calling LLM canister') // Reset it to default
 

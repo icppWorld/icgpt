@@ -5,8 +5,10 @@ import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 
 import { ChatSelectModelSizeCardTinyStories } from './ChatSelectModelSizeCardTinyStories'
 import { ChatSelectModelSizeCardQwen2_5 } from './ChatSelectModelSizeCardQwen2_5'
+import { ChatSelectModelSizeCardLlamacppCharles } from './ChatSelectModelSizeCardLlamacppCharles'
 import { ChatSelectFinetuneTypeCardTinyStories } from './ChatSelectFinetuneTypeCardTinyStories'
 import { ChatSelectFinetuneTypeCardQwen2_5 } from './ChatSelectFinetuneTypeCardQwen2_5'
+import { ChatSelectFinetuneTypeCardLlamacppCharles } from './ChatSelectFinetuneTypeCardLlamacppCharles'
 
 export function ChatSelectModel({
   modelType,
@@ -33,8 +35,11 @@ export function ChatSelectModel({
       doSetModelSize('42M')
       doSetFinetuneType('Raw LLM')
     } else if (type === 'Qwen2.5') {
-      doSetModelSize('0.5b_q4_k_m')
+      doSetModelSize('0.5b_q8_0')
       doSetFinetuneType('Instruct')
+    } else if (type === 'llama.cpp Charles') {
+      doSetModelSize('42M')
+      doSetFinetuneType('Raw LLM')
     }
 
     doSetInputPlaceholder()
@@ -66,12 +71,16 @@ export function ChatSelectModel({
         placeholder = 'Start your story (pretend to be 4 years old)'
       } else if (modelType === 'Qwen2.5') {
         placeholder = 'Start a sentence and I will continue it'
+      } else if (modelType === 'llama.cpp Charles') {
+        placeholder = 'Start your story (pretend to be 4 years old)'
       }
     } else if (finetuneType === 'Instruct') {
       if (modelType === 'TinyStories') {
         placeholder = 'Describe your story (pretend to be 4 years old)'
       } else if (modelType === 'Qwen2.5') {
         placeholder = 'Message ICGPT'
+      } else if (modelType === 'llama.cpp Charles') {
+        placeholder = 'Describe your story (pretend to be 4 years old)'
       }
     }
     handleSetInputPlaceholder(placeholder)
@@ -102,6 +111,7 @@ export function ChatSelectModel({
               TinyStories
             </Text>
           </Button>
+
           <Button
             color={modelType === 'Qwen2.5' ? 'cyan' : 'white'}
             size="sm"
@@ -111,9 +121,25 @@ export function ChatSelectModel({
             disabled={false}
           >
             <Text color={modelType === 'Qwen2.5' ? 'black' : 'black'} size="sm">
-              Qwen2.5
+              llama.cpp Qwen2.5
             </Text>
           </Button>
+
+          {/* <Button
+            color={modelType === 'llama.cpp Charles' ? 'cyan' : 'white'}
+            size="sm"
+            p="xs"
+            m="xs"
+            onClick={() => doSetModelType('llama.cpp Charles')}
+            disabled={false}
+          >
+            <Text
+              color={modelType === 'llama.cpp Charles' ? 'black' : 'black'}
+              size="sm"
+            >
+              llama.cpp Charles
+            </Text>
+          </Button> */}
         </Box>
       </Box>
 
@@ -131,6 +157,11 @@ export function ChatSelectModel({
             modelSize={modelSize}
             doSetModelSize={doSetModelSize}
           />
+        ) : modelType === 'llama.cpp Charles' ? (
+          <ChatSelectModelSizeCardLlamacppCharles
+            modelSize={modelSize}
+            doSetModelSize={doSetModelSize}
+          />
         ) : null}
       </Box>
 
@@ -145,6 +176,11 @@ export function ChatSelectModel({
           />
         ) : modelType === 'Qwen2.5' ? (
           <ChatSelectFinetuneTypeCardQwen2_5
+            finetuneType={finetuneType}
+            doSetFinetuneType={doSetFinetuneType}
+          />
+        ) : modelType === 'llama.cpp Charles' ? (
+          <ChatSelectFinetuneTypeCardLlamacppCharles
             finetuneType={finetuneType}
             doSetFinetuneType={doSetFinetuneType}
           />
