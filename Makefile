@@ -627,6 +627,13 @@ upload-llama-cpp-qwen25-05b-q8-ic:
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
 	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
 	
+.PHONY: download-log-llama-cpp-qwen25-05b-q8-ic
+download-log-llama-cpp-qwen25-05b-q8-ic:
+	@echo "---"
+	@echo "download-log-llama-cpp-qwen25-05b-q8-ic"
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	python -m llama_cpp_canister.scripts.download --network ic --canister llama_cpp_qwen25_05b_q8 --local-filename main-llama-cpp-qwen25-05b-q8.log main.log
+
 .PHONY: initialize-llama-cpp-qwen25-05b-q8-ic
 initialize-llama-cpp-qwen25-05b-q8-ic:
 	@echo "Setting max tokens"
