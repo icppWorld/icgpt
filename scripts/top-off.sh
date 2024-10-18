@@ -1,12 +1,6 @@
 #!/bin/bash
 
 #######################################################################
-# For Linux & Mac
-#######################################################################
-export PYTHONPATH="${PYTHONPATH}:$(realpath ../icpp_llm/llama2_c)"
-
-
-#######################################################################
 # --network [local|ic]
 #######################################################################
 
@@ -37,7 +31,7 @@ done
 echo "Using network type: $NETWORK_TYPE"
 
 #######################################################################
-# canisters=("canister_frontend" "llama2_260K" "llama2_15M" "llama2_42M")
+# canisters=("canister_frontend" "llama2_260K" "llama2_15M" "llama2_42M" "llama_cpp_qwen25_05b_q8")
 canisters=("llama2_42M")
 
 # Define the target balance in cycles
