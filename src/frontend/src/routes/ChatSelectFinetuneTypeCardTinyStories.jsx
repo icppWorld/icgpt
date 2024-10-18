@@ -21,7 +21,7 @@ export function ChatSelectFinetuneTypeCardTinyStories({
           Raw LLM
         </Text>
       </Button>
-      <Button
+      {/* <Button
         color={finetuneType === 'Instruct' ? 'cyan' : 'white'}
         size="sm"
         p="xs"
@@ -32,7 +32,7 @@ export function ChatSelectFinetuneTypeCardTinyStories({
         <Text color={finetuneType === 'Instruct' ? 'black' : 'black'} size="sm">
           Instruct
         </Text>
-      </Button>
+      </Button> */}
     </Box>
   )
 }

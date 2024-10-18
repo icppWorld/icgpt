@@ -127,10 +127,12 @@ secret/
 # On the fly data created during deploy
 *.wasm
 
-# scratch files
+# local & scratch files
 x
 y
 z
+README-WIP.md
+Makefile-WIP
 
 # If you download the internet identity into this folder, you can install without wifi
 internet_identity_download
