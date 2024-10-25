@@ -11,6 +11,7 @@ import { CardError } from '../common/CardError'
 import { ChatSelectModel } from './ChatSelectModel'
 import { ChatOutput } from './ChatOutput'
 import { ChatNewChat } from './ChatNewChat'
+import { Chats } from './Chats'
 import { ChatInput } from './ChatInput'
 
 const DEBUG = true
@@ -103,6 +104,28 @@ export function Chat() {
           >
             {DisplayComponent}
             <ChatNewChat
+              authClient={authClient}
+              setAuthClient={setAuthClient}
+              actorRef={actorRef}
+              setActorRef={setActorRef}
+              chatNew={chatNew}
+              setChatNew={setChatNew}
+              chatDone={chatDone}
+              setChatDone={setChatDone}
+              heightChatInput={heightChatInput}
+              setHeightChatInput={setHeightChatInput}
+              inputString={inputString}
+              setInputString={setInputString}
+              inputPlaceholder={inputPlaceholder}
+              setInputPlaceholder={setInputPlaceholder}
+              isSubmitting={isSubmitting}
+              setIsSubmitting={setIsSubmitting}
+              setChatOutputText={setChatOutputText}
+              setChatDisplay={setChatDisplay}
+              setWaitAnimationMessage={setWaitAnimationMessage}
+              modelType={modelType}
+            />
+            <Chats
               authClient={authClient}
               setAuthClient={setAuthClient}
               actorRef={actorRef}
