@@ -31,20 +31,22 @@ export function ChatsPopupModal({ onClose }) {
           borderRadius: '8px',
           color: '#f8f8f2',
           maxWidth: '300px',
-          textAlign: 'center',
+          textAlign: 'left',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'flex-start',
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <Heading size="lg" color="purple">
-          Select Option
+        <Heading size="lg" color="white">
+          Select a chat:
         </Heading>
-        <Text color="white" mb="sm">
-          Choose an action:
-        </Text>
+
         <Button
-          color="purple"
+          color="white"
           size="sm"
           m="xs"
+          style={{ width: '100%' }}
           onClick={() => {
             console.log('Button 1 clicked')
             onClose()
@@ -53,9 +55,10 @@ export function ChatsPopupModal({ onClose }) {
           Button 1
         </Button>
         <Button
-          color="yellow"
+          color="white"
           size="sm"
           m="xs"
+          style={{ width: '100%' }}
           onClick={() => {
             console.log('Button 2 clicked')
             onClose()
@@ -64,9 +67,10 @@ export function ChatsPopupModal({ onClose }) {
           Button 2
         </Button>
         <Button
-          color="green"
+          color="white"
           size="sm"
           m="xs"
+          style={{ width: '100%' }}
           onClick={() => {
             console.log('Button 3 clicked')
             onClose()
@@ -74,8 +78,13 @@ export function ChatsPopupModal({ onClose }) {
         >
           Button 3
         </Button>
-        <Divider color="purple" m="sm" />
-        <Button color="red" size="sm" onClick={onClose}>
+        <Divider color="white" m="sm" />
+        <Button
+          color="white"
+          size="sm"
+          style={{ alignSelf: 'center' }} // Centering the Cancel button
+          onClick={onClose}
+        >
           Cancel
         </Button>
       </Card>
