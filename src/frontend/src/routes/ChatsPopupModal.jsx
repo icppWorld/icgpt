@@ -102,6 +102,10 @@ export function ChatsPopupModal({
           style={{ width: '100%' }}
           onClick={() => {
             console.log('Button 1 clicked')
+            setInputString('TODO: Button 1 input string..')
+            setChatOutputText('TODO: Button 1 output string..')
+            // force a re-render showing the ChatOutput
+            setChatDisplay('ChatOutput')
             onClose()
           }}
         >
@@ -114,6 +118,10 @@ export function ChatsPopupModal({
           style={{ width: '100%' }}
           onClick={() => {
             console.log('Button 2 clicked')
+            setInputString('TODO: Button 2 input string..')
+            setChatOutputText('TODO: Button 2 output string..')
+            // force a re-render showing the ChatOutput
+            setChatDisplay('ChatOutput')
             onClose()
           }}
         >
@@ -126,6 +134,10 @@ export function ChatsPopupModal({
           style={{ width: '100%' }}
           onClick={() => {
             console.log('Button 3 clicked')
+            setInputString('TODO: Button 3 input string..')
+            setChatOutputText('TODO: Button 3 output string..')
+            // force a re-render showing the ChatOutput
+            setChatDisplay('ChatOutput')
             onClose()
           }}
         >
@@ -136,7 +148,15 @@ export function ChatsPopupModal({
           color="white"
           size="sm"
           style={{ alignSelf: 'center' }} // Centering the Cancel button
-          onClick={onClose}
+          onClick={() => {
+            console.log('Button Cancel clicked')
+            setChatNew(true)
+            setChatDone(false)
+            setInputString('')
+            setChatOutputText('')
+            setChatDisplay('SelectModel')
+            onClose()
+          }}
         >
           Cancel
         </Button>

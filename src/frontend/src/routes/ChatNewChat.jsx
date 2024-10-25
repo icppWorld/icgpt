@@ -81,6 +81,11 @@ export function ChatNewChat({
         size="sm"
         disabled={isSubmitting} // Always wait until current submit is done
         onClick={() => {
+          setChatNew(true)
+          setChatDone(false)
+          setInputString('')
+          setChatOutputText('')
+          setChatDisplay('SelectModel')
           if (modelType === 'TinyStories') {
             doNewChat({
               authClient,
