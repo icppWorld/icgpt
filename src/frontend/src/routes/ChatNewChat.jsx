@@ -16,6 +16,8 @@ export function ChatNewChat({
   setChatNew,
   chatDone,
   setChatDone,
+  widthChatInput,
+  setWidthChatInput,
   heightChatInput,
   setHeightChatInput,
   inputString,

@@ -17,6 +17,8 @@ export function ChatInput({
   setChatNew,
   chatDone,
   setChatDone,
+  widthChatInput,
+  setWidthChatInput,
   heightChatInput,
   setHeightChatInput,
   inputString,
@@ -36,9 +38,14 @@ export function ChatInput({
 
   React.useEffect(() => {
     if (textareaRef.current) {
+      // Update the widthChatInput & heightChatInput state variables, used to position other components
+
+      textareaRef.current.style.width = 'auto'
+      textareaRef.current.style.width = `${textareaRef.current.scrollWidth}px`
+      setWidthChatInput(textareaRef.current.scrollWidth)
+
       textareaRef.current.style.height = 'auto' // reset the height
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`
-      // 2. Update the heightChatInput state variable, used to position other components
       setHeightChatInput(textareaRef.current.scrollHeight)
     }
   }, [inputString])

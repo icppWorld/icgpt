@@ -41,6 +41,7 @@ export function App() {
   const [finetuneType, setFinetuneType] = React.useState('Instruct')
 
   // ChatInput
+  const [widthChatInput, setWidthChatInput] = React.useState('100%')
   const [heightChatInput, setHeightChatInput] = React.useState(0)
   const [inputString, setInputString] = React.useState('')
   const [inputPlaceholder, setInputPlaceholder] = React.useState(
@@ -63,6 +64,7 @@ export function App() {
     console.log('inputPlaceholder     : ' + inputPlaceholder)
     console.log('chatDisplay          : ' + chatDisplay)
     console.log('waitAnimationMessage : ' + waitAnimationMessage)
+    console.log('widthChatInput       : ' + widthChatInput)
     console.log('heightChatInput      : ' + heightChatInput)
     console.log('isSubmitting         : ' + isSubmitting)
   }
@@ -113,6 +115,8 @@ export function App() {
           setModelSize,
           finetuneType,
           setFinetuneType,
+          widthChatInput,
+          setWidthChatInput,
           heightChatInput,
           setHeightChatInput,
           inputString,

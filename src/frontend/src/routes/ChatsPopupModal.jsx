@@ -7,7 +7,73 @@ import { doNewChatLlamacpp } from '../canisters/llamacpp.js'
 
 const DEBUG = true
 
-export function ChatsPopupModal({ onClose }) {
+export function ChatsPopupModal({
+  authClient,
+  setAuthClient,
+  actorRef,
+  setActorRef,
+  chatNew,
+  setChatNew,
+  chatDone,
+  setChatDone,
+  widthChatInput,
+  setWidthChatInput,
+  heightChatInput,
+  setHeightChatInput,
+  inputString,
+  setInputString,
+  inputPlaceholder,
+  setInputPlaceholder,
+  isSubmitting,
+  setIsSubmitting,
+  setChatOutputText,
+  setChatDisplay,
+  setWaitAnim,
+  onClose,
+}) {
+  // -----------------------------------------------------------------
+  // Adjust button position based on height of the chatInput Card
+  const [modalPosition, setModalPosition] = React.useState('10px') // Initial position
+
+  React.useEffect(() => {
+    function updatePosition() {
+      if (DEBUG) {
+        console.log(
+          'DEBUG-FLOW: entered ChatsPopupModal.jsx Chats.updatePosition '
+        )
+      }
+      const calculatedBottomPosition = heightChatInput + 100
+      setModalPosition(`${calculatedBottomPosition}px`)
+    }
+
+    // Initially set the position
+    updatePosition()
+
+    // Update position whenever window is resized
+    window.addEventListener('resize', updatePosition)
+
+    // Cleanup listener on component unmount
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+    }
+  }, [heightChatInput])
+
+  const floatingStyle = {
+    position: 'fixed',
+    bottom: modalPosition, // moves with height of ChatInput
+    left: '10px', // if you want some spacing from the left
+    right: '10px', // if you want some spacing from the right
+    zIndex: 1000,
+    boxShadow: '0px -2px 10px rgba(0, 0, 0, 0.1)',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
+    paddingTop: '40px',
+  }
+
   return (
     <div
       style={{
@@ -24,21 +90,8 @@ export function ChatsPopupModal({ onClose }) {
       }}
       onClick={onClose}
     >
-      <Card
-        style={{
-          padding: '20px',
-          backgroundColor: '#282a36',
-          borderRadius: '8px',
-          color: '#f8f8f2',
-          maxWidth: '300px',
-          textAlign: 'left',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Heading size="lg" color="white">
+      <Card style={floatingStyle} onClick={(e) => e.stopPropagation()}>
+        <Heading size="lg" color="black">
           Select a chat:
         </Heading>
 

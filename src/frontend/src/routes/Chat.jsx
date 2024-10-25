@@ -24,6 +24,7 @@ export function Chat() {
   const { modelType, setModelType } = useOutletContext()
   const { modelSize, setModelSize } = useOutletContext()
   const { finetuneType, setFinetuneType } = useOutletContext()
+  const { widthChatInput, setWidthChatInput } = useOutletContext()
   const { heightChatInput, setHeightChatInput } = useOutletContext()
   const { inputString, setInputString } = useOutletContext()
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
@@ -112,6 +113,8 @@ export function Chat() {
               setChatNew={setChatNew}
               chatDone={chatDone}
               setChatDone={setChatDone}
+              widthChatInput={widthChatInput}
+              setWidthChatInput={setWidthChatInput}
               heightChatInput={heightChatInput}
               setHeightChatInput={setHeightChatInput}
               inputString={inputString}
@@ -134,6 +137,8 @@ export function Chat() {
               setChatNew={setChatNew}
               chatDone={chatDone}
               setChatDone={setChatDone}
+              widthChatInput={widthChatInput}
+              setWidthChatInput={setWidthChatInput}
               heightChatInput={heightChatInput}
               setHeightChatInput={setHeightChatInput}
               inputString={inputString}
@@ -146,6 +151,8 @@ export function Chat() {
               setChatDisplay={setChatDisplay}
               setWaitAnimationMessage={setWaitAnimationMessage}
               modelType={modelType}
+              modelSize={modelSize}
+              finetuneType={finetuneType}
             />
             <ChatInput
               authClient={authClient}
@@ -156,6 +163,8 @@ export function Chat() {
               setChatNew={setChatNew}
               chatDone={chatDone}
               setChatDone={setChatDone}
+              widthChatInput={widthChatInput}
+              setWidthChatInput={setWidthChatInput}
               heightChatInput={heightChatInput}
               setHeightChatInput={setHeightChatInput}
               inputString={inputString}

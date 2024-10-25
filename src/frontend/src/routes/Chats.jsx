@@ -16,6 +16,8 @@ export function Chats({
   setChatNew,
   chatDone,
   setChatDone,
+  widthChatInput,
+  setWidthChatInput,
   heightChatInput,
   setHeightChatInput,
   inputString,
@@ -28,6 +30,8 @@ export function Chats({
   setChatDisplay,
   setWaitAnimationMessage,
   modelType,
+  modelSize,
+  finetuneType,
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered Chats.jsx Chats ')
@@ -89,7 +93,33 @@ export function Chats({
 
           {/* Conditionally render PopupModal */}
           {showChatsModal && (
-            <ChatsPopupModal onClose={() => setShowChatsModal(false)} />
+            <ChatsPopupModal
+              authClient={authClient}
+              setAuthClient={setAuthClient}
+              actorRef={actorRef}
+              setActorRef={setActorRef}
+              chatNew={chatNew}
+              setChatNew={setChatNew}
+              chatDone={chatDone}
+              setChatDone={setChatDone}
+              widthChatInput={widthChatInput}
+              setWidthChatInput={setWidthChatInput}
+              heightChatInput={heightChatInput}
+              setHeightChatInput={setHeightChatInput}
+              inputString={inputString}
+              setInputString={setInputString}
+              inputPlaceholder={inputPlaceholder}
+              setInputPlaceholder={setInputPlaceholder}
+              isSubmitting={isSubmitting}
+              setIsSubmitting={setIsSubmitting}
+              setChatOutputText={setChatOutputText}
+              setChatDisplay={setChatDisplay}
+              setWaitAnimationMessage={setWaitAnimationMessage}
+              modelType={modelType}
+              modelSize={modelSize}
+              finetuneType={finetuneType}
+              onClose={() => setShowChatsModal(false)}
+            />
           )}
         </>
       )}
