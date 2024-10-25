@@ -3,6 +3,7 @@ import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 import { doNewChatLlamacpp } from '../canisters/llamacpp.js'
+import { ChatsPopupModal } from './ChatsPopupModal'
 
 const DEBUG = true
 
@@ -34,6 +35,9 @@ export function Chats({
   // -----------------------------------------------------------------
   // Adjust button position based on height of the chatInput Card
   const [buttonPosition, setButtonPosition] = React.useState('10px') // Initial position
+
+  // State for showing the modal containing the available Chats
+  const [showChatsModal, setShowChatsModal] = React.useState(false)
 
   React.useEffect(() => {
     function updatePosition() {
@@ -72,58 +76,22 @@ export function Chats({
       m="sm"
     >
       {modelType !== 'TinyStories' && (
-        <Button
-          color="white"
-          size="sm"
-          disabled={isSubmitting || modelType === 'TinyStories'} // Always wait until current submit is done
-          onClick={() => {
-            // if (modelType === 'TinyStories') {
-            // we do not support saving of chats for icpp_llm
-            // } else
-            if (modelType === 'Qwen2.5') {
-              doNewChatLlamacpp({
-                authClient,
-                actorRef,
-                chatNew,
-                chatDone,
-                setActorRef,
-                setChatNew,
-                setChatDone,
-                inputString,
-                setInputString,
-                inputPlaceholder,
-                setInputPlaceholder,
-                isSubmitting,
-                setIsSubmitting,
-                setChatOutputText,
-                setChatDisplay,
-                setWaitAnimationMessage,
-              })
-            } else if (modelType === 'llama.cpp Charles') {
-              doNewChatLlamacpp({
-                authClient,
-                actorRef,
-                chatNew,
-                chatDone,
-                setActorRef,
-                setChatNew,
-                setChatDone,
-                inputString,
-                setInputString,
-                inputPlaceholder,
-                setInputPlaceholder,
-                isSubmitting,
-                setIsSubmitting,
-                setChatOutputText,
-                setChatDisplay,
-                setWaitAnimationMessage,
-              })
-            }
-          }}
-          style={buttonStyle}
-        >
-          Chats
-        </Button>
+        <>
+          <Button
+            color="white"
+            size="sm"
+            disabled={isSubmitting || modelType === 'TinyStories'}
+            onClick={() => setShowChatsModal(true)}
+            style={buttonStyle}
+          >
+            Chats
+          </Button>
+
+          {/* Conditionally render PopupModal */}
+          {showChatsModal && (
+            <ChatsPopupModal onClose={() => setShowChatsModal(false)} />
+          )}
+        </>
       )}
     </Box>
   )
