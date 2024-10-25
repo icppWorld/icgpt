@@ -1,4 +1,5 @@
-// eslint-disable-next-line no-use-before-define
+// ChatsPopupModal.jsx
+
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
@@ -44,7 +45,10 @@ export function ChatsPopupModal({ onClose }) {
           color="purple"
           size="sm"
           m="xs"
-          onClick={() => console.log('Button 1 clicked')}
+          onClick={() => {
+            console.log('Button 1 clicked')
+            onClose()
+          }}
         >
           Button 1
         </Button>
@@ -52,7 +56,10 @@ export function ChatsPopupModal({ onClose }) {
           color="yellow"
           size="sm"
           m="xs"
-          onClick={() => console.log('Button 2 clicked')}
+          onClick={() => {
+            console.log('Button 2 clicked')
+            onClose()
+          }}
         >
           Button 2
         </Button>
@@ -60,13 +67,16 @@ export function ChatsPopupModal({ onClose }) {
           color="green"
           size="sm"
           m="xs"
-          onClick={() => console.log('Button 3 clicked')}
+          onClick={() => {
+            console.log('Button 3 clicked')
+            onClose()
+          }}
         >
           Button 3
         </Button>
         <Divider color="purple" m="sm" />
         <Button color="red" size="sm" onClick={onClose}>
-          Close
+          Cancel
         </Button>
       </Card>
     </div>
