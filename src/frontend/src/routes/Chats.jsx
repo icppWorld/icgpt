@@ -38,9 +38,7 @@ export function Chats({
   React.useEffect(() => {
     function updatePosition() {
       if (DEBUG) {
-        console.log(
-          'DEBUG-FLOW: entered Chats.jsx Chats.updatePosition '
-        )
+        console.log('DEBUG-FLOW: entered Chats.jsx Chats.updatePosition ')
       }
       const calculatedBottomPosition = heightChatInput + 30
       setButtonPosition(`${calculatedBottomPosition}px`)
@@ -74,58 +72,58 @@ export function Chats({
       m="sm"
     >
       {modelType !== 'TinyStories' && (
-      <Button
-        color="white"
-        size="sm"
-        disabled={isSubmitting || modelType === 'TinyStories'} // Always wait until current submit is done
-        onClick={() => {
-          // if (modelType === 'TinyStories') {
-          // we do not support saving of chats for icpp_llm
-          // } else 
-          if (modelType === 'Qwen2.5') {
-            doNewChatLlamacpp({
-              authClient,
-              actorRef,
-              chatNew,
-              chatDone,
-              setActorRef,
-              setChatNew,
-              setChatDone,
-              inputString,
-              setInputString,
-              inputPlaceholder,
-              setInputPlaceholder,
-              isSubmitting,
-              setIsSubmitting,
-              setChatOutputText,
-              setChatDisplay,
-              setWaitAnimationMessage,
-            })
-          } else if (modelType === 'llama.cpp Charles') {
-            doNewChatLlamacpp({
-              authClient,
-              actorRef,
-              chatNew,
-              chatDone,
-              setActorRef,
-              setChatNew,
-              setChatDone,
-              inputString,
-              setInputString,
-              inputPlaceholder,
-              setInputPlaceholder,
-              isSubmitting,
-              setIsSubmitting,
-              setChatOutputText,
-              setChatDisplay,
-              setWaitAnimationMessage,
-            })
-          }
-        }}
-        style={buttonStyle}
-      >
-        Chats
-      </Button>
+        <Button
+          color="white"
+          size="sm"
+          disabled={isSubmitting || modelType === 'TinyStories'} // Always wait until current submit is done
+          onClick={() => {
+            // if (modelType === 'TinyStories') {
+            // we do not support saving of chats for icpp_llm
+            // } else
+            if (modelType === 'Qwen2.5') {
+              doNewChatLlamacpp({
+                authClient,
+                actorRef,
+                chatNew,
+                chatDone,
+                setActorRef,
+                setChatNew,
+                setChatDone,
+                inputString,
+                setInputString,
+                inputPlaceholder,
+                setInputPlaceholder,
+                isSubmitting,
+                setIsSubmitting,
+                setChatOutputText,
+                setChatDisplay,
+                setWaitAnimationMessage,
+              })
+            } else if (modelType === 'llama.cpp Charles') {
+              doNewChatLlamacpp({
+                authClient,
+                actorRef,
+                chatNew,
+                chatDone,
+                setActorRef,
+                setChatNew,
+                setChatDone,
+                inputString,
+                setInputString,
+                inputPlaceholder,
+                setInputPlaceholder,
+                isSubmitting,
+                setIsSubmitting,
+                setChatOutputText,
+                setChatDisplay,
+                setWaitAnimationMessage,
+              })
+            }
+          }}
+          style={buttonStyle}
+        >
+          Chats
+        </Button>
       )}
     </Box>
   )
