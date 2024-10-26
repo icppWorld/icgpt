@@ -32,6 +32,8 @@ export function Chats({
   modelType,
   modelSize,
   finetuneType,
+  chats,
+  setChats,
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered Chats.jsx Chats ')
@@ -118,6 +120,8 @@ export function Chats({
               modelType={modelType}
               modelSize={modelSize}
               finetuneType={finetuneType}
+              chats={chats}
+              setChats={setChats}
               onClose={() => setShowChatsModal(false)}
             />
           )}

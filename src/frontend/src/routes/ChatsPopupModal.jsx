@@ -3,7 +3,7 @@
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
-import { doNewChatLlamacpp } from '../canisters/llamacpp.js'
+import { getChatsLlamacpp } from '../canisters/llamacpp.js'
 
 const DEBUG = true
 
@@ -28,13 +28,72 @@ export function ChatsPopupModal({
   setIsSubmitting,
   setChatOutputText,
   setChatDisplay,
-  setWaitAnim,
+  setWaitAnimationMessage,
+  modelType,
+  modelSize,
+  finetuneType,
+  chats,
+  setChats,
   onClose,
 }) {
+  const DEBUG = true
+
+  // -----------------------------------------------------------------
+  // Fetch chats from LLM on component mount
+  React.useEffect(() => {
+    if (DEBUG) {
+      console.log(
+        'DEBUG-FLOW: ChatsPopupModal being mounted with chats = ',
+        chats
+      )
+    }
+    if (!chats) {
+      if (DEBUG) {
+        console.log(
+          'DEBUG-FLOW: chats is null, so going to fetch the chats from the LLM canister '
+        )
+      }
+      const fetchData = async () => {
+        try {
+          await getChatsLlamacpp({
+            authClient,
+            actorRef,
+            chatNew,
+            chatDone,
+            setActorRef,
+            setChatNew,
+            setChatDone,
+            inputString,
+            setInputString,
+            inputPlaceholder,
+            isSubmitting,
+            setIsSubmitting,
+            setInputPlaceholder,
+            setChatOutputText,
+            setChatDisplay,
+            setWaitAnimationMessage,
+            modelType,
+            modelSize,
+            finetuneType,
+            chats,
+            setChats,
+          })
+        } catch (error) {
+          console.error(
+            'ChatsPopupModal.jsx - Error fetching chat data:',
+            error
+          )
+        }
+      }
+      fetchData()
+    }
+  }, [])
+
   // -----------------------------------------------------------------
   // Adjust button position based on height of the chatInput Card
   const [modalPosition, setModalPosition] = React.useState('10px') // Initial position
 
+  // Reposition when height of input changes
   React.useEffect(() => {
     function updatePosition() {
       if (DEBUG) {

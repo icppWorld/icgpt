@@ -52,6 +52,9 @@ export function App() {
   // ChatOutput
   const [chatOutputText, setChatOutputText] = React.useState('')
 
+  // for ChatsPopupModal
+  const [chats, setChats] = React.useState()
+
   // ---------------------------------------------------------
   function print_state() {
     console.log('------------------------------------')
@@ -131,6 +134,8 @@ export function App() {
           setChatDisplay,
           waitAnimationMessage,
           setWaitAnimationMessage,
+          chats,
+          setChats,
         }}
       />
       {/* <StagingBanner /> */}

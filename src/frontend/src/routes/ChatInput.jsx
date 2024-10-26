@@ -8,6 +8,8 @@ import { doSubmitLlamacpp } from '../canisters/llamacpp.js'
 const II_URL = process.env.II_URL
 const IC_HOST_URL = process.env.IC_HOST_URL
 
+const DEBUG = true
+
 export function ChatInput({
   authClient,
   setAuthClient,
@@ -33,7 +35,12 @@ export function ChatInput({
   modelType,
   modelSize,
   finetuneType,
+  chats,
+  setChats,
 }) {
+  if (DEBUG) {
+    console.log('DEBUG-FLOW: entered ChatInput.jsx ChatInput ')
+  }
   const textareaRef = React.useRef(null)
 
   React.useEffect(() => {
@@ -96,6 +103,12 @@ export function ChatInput({
         mr="none"
         disabled={isSubmitting} // Always wait until current submit is done
         onClick={() => {
+          // Force refetching of chats during mount of ChatsPopupModal
+          setChats(null)
+          if (DEBUG) {
+            console.log('ChatInput.jsx - chats have been reset.')
+          }
+
           if (modelType === 'TinyStories') {
             doSubmit({
               authClient,

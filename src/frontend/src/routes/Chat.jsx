@@ -32,6 +32,7 @@ export function Chat() {
   const { chatOutputText, setChatOutputText } = useOutletContext()
   const { chatDisplay, setChatDisplay } = useOutletContext()
   const { waitAnimationMessage, setWaitAnimationMessage } = useOutletContext()
+  const { chats, setChats } = useOutletContext()
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
@@ -127,6 +128,8 @@ export function Chat() {
               setChatDisplay={setChatDisplay}
               setWaitAnimationMessage={setWaitAnimationMessage}
               modelType={modelType}
+              chats={chats}
+              setChats={setChats}
             />
             <Chats
               authClient={authClient}
@@ -153,6 +156,8 @@ export function Chat() {
               modelType={modelType}
               modelSize={modelSize}
               finetuneType={finetuneType}
+              chats={chats}
+              setChats={setChats}
             />
             <ChatInput
               authClient={authClient}
@@ -179,6 +184,8 @@ export function Chat() {
               modelType={modelType}
               modelSize={modelSize}
               finetuneType={finetuneType}
+              chats={chats}
+              setChats={setChats}
             />
           </Card>
         </div>
