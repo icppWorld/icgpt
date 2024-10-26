@@ -407,7 +407,7 @@ export async function doSubmitLlamacpp({
     console.log('DEBUG-FLOW: entered llamacpp.js doSubmitLlamacpp ')
     console.log('- modelType ', modelType)
     console.log('- modelSize ', modelSize)
-    console.log('- modelTfinetuneTypepe ', finetuneType)
+    console.log('- finetuneType ', finetuneType)
   }
   setIsSubmitting(true)
 
@@ -575,7 +575,7 @@ export async function getChatsLlamacpp({
     console.log('DEBUG-FLOW: entered llamacpp.js getChatsLlamacpp ')
     console.log('- modelType ', modelType)
     console.log('- modelSize ', modelSize)
-    console.log('- modelTfinetuneTypepe ', finetuneType)
+    console.log('- finetuneType ', finetuneType)
   }
 
   // Based on the values of modelType, modelSize, and finetuneType, determine the module to import
@@ -635,25 +635,26 @@ export async function getChatsLlamacpp({
       // Placeholder data
       const chatData = [
         {
-          label: 'Chat 1',
+          label: 'Label for Chat 1',
           systemPrompt: 'System Prompt 1',
           inputString: 'Chat 1 input text...',
           outputString: 'Chat 1 output text...',
         },
         {
-          label: 'Chat 2',
+          label: 'Label for Chat 2',
           systemPrompt: 'System Prompt 2',
           inputString: 'Chat 2 input text...',
           outputString: 'Chat 2 output text...',
         },
         {
-          label: 'Chat 3',
+          label: 'Label for Chat 3',
           systemPrompt: 'System Prompt 3',
           inputString: 'Chat 3 input text...',
           outputString: 'Chat 3 output text...',
         },
       ]
       setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+      setChatDisplay('ChatOutput')
       setChats(chatData)
       // } else {
       //   setWaitAnimationMessage('Calling LLM canister') // Reset it to default
@@ -676,5 +677,7 @@ export async function getChatsLlamacpp({
     setChatDisplay('CanisterError')
   } finally {
     setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+    setChatDisplay('ChatOutput')
   }
+  setChatDisplay('ChatOutput')
 }

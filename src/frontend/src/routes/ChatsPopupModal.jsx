@@ -154,7 +154,7 @@ export function ChatsPopupModal({
           Select a chat:
         </Heading>
 
-        <Button
+        {/* <Button
           color="white"
           size="sm"
           m="xs"
@@ -169,56 +169,27 @@ export function ChatsPopupModal({
           }}
         >
           Button 1
-        </Button>
-        <Button
-          color="white"
-          size="sm"
-          m="xs"
-          style={{ width: '100%' }}
-          onClick={() => {
-            console.log('Button 2 clicked')
-            setInputString('TODO: Button 2 input string..')
-            setChatOutputText('TODO: Button 2 output string..')
-            // force a re-render showing the ChatOutput
-            setChatDisplay('ChatOutput')
-            onClose()
-          }}
-        >
-          Button 2
-        </Button>
-        <Button
-          color="white"
-          size="sm"
-          m="xs"
-          style={{ width: '100%' }}
-          onClick={() => {
-            console.log('Button 3 clicked')
-            setInputString('TODO: Button 3 input string..')
-            setChatOutputText('TODO: Button 3 output string..')
-            // force a re-render showing the ChatOutput
-            setChatDisplay('ChatOutput')
-            onClose()
-          }}
-        >
-          Button 3
-        </Button>
-        <Divider color="white" m="sm" />
-        <Button
-          color="white"
-          size="sm"
-          style={{ alignSelf: 'center' }} // Centering the Cancel button
-          onClick={() => {
-            console.log('Button Cancel clicked')
-            setChatNew(true)
-            setChatDone(false)
-            setInputString('')
-            setChatOutputText('')
-            setChatDisplay('SelectModel')
-            onClose()
-          }}
-        >
-          Cancel
-        </Button>
+        </Button> */}
+
+        {chats &&
+          chats.map((chat, index) => (
+            <Button
+              key={index}
+              color="white"
+              size="sm"
+              m="xs"
+              style={{ width: '100%' }}
+              onClick={() => {
+                console.log(`${chat.label} clicked`)
+                setInputString(chat.inputString)
+                setChatOutputText(chat.outputString)
+                setChatDisplay('ChatOutput')
+                onClose()
+              }}
+            >
+              {chat.label}
+            </Button>
+          ))}
       </Card>
     </div>
   )
