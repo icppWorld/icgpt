@@ -154,31 +154,19 @@ export function ChatsPopupModal({
           Select a chat:
         </Heading>
 
-        {/* <Button
-          color="white"
-          size="sm"
-          m="xs"
-          style={{ width: '100%' }}
-          onClick={() => {
-            console.log('Button 1 clicked')
-            setInputString('TODO: Button 1 input string..')
-            setChatOutputText('TODO: Button 1 output string..')
-            // force a re-render showing the ChatOutput
-            setChatDisplay('ChatOutput')
-            onClose()
-          }}
-        >
-          Button 1
-        </Button> */}
-
-        {chats &&
+        {chats && chats.length > 0 ? (
           chats.map((chat, index) => (
             <Button
               key={index}
               color="white"
               size="sm"
               m="xs"
-              style={{ width: '100%' }}
+              style={{
+                width: '100%',
+                whiteSpace: 'nowrap', // Prevents wrapping
+                overflow: 'hidden', // Hides overflowed text
+                textOverflow: 'ellipsis', // Adds ellipsis (...) if text overflows
+              }}
               onClick={() => {
                 console.log(`${chat.label} clicked`)
                 setInputString(chat.inputString)
@@ -189,7 +177,35 @@ export function ChatsPopupModal({
             >
               {chat.label}
             </Button>
-          ))}
+          ))
+        ) : (
+          <Heading
+            size="sm"
+            color="gray"
+            m="xs"
+            style={{ fontStyle: 'italic' }}
+          >
+            No chats found...
+          </Heading>
+        )}
+
+        <Divider color="white" m="sm" />
+        <Button
+          color="white"
+          size="sm"
+          style={{ alignSelf: 'center' }} // Centering the Cancel button
+          onClick={() => {
+            console.log('Button Cancel clicked')
+            setChatNew(true)
+            setChatDone(false)
+            setInputString('')
+            setChatOutputText('')
+            setChatDisplay('SelectModel')
+            onClose()
+          }}
+        >
+          Cancel
+        </Button>
       </Card>
     </div>
   )

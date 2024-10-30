@@ -546,6 +546,46 @@ export async function doNewChatLlamacpp({
   setChatDisplay('SelectModel')
 }
 
+// Conversion function with extraction logic
+const convertChatsToChatData = (chats) => {
+  return chats.map((chat, index) => {
+    // Extract systemPrompt, inputString, and outputString using regex
+    const systemPromptMatch = chat.chat.match(
+      /<\|im_start\|>system\n(.*?)<\|im_end\|>/s
+    )
+    const inputStringMatch = chat.chat.match(
+      /<\|im_start\|>user\n(.*?)<\|im_end\|>/s
+    )
+    let outputStringMatch = chat.chat.match(
+      /<\|im_start\|>assistant\n(.*?)<\|im_end\|>/s
+    )
+
+    const systemPrompt = systemPromptMatch ? systemPromptMatch[1] : ''
+    const inputString = inputStringMatch ? inputStringMatch[1] : ''
+    let outputString = outputStringMatch ? outputStringMatch[1] : ''
+
+    // If outputString is still empty, perhaps the chat is not finished. Get whatever there is.
+    if (!outputString) {
+      outputStringMatch = outputStringMatch = chat.chat.match(
+        /<\|im_start\|>assistant\n(.*?)(<\|im_end\|>|$)/s
+      )
+      outputString = outputStringMatch ? outputStringMatch[1] : ''
+    }
+
+    // Generate label: chat.timestamp + first N words of inputString
+    const inputWords = inputString.split(' ').slice(0, 25).join(' ')
+    const dateLabel = chat.timestamp.split('_')[0]
+    const label = `(${dateLabel}) ${inputWords}`
+
+    return {
+      label: label,
+      systemPrompt: systemPrompt,
+      inputString: inputString,
+      outputString: outputString,
+    }
+  })
+}
+
 // Called when user clicks 'Chats' button and ChatsPopupModal is (re)mounted
 // Returns a JSON object with the chatData
 export async function getChatsLlamacpp({
@@ -617,7 +657,7 @@ export async function getChatsLlamacpp({
   try {
     // Call llm canister to check on health
     // Force a re-render, showing the WaitAnimation
-    setWaitAnimationMessage('Calling LLM canister - getChats')
+    setWaitAnimationMessage('Calling LLM canister - get_chats')
     setChatDisplay('WaitAnimation')
     console.log('Calling actor_.health ')
     const responseHealth = await actor_.health()
@@ -627,42 +667,20 @@ export async function getChatsLlamacpp({
       console.log('llm canister is healthy: ', responseHealth)
 
       // Ok, ready for show time...
-      setWaitAnimationMessage('Calling LLM canister - getChats')
-      console.log('TODO TODO TODO TODO TODO')
-      // const responseGetChats = await actor_.getChats()
-      // if ('Ok' in responseGetChats) {
-      // TODO: convert into chatData format
-      // Placeholder data
-      const chatData = [
-        {
-          label: 'Label for Chat 1',
-          systemPrompt: 'System Prompt 1',
-          inputString: 'Chat 1 input text...',
-          outputString: 'Chat 1 output text...',
-        },
-        {
-          label: 'Label for Chat 2',
-          systemPrompt: 'System Prompt 2',
-          inputString: 'Chat 2 input text...',
-          outputString: 'Chat 2 output text...',
-        },
-        {
-          label: 'Label for Chat 3',
-          systemPrompt: 'System Prompt 3',
-          inputString: 'Chat 3 input text...',
-          outputString: 'Chat 3 output text...',
-        },
-      ]
-      setWaitAnimationMessage('Calling LLM canister') // Reset it to default
-      setChatDisplay('ChatOutput')
-      setChats(chatData)
-      // } else {
-      //   setWaitAnimationMessage('Calling LLM canister') // Reset it to default
-      //   let ermsg = ''
-      //   if ('Err' in responseGetChats && 'Other' in responseGetChats.Err)
-      //     ermsg = responseGetChats.Err.Other
-      //   throw new Error(`Call to getChats returns error: ` + ermsg)
-      // }
+      setWaitAnimationMessage('Calling LLM canister - get_chats')
+      const responseGetChats = await actor_.get_chats()
+      if ('Ok' in responseGetChats) {
+        const chatData = convertChatsToChatData(responseGetChats.Ok.chats)
+        setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+        setChatDisplay('ChatOutput')
+        setChats(chatData)
+      } else {
+        setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+        let ermsg = ''
+        if ('Err' in responseGetChats && 'Other' in responseGetChats.Err)
+          ermsg = responseGetChats.Err.Other
+        throw new Error(`Call to getChats returns error: ` + ermsg)
+      }
     } else {
       setWaitAnimationMessage('Calling LLM canister') // Reset it to default
       let ermsg = ''
