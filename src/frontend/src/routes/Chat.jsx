@@ -11,6 +11,7 @@ import { CardError } from '../common/CardError'
 import { ChatSelectModel } from './ChatSelectModel'
 import { ChatOutput } from './ChatOutput'
 import { ChatNewChat } from './ChatNewChat'
+import { Chats } from './Chats'
 import { ChatInput } from './ChatInput'
 
 const DEBUG = true
@@ -23,6 +24,7 @@ export function Chat() {
   const { modelType, setModelType } = useOutletContext()
   const { modelSize, setModelSize } = useOutletContext()
   const { finetuneType, setFinetuneType } = useOutletContext()
+  const { widthChatInput, setWidthChatInput } = useOutletContext()
   const { heightChatInput, setHeightChatInput } = useOutletContext()
   const { inputString, setInputString } = useOutletContext()
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
@@ -30,6 +32,7 @@ export function Chat() {
   const { chatOutputText, setChatOutputText } = useOutletContext()
   const { chatDisplay, setChatDisplay } = useOutletContext()
   const { waitAnimationMessage, setWaitAnimationMessage } = useOutletContext()
+  const { chats, setChats } = useOutletContext()
 
   const identity = authClient.getIdentity()
   const principal = identity.getPrincipal()
@@ -111,6 +114,8 @@ export function Chat() {
               setChatNew={setChatNew}
               chatDone={chatDone}
               setChatDone={setChatDone}
+              widthChatInput={widthChatInput}
+              setWidthChatInput={setWidthChatInput}
               heightChatInput={heightChatInput}
               setHeightChatInput={setHeightChatInput}
               inputString={inputString}
@@ -123,8 +128,10 @@ export function Chat() {
               setChatDisplay={setChatDisplay}
               setWaitAnimationMessage={setWaitAnimationMessage}
               modelType={modelType}
+              chats={chats}
+              setChats={setChats}
             />
-            <ChatInput
+            <Chats
               authClient={authClient}
               setAuthClient={setAuthClient}
               actorRef={actorRef}
@@ -133,6 +140,8 @@ export function Chat() {
               setChatNew={setChatNew}
               chatDone={chatDone}
               setChatDone={setChatDone}
+              widthChatInput={widthChatInput}
+              setWidthChatInput={setWidthChatInput}
               heightChatInput={heightChatInput}
               setHeightChatInput={setHeightChatInput}
               inputString={inputString}
@@ -147,6 +156,36 @@ export function Chat() {
               modelType={modelType}
               modelSize={modelSize}
               finetuneType={finetuneType}
+              chats={chats}
+              setChats={setChats}
+            />
+            <ChatInput
+              authClient={authClient}
+              setAuthClient={setAuthClient}
+              actorRef={actorRef}
+              setActorRef={setActorRef}
+              chatNew={chatNew}
+              setChatNew={setChatNew}
+              chatDone={chatDone}
+              setChatDone={setChatDone}
+              widthChatInput={widthChatInput}
+              setWidthChatInput={setWidthChatInput}
+              heightChatInput={heightChatInput}
+              setHeightChatInput={setHeightChatInput}
+              inputString={inputString}
+              setInputString={setInputString}
+              inputPlaceholder={inputPlaceholder}
+              setInputPlaceholder={setInputPlaceholder}
+              isSubmitting={isSubmitting}
+              setIsSubmitting={setIsSubmitting}
+              setChatOutputText={setChatOutputText}
+              setChatDisplay={setChatDisplay}
+              setWaitAnimationMessage={setWaitAnimationMessage}
+              modelType={modelType}
+              modelSize={modelSize}
+              finetuneType={finetuneType}
+              chats={chats}
+              setChats={setChats}
             />
           </Card>
         </div>

@@ -35,6 +35,11 @@
       "candid": "../icpp_llm/llama2_c/src/llama2.did",
       "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
     },
+    "llama2_110M": {
+      "type": "custom",
+      "candid": "../icpp_llm/llama2_c/src/llama2.did",
+      "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
+    },
     "llama_cpp_qwen25_05b_q8": {
       "type": "custom",
       "candid": "../../../onicai/repos/llama_cpp_canister/src/llama_cpp.did",

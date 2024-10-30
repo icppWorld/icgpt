@@ -16,6 +16,8 @@ export function ChatNewChat({
   setChatNew,
   chatDone,
   setChatDone,
+  widthChatInput,
+  setWidthChatInput,
   heightChatInput,
   setHeightChatInput,
   inputString,
@@ -28,6 +30,8 @@ export function ChatNewChat({
   setChatDisplay,
   setWaitAnimationMessage,
   modelType,
+  chats,
+  setChats,
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered ChatNewChat.jsx ChatNewChat ')
@@ -79,6 +83,17 @@ export function ChatNewChat({
         size="sm"
         disabled={isSubmitting} // Always wait until current submit is done
         onClick={() => {
+          // Force refetching of chats during mount of ChatsPopupModal
+          setChats(null)
+          if (DEBUG) {
+            console.log('ChatInput.jsx - chats have been reset.')
+          }
+
+          setChatNew(true)
+          setChatDone(false)
+          setInputString('')
+          setChatOutputText('')
+          setChatDisplay('SelectModel')
           if (modelType === 'TinyStories') {
             doNewChat({
               authClient,

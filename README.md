@@ -185,9 +185,10 @@ dfx deploy llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves mo
 dfx canister update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
 dfx canister status llama_cpp_qwen25_05b_q8
 dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
-make upload-llama-cpp-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
-# After `dfx deploy -m upgrade` only:
-dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; } })'
+# if (re)installed:
+  make upload-llama-cpp-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
+# else (After `dfx deploy -m upgrade`):
+  dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; } })'
 
 
 dfx deploy internet_identity # REQUIRED: it installs II
@@ -426,69 +427,3 @@ When deploying locally, the internet_identity canister will be installed automat
 When deploying to IC, it will NOT be deployed.
 
 For details, see this [forum post](https://forum.dfinity.org/t/problem-insalling-internet-identity-in-local-setup/20417/18).
-
-
-## Dealing with subnet overload due to bob.fun
-
-References: 
-- [Subnets with heavy compute load: what can you do now & next steps](https://forum.dfinity.org/t/subnets-with-heavy-compute-load-what-can-you-do-now-next-steps/35762/1)
-- [Dashboard of canisters](https://dashboard.internetcomputer.org/canisters)
-- [Dashboard of subnets](https://dashboard.internetcomputer.org/subnets?sort=asc-canisters)
-- [Overview of pulic subnets](https://dashboard.internetcomputer.org/proposal/132409)
-
-- The main affected subnets are
-
-lspz2 → Yral
-fuqsr → old Bob/other miner?
-6pbhf → Yral
-e66qm → Yral
-bkfrj → current Bob
-3hhby → Yral
-nl6hn → Yral
-opn46 → Yral
-lhg73 → Yral
-k44fs → Yral
-
-The original ICGPT canisters were in an overloaded subnet: lspz2-jx4pu-k3e7p-znm7j-q4yum-ork6e-6w4q6-pijwq-znehu-4jabe-kqe
-
-| name                    | canister-id                 | canister details                                                            |
-| ----------------------- | --------------------------- | --------------------------------------------------------------------------- |
-| canister_frontend       | 4v3v2-lyaaa-aaaag-abzna-cai | https://dashboard.internetcomputer.org/canister/4v3v2-lyaaa-aaaag-abzna-cai |
-| llama2_260K             | otmmw-3yaaa-aaaag-ab2na-cai | https://dashboard.internetcomputer.org/canister/otmmw-3yaaa-aaaag-ab2na-cai |
-| llama2_15M              | 4c4bn-daaaa-aaaag-abvcq-cai | https://dashboard.internetcomputer.org/canister/4c4bn-daaaa-aaaag-abvcq-cai |
-| llama2_42M              | ounkc-waaaa-aaaag-ab2nq-cai | https://dashboard.internetcomputer.org/canister/ounkc-waaaa-aaaag-ab2nq-cai |
-| llama2_110M             | p4tfr-saaaa-aaaag-acgma-cai | https://dashboard.internetcomputer.org/canister/p4tfr-saaaa-aaaag-acgma-cai |
-| llama_cpp_qwen25_05b_q8 | 6uwoh-vaaaa-aaaag-amema-cai | https://dashboard.internetcomputer.org/canister/6uwoh-vaaaa-aaaag-amema-cai |
-
-I canister_ids.json to canister_ids_orig.json
-Once we switch icgpt.com to the new canister_frontend in the less loaded subnet, delete all dfx-orig.json canisters !
-
-Finding a better subnet, using the references above:
-1. Searched for a less loaded subnet
-2. Made sure it is a public subnet where we are allowed to create canisters
-3. Created all new canisters with the commands below
-4. Deployed everything as described above.
-
-I selected the public network with the least amount of canisters, not impacted by Bob/Yral, and tried it out: 
-- yinp6-35cfo-wgcd2-oc4ty-2kqpf-t4dul-rfk33-fsq3r-mfmua-m2ngh-jqe (Failed)
-- 4ecnw-byqwz-dtgss-ua2mh-pfvs7-c3lct-gtf4e-hnu75-j7eek-iifqm-sqe (Failed)
-- fuqsr-in2lc-zbcjj-ydmcw-pzq7h-4xm2z-pto4i-dcyee-5z4rz-x63ji-nae (Failed!) (Initial success, but Yral)
-- jtdsg-3h6gi-hs7o5-z2soi-43w3z-soyl3-ajnp3-ekni5-sw553-5kw67-nqe (Failed)
-- 3hhby-wmtmw-umt4t-7ieyg-bbiig-xiylg-sblrt-voxgt-bqckd-a75bf-rqe (Failed)
-- pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae (Success) (ONly one, then failed)
-
-
-
-```
-dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae canister_frontend
-dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama2_260K
-dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama2_15M
-dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama2_42M
-dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama_cpp_qwen25_05b_q8      (Ok)
-dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama_cpp_qwen25_05b_q4_k_m
-dfx canister create --ic --subnet pjljw-kztyl-46ud4-ofrj6-nzkhm-3n4nt-wi3jt-ypmav-ijqkt-gjf66-uae llama_cpp_charles_42m
-
-# OK to fuqsr, but that is affected by Yral. Deleted, and then redeployed on next subnet
-dfx canister create --ic --subnet fuqsr-in2lc-zbcjj-ydmcw-pzq7h-4xm2z-pto4i-dcyee-5z4rz-x63ji-nae llama_cpp_qwen25_05b_q4_k_m  (Deleted)
-dfx canister create --ic --subnet fuqsr-in2lc-zbcjj-ydmcw-pzq7h-4xm2z-pto4i-dcyee-5z4rz-x63ji-nae llama_cpp_charles_42m        (Deleted)
-```

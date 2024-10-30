@@ -407,7 +407,7 @@ export async function doSubmitLlamacpp({
     console.log('DEBUG-FLOW: entered llamacpp.js doSubmitLlamacpp ')
     console.log('- modelType ', modelType)
     console.log('- modelSize ', modelSize)
-    console.log('- modelTfinetuneTypepe ', finetuneType)
+    console.log('- finetuneType ', finetuneType)
   }
   setIsSubmitting(true)
 
@@ -544,4 +544,158 @@ export async function doNewChatLlamacpp({
   chatFinished = false
   setChatOutputText('')
   setChatDisplay('SelectModel')
+}
+
+// Conversion function with extraction logic
+const convertChatsToChatData = (chats) => {
+  return chats.map((chat, index) => {
+    // Extract systemPrompt, inputString, and outputString using regex
+    const systemPromptMatch = chat.chat.match(
+      /<\|im_start\|>system\n(.*?)<\|im_end\|>/s
+    )
+    const inputStringMatch = chat.chat.match(
+      /<\|im_start\|>user\n(.*?)<\|im_end\|>/s
+    )
+    let outputStringMatch = chat.chat.match(
+      /<\|im_start\|>assistant\n(.*?)<\|im_end\|>/s
+    )
+
+    const systemPrompt = systemPromptMatch ? systemPromptMatch[1] : ''
+    const inputString = inputStringMatch ? inputStringMatch[1] : ''
+    let outputString = outputStringMatch ? outputStringMatch[1] : ''
+
+    // If outputString is still empty, perhaps the chat is not finished. Get whatever there is.
+    if (!outputString) {
+      outputStringMatch = outputStringMatch = chat.chat.match(
+        /<\|im_start\|>assistant\n(.*?)(<\|im_end\|>|$)/s
+      )
+      outputString = outputStringMatch ? outputStringMatch[1] : ''
+    }
+
+    // Generate label: chat.timestamp + first N words of inputString
+    const inputWords = inputString.split(' ').slice(0, 25).join(' ')
+    const dateLabel = chat.timestamp.split('_')[0]
+    const label = `(${dateLabel}) ${inputWords}`
+
+    return {
+      label: label,
+      systemPrompt: systemPrompt,
+      inputString: inputString,
+      outputString: outputString,
+    }
+  })
+}
+
+// Called when user clicks 'Chats' button and ChatsPopupModal is (re)mounted
+// Returns a JSON object with the chatData
+export async function getChatsLlamacpp({
+  authClient,
+  actorRef,
+  chatNew,
+  chatDone,
+  setActorRef,
+  setChatNew,
+  setChatDone,
+  inputString,
+  setInputString,
+  inputPlaceholder,
+  isSubmitting,
+  setIsSubmitting,
+  setInputPlaceholder,
+  setChatOutputText,
+  setChatDisplay,
+  setWaitAnimationMessage,
+  modelType,
+  modelSize,
+  finetuneType,
+  chats,
+  setChats,
+}) {
+  if (DEBUG) {
+    console.log('DEBUG-FLOW: entered llamacpp.js getChatsLlamacpp ')
+    console.log('- modelType ', modelType)
+    console.log('- modelSize ', modelSize)
+    console.log('- finetuneType ', finetuneType)
+  }
+
+  // Based on the values of modelType, modelSize, and finetuneType, determine the module to import
+  let moduleToImport
+  if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
+    switch (modelSize) {
+      case '0.5b_q8_0':
+        console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
+        moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
+        break
+    }
+  } else if (modelType === 'llama.cpp Charles' && finetuneType === 'Raw LLM') {
+    switch (modelSize) {
+      case '42M':
+        console.log('canister - llama cpp Charles 42M, Raw LLM')
+        moduleToImport = import('DeclarationsCanisterLlamacpp_Charles_42m')
+        break
+    }
+  } else {
+    console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
+    moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
+  }
+  const { canisterId, createActor } = await moduleToImport
+
+  // let actor_ = actorRef.current
+  // if (chatNew) {
+  console.log('Creating identity ')
+  const identity = await authClient.getIdentity()
+  console.log('Creating actor ')
+  const actor_ = createActor(canisterId, {
+    agentOptions: {
+      identity,
+      host: IC_HOST_URL,
+    },
+  })
+  setActorRef(actor_)
+  // }
+
+  try {
+    // Call llm canister to check on health
+    // Force a re-render, showing the WaitAnimation
+    setWaitAnimationMessage('Calling LLM canister - get_chats')
+    setChatDisplay('WaitAnimation')
+    console.log('Calling actor_.health ')
+    const responseHealth = await actor_.health()
+    console.log('llm canister health: ', responseHealth)
+
+    if ('Ok' in responseHealth) {
+      console.log('llm canister is healthy: ', responseHealth)
+
+      // Ok, ready for show time...
+      setWaitAnimationMessage('Calling LLM canister - get_chats')
+      const responseGetChats = await actor_.get_chats()
+      if ('Ok' in responseGetChats) {
+        const chatData = convertChatsToChatData(responseGetChats.Ok.chats)
+        setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+        setChatDisplay('ChatOutput')
+        setChats(chatData)
+      } else {
+        setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+        let ermsg = ''
+        if ('Err' in responseGetChats && 'Other' in responseGetChats.Err)
+          ermsg = responseGetChats.Err.Other
+        throw new Error(`Call to getChats returns error: ` + ermsg)
+      }
+    } else {
+      setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+      let ermsg = ''
+      if ('Err' in responseHealth && 'Other' in responseHealth.Err)
+        ermsg = responseHealth.Err.Other
+      throw new Error(`LLM canister is not healthy: ` + ermsg)
+    }
+  } catch (error) {
+    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+    console.error(error)
+    // Force a re-render, showing the ChatOutput
+    setChatDisplay('CanisterError')
+  } finally {
+    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+    setChatDisplay('ChatOutput')
+  }
+  setChatDisplay('ChatOutput')
 }
