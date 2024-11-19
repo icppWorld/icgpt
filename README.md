@@ -1,6 +1,6 @@
 # ICGPT
 
-[Try it out](https://icgpt.icpp.world) !
+[Try it out](https://icgpt.onicai.com) !
 
 ---
 
@@ -294,7 +294,7 @@ All front-end color styling is done using the open source Dracula UI:
 
 Step 0: When deploying for the first time:
 
-- Delete **canister_ids.json**, because when you forked or cloned the github repo [icgpt](https://github.com/icppWorld/icgpt), it contained the canisters used by our deployment at https://icgpt.icpp.world/
+- Delete **canister_ids.json**, because when you forked or cloned the github repo [icgpt](https://github.com/icppWorld/icgpt), it contained the canisters used by our deployment at https://icgpt.onicai.com/
 
 Step 1: Build the backend wasm files
 
@@ -313,6 +313,10 @@ Step 2: Deploy the backend canisters
   make upload-15M-ic
 
   dfx deploy --ic llama2_42M -m reinstall
+  # To avoid time-outs:
+  # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
+  dfx canister update-settings --ic llama2_42M --compute-allocation 1 # (costs a rental fee)
+  dfx canister status --ic llama2_42M 
   make upload-charles-42M-ic
   # make upload-42M-ic
 
@@ -324,7 +328,7 @@ Step 2: Deploy the backend canisters
   dfx canister --ic update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
   dfx canister --ic status llama_cpp_qwen25_05b_q8
   dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
-  # To be able to upload the model, I change the 
+  # To avoid time-outs:
   # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
   dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (costs a rental fee)
   dfx canister status --ic llama_cpp_qwen25_05b_q8 
