@@ -52,8 +52,8 @@ cd icgpt
 
 ## Update requirements-dev.txt
 
-We install python requirements from the icpp_llm & llama_cpp_canister repos.
-Make sure that requirements-dev.txt is pointing to the correct locations.
+We install python requirements from the icpp_llm & llama_cpp_canister repos as sibling repos.
+If you do it differently, make sure that requirements-dev.txt is pointing to the correct locations.
 
 ### pre-commit
 
@@ -127,7 +127,7 @@ The following models will be uploaded as ICGPT backend canisters:
 ../icpp_llm/llama2_c/tokenizers/tok4096.bin
 ../icpp_llm/llama2_c/models/stories15Mtok4096.bin
 
-# Charles: 42M with tok4096  (Not yet public)
+# Charles: 42M with tok4096
 ../charles/models/out-09/model.bin
 ../charles/models/out-09/tok4096.bin
 ```
@@ -142,61 +142,83 @@ The following files are used by the ICGPT deployment steps:
 
 ```
 # See: dfx.json 
-../../../onicai/repos/llama_cpp_canister/src/llama_cpp.did
-../../../onicai/repos/llama_cpp_canister/build/llama_cpp.wasm
+../llama_cpp_canister/build/llama_cpp.did
+../llama_cpp_canister/build/llama_cpp.wasm
 
 # See: Makefile
-../../../onicai/repos/llama_cpp_canister/scripts/upload.py
+../llama_cpp_canister/scripts/upload.py
 ```
 
 The following models will be uploaded as ICGPT backend canisters:
 ```
-../../../onicai/repos/llama_cpp_canister/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+../llama_cpp_canister/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
 ```
 
 ## Deploy ICGPT to local network
 
 Once the files of the backend LLMs are in place, as described in the previous step, you can deploy everything with:
 
+
 ```bash
+#NOTE: Be aware of the environment setting `DFX_NETWORK` in your shell. It might interfere with the scripts.
+unset DFX_NETWORK
+
 # Start the local network
 dfx start --clean
+
+# Deploy the Internet Identity canister to the local network
+dfx deps pull
+dfx deps init
+dfx deps deploy --network local
 
 # In another terminal, deploy the canisters
 # IMPORTANT: dfx deploy ... updates .env for local canisters
 #            .env is used by the frontend webpack.config.js !!!
 
 # Deploy the wasms & upload models & prime the canisters
-dfx deploy llama2_260K
+dfx deploy llama2_260K --network local
 make upload-260K-local
 
-dfx deploy llama2_15M
+dfx deploy llama2_15M --network local
 make upload-15M-local
 
-dfx deploy llama2_42M
+dfx deploy llama2_42M --network local
 make upload-charles-42M-local
 # make upload-42M-local
 
-dfx deploy llama2_110M
+dfx deploy llama2_110M --network local
 make upload-110M-local
 
 # llama.cpp qwen2.5 0.5b q8 (676 Mb)
-dfx deploy llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
-dfx canister update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
-dfx canister status llama_cpp_qwen25_05b_q8
-dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+dfx deploy llama_cpp_qwen25_05b_q8 --network local [-m upgrade/reinstall] # upgrade preserves model in stable memory
+# dfx canister update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
+dfx canister status llama_cpp_qwen25_05b_q8 --network local
 # if (re)installed:
   make upload-llama-cpp-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
-# else (After `dfx deploy -m upgrade`):
-  dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; } })'
+dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; } })'  --network local
+dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 13 : nat64; max_tokens_update = 13 : nat64 })'  --network local
+dfx canister call llama_cpp_qwen25_05b_q8 chats_resume  --network local
+#
+# Open up access:
+# 0 = only controllers
+# 1 = all except anonymous
+dfx canister call llama_cpp_qwen25_05b_q8 set_access '(record { level = 1 : nat16 })' --network local
+dfx canister call llama_cpp_qwen25_05b_q8 get_access --network local
+#
+# Final check
+dfx canister call llama_cpp_qwen25_05b_q8 ready  --network local
 
 
-dfx deploy internet_identity # REQUIRED: it installs II
-dfx deploy canister_frontend # REQUIRED: redeploy each time backend candid interface is modified.
-                             #           it creates src/declarations used by webpack.config.js
+
+# Deploy the frontend canisters to the local network
+dfx deploy canister_frontend  --network local # REQUIRED: redeploy each time backend candid interface is modified.
+                                              #           it creates src/declarations used by webpack.config.js
+
+# Generate the bindings
+dfx generate --network local canister_frontend
 
 # Note: you can stop the local network with
-dfx stop
+dfx stop 
 ```
 
 After the deployment steps described above, the full application is now deployed to the local network, including the front-end canister, the LLM back-end canisters, and the internet_identity canister:
@@ -262,11 +284,15 @@ The front-end is a react application with a webpack based build pipeline. Webpac
 
   conda activate icgpt
 
-  # start the npm development server, with hot reloading
-  npm run start
+  # build a dev version, so you can add breakpoints etc.
+  npm run build:dev
 
-  # to rebuild from scratch
-  npm run build
+  # start the npm development server, with hot reloading
+  # run against local deployment of backend
+  npm run start:local
+  # run against ic deployment of backend
+  npm run start:ic         (NOTE: not tested...)
+  
   ```
 
 - When you login, just create a new II, and once login completed, you will see the start screen shown at the top of this README.

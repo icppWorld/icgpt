@@ -1,4 +1,36 @@
 require('dotenv').config()
+console.warn(`process.env.DFX_VERSION before: ${process.env.DFX_VERSION}`)
+console.warn(`process.env.DFX_NETWORK before: ${process.env.DFX_NETWORK}`)
+console.warn(`process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 before: ${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`)
+
+// Overwrite the DFX_VERSION and DFX_NETWORK environment variables already present in the shell
+// process.env.DFX_VERSION = process.env.DFX_VERSION || 'local';
+// process.env.DFX_NETWORK = process.env.DFX_NETWORK || 'local';
+// Force override of all variables -> ensure .env always wins
+const dotenv = require('dotenv')
+const fs = require('fs')
+
+// Load .env manually
+const envConfig = dotenv.parse(fs.readFileSync('.env'))
+
+// Force override: apply all keys from .env to process.env
+for (const k in envConfig) {
+  process.env[k] = envConfig[k]
+}
+
+// Now log to confirm
+for (const key in process.env) {
+  if (key.startsWith('CANISTER_ID_') || key.startsWith('DFX_')) {
+    console.warn(`${key}: ${process.env[key]}`)
+  }
+}
+
+console.warn(`--------------------------------------------`)
+console.warn(`process.env.DFX_VERSION after: ${process.env.DFX_VERSION}`)
+console.warn(`process.env.DFX_NETWORK after: ${process.env.DFX_NETWORK}`)
+console.warn(`process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 before: ${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`)
+
+
 const path = require('path')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
@@ -8,6 +40,7 @@ const CopyPlugin = require('copy-webpack-plugin')
 // The environment variable NODE_ENV will the set to 'production' by the command
 //   dfx deploy --network ic
 const isDevelopment = process.env.NODE_ENV !== 'production'
+console.warn(`isDevelopment: ${isDevelopment}`)
 
 const frontendDirectory = 'frontend'
 
@@ -15,6 +48,8 @@ const frontendDirectory = 'frontend'
 const II_URL_LOCAL = `http://${process.env.CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`
 const II_URL_IC = 'https://identity.ic0.app/'
 const II_URL = process.env.NODE_ENV === 'production' ? II_URL_IC : II_URL_LOCAL
+console.warn(`II_URL_LOCAL: ${II_URL_LOCAL}`)
+console.warn(`II_URL_IC: ${II_URL_IC}`)
 console.warn(`II_URL: ${II_URL}`)
 
 // URL for IC host
@@ -22,6 +57,8 @@ const IC_HOST_URL_LOCAL = 'http://localhost:4943'
 const IC_HOST_URL_IC = 'https://ic0.app'
 const IC_HOST_URL =
   process.env.NODE_ENV === 'production' ? IC_HOST_URL_IC : IC_HOST_URL_LOCAL
+console.warn(`IC_HOST_URL_LOCAL: ${IC_HOST_URL_LOCAL}`)
+console.warn(`IC_HOST_URL_IC: ${IC_HOST_URL_IC}`)
 console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
 
 // More data from .env
@@ -29,8 +66,8 @@ console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
 // (1) make dfx-deploy-local   (local deploy, updates .env)
 // (2) edit .env, and update canister IDs to the ones of mainnet
 // (3) nmp run start
-const DFX_VERSION = `${process.env.DFX_VERSION}`
-const DFX_NETWORK = `${process.env.DFX_NETWORK}`
+const DFX_VERSION = process.env.DFX_VERSION || 'local'
+const DFX_NETWORK = process.env.DFX_NETWORK || 'local'
 const CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 = `${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
 const CANISTER_ID_LLAMA_CPP_CHARLES_42M = `${process.env.CANISTER_ID_LLAMA_CPP_CHARLES_42M}`
 const CANISTER_ID_LLAMA2_42M = `${process.env.CANISTER_ID_LLAMA2_42M}`

@@ -17,11 +17,12 @@
     "lint:fix": "eslint --fix .",
     "lint:check": "eslint --cache .",
     "build": "webpack",
-    "build:dev": "webpack --progress --mode development --env development",
-    "prebuild": "dfx generate",
-    "start": "webpack serve --mode development --env development",
-    "deploy:local": "dfx deploy --network=local",
-    "deploy:ic": "dfx deploy --network=ic"
+    "build:dev": "DFX_NETWORK=local webpack --progress --mode development --env development",
+    "prebuild": "echo skipping dfx generate",
+    "start:local": "DFX_NETWORK=local webpack serve --mode development --env development",
+    "start:ic": "DFX_NETWORK=ic webpack serve --mode development --env development",
+    "deploy:local": "DFX_NETWORK=local dfx deploy --network=local",
+    "deploy:ic": "DFX_NETWORK=ic dfx deploy --network=ic"
   },
   "devDependencies": {
     "@dfinity/agent": "latest",

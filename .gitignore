@@ -140,6 +140,8 @@ internet_identity_download
 # If you reinitialize the git repo, outcomment this line during initial commit
 src/frontend/assets/deploy-info/commit.json
 
+# dfx deps
+deps
 
 
 

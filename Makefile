@@ -505,7 +505,7 @@ upload-110M-local:
 upload-llama-cpp-qwen25-05b-q8-local:
 	@echo "---"
 	@echo "upload-llama-cpp-qwen25-05b-q8-local"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../)"; \
 	python -m llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
 
 .PHONY: upload-260K-ic
@@ -562,12 +562,12 @@ upload-110M-ic:
 upload-llama-cpp-qwen25-05b-q8-ic:
 	@echo "---"
 	@echo "upload-llama-cpp-qwen25-05b-q8-ic"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../)"; \
 	python -m llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
 	
 .PHONY: download-log-llama-cpp-qwen25-05b-q8-ic
 download-log-llama-cpp-qwen25-05b-q8-ic:
 	@echo "---"
 	@echo "download-log-llama-cpp-qwen25-05b-q8-ic"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../../../onicai/repos/)"; \
+	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ../)"; \
 	python -m llama_cpp_canister.scripts.download --network ic --canister llama_cpp_qwen25_05b_q8 --local-filename main-llama-cpp-qwen25-05b-q8.log main.log

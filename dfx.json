@@ -8,17 +8,9 @@
       "source": ["dist/frontend/"],
       "type": "assets"
     },
-    "internet_identity": {
-      "type": "custom",
-      "candid": "https://github.com/dfinity/internet-identity/releases/latest/download/internet_identity.did",
-      "wasm": "https://github.com/dfinity/internet-identity/releases/download/release-2024-10-01/internet_identity_dev.wasm.gz",
-      "shrink": false,
-      "remote": {
-        "candid": "internet_identity.did",
-        "id": {
-          "ic": "rdmx6-jaaaa-aaaaa-aaadq-cai"
-        }
-      }
+    "internet-identity": {
+      "type": "pull",
+      "id": "rdmx6-jaaaa-aaaaa-aaadq-cai"
     },
     "llama2_260K": {
       "type": "custom",
@@ -42,8 +34,8 @@
     },
     "llama_cpp_qwen25_05b_q8": {
       "type": "custom",
-      "candid": "../../../onicai/repos/llama_cpp_canister/src/llama_cpp.did",
-      "wasm": "../../../onicai/repos/llama_cpp_canister/build/llama_cpp.wasm"
+      "candid": "../llama_cpp_canister/build/llama_cpp.did",
+      "wasm": "../llama_cpp_canister/build/llama_cpp.wasm"
     }
   },
   "output_env_file": ".env",
