@@ -1,7 +1,9 @@
 require('dotenv').config()
 console.warn(`process.env.DFX_VERSION before: ${process.env.DFX_VERSION}`)
 console.warn(`process.env.DFX_NETWORK before: ${process.env.DFX_NETWORK}`)
-console.warn(`process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 before: ${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`)
+console.warn(
+  `process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 before: ${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
+)
 
 // Overwrite the DFX_VERSION and DFX_NETWORK environment variables already present in the shell
 // process.env.DFX_VERSION = process.env.DFX_VERSION || 'local';
@@ -28,8 +30,9 @@ for (const key in process.env) {
 console.warn(`--------------------------------------------`)
 console.warn(`process.env.DFX_VERSION after: ${process.env.DFX_VERSION}`)
 console.warn(`process.env.DFX_NETWORK after: ${process.env.DFX_NETWORK}`)
-console.warn(`process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 before: ${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`)
-
+console.warn(
+  `process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 before: ${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
+)
 
 const path = require('path')
 const webpack = require('webpack')
@@ -45,15 +48,18 @@ console.warn(`isDevelopment: ${isDevelopment}`)
 const frontendDirectory = 'frontend'
 
 // URL for Internet Identity
-const II_URL_LOCAL = `http://${process.env.CANISTER_ID_INTERNET_IDENTITY}.localhost:4943`
+// When using `dfx nns install`, the Internet Identity canister ID is always qhbym-qaaaa-aaaaa-aaafq-cai
+// Local network port is 8080 (see dfx.json networks.local.bind)
+const II_CANISTER_ID_LOCAL = 'qhbym-qaaaa-aaaaa-aaafq-cai'
+const II_URL_LOCAL = `http://${II_CANISTER_ID_LOCAL}.localhost:8080`
 const II_URL_IC = 'https://identity.ic0.app/'
 const II_URL = process.env.NODE_ENV === 'production' ? II_URL_IC : II_URL_LOCAL
 console.warn(`II_URL_LOCAL: ${II_URL_LOCAL}`)
 console.warn(`II_URL_IC: ${II_URL_IC}`)
 console.warn(`II_URL: ${II_URL}`)
 
-// URL for IC host
-const IC_HOST_URL_LOCAL = 'http://localhost:4943'
+// URL for IC host (local network port is 8080, see dfx.json networks.local.bind)
+const IC_HOST_URL_LOCAL = 'http://localhost:8080'
 const IC_HOST_URL_IC = 'https://ic0.app'
 const IC_HOST_URL =
   process.env.NODE_ENV === 'production' ? IC_HOST_URL_IC : IC_HOST_URL_LOCAL
@@ -69,10 +75,8 @@ console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
 const DFX_VERSION = process.env.DFX_VERSION || 'local'
 const DFX_NETWORK = process.env.DFX_NETWORK || 'local'
 const CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 = `${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
-const CANISTER_ID_LLAMA_CPP_CHARLES_42M = `${process.env.CANISTER_ID_LLAMA_CPP_CHARLES_42M}`
 const CANISTER_ID_LLAMA2_42M = `${process.env.CANISTER_ID_LLAMA2_42M}`
 const CANISTER_ID_LLAMA2_260K = `${process.env.CANISTER_ID_LLAMA2_260K}`
-const CANISTER_ID_LLAMA2_110M = `${process.env.CANISTER_ID_LLAMA2_110M}`
 const CANISTER_ID_LLAMA2_15M = `${process.env.CANISTER_ID_LLAMA2_15M}`
 const CANISTER_ID_INTERNET_IDENTITY = `${process.env.CANISTER_ID_INTERNET_IDENTITY}`
 const CANISTER_ID_CANISTER_FRONTEND = `${process.env.CANISTER_ID_CANISTER_FRONTEND}`
@@ -81,12 +85,8 @@ console.warn(`DFX_NETWORK: ${DFX_NETWORK}`)
 console.warn(
   `CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8: ${CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
 )
-console.warn(
-  `CANISTER_ID_LLAMA_CPP_CHARLES_42M: ${CANISTER_ID_LLAMA_CPP_CHARLES_42M}`
-)
 console.warn(`CANISTER_ID_LLAMA2_42M: ${CANISTER_ID_LLAMA2_42M}`)
 console.warn(`CANISTER_ID_LLAMA2_260K: ${CANISTER_ID_LLAMA2_260K}`)
-console.warn(`CANISTER_ID_LLAMA2_110M: ${CANISTER_ID_LLAMA2_110M}`)
 console.warn(`CANISTER_ID_LLAMA2_15M: ${CANISTER_ID_LLAMA2_15M}`)
 console.warn(`CANISTER_ID_INTERNET_IDENTITY: ${CANISTER_ID_INTERNET_IDENTITY}`)
 console.warn(`CANISTER_ID_CANISTER_FRONTEND: ${CANISTER_ID_CANISTER_FRONTEND}`)
@@ -186,11 +186,6 @@ module.exports = (env = {}, args = {}) => {
           'src/declarations',
           'llama_cpp_qwen25_05b_q8'
         ),
-        DeclarationsCanisterLlamacpp_Charles_42m: path.resolve(
-          __dirname,
-          'src/declarations',
-          'llama_cpp_charles_42m'
-        ),
         DeclarationsCanisterLlama2_42M: path.resolve(
           __dirname,
           'src/declarations',
@@ -200,11 +195,6 @@ module.exports = (env = {}, args = {}) => {
           __dirname,
           'src/declarations',
           'llama2_260K'
-        ),
-        DeclarationsCanisterLlama2_110M: path.resolve(
-          __dirname,
-          'src/declarations',
-          'llama2_110M'
         ),
         DeclarationsCanisterLlama2_15M: path.resolve(
           __dirname,
@@ -281,10 +271,8 @@ module.exports = (env = {}, args = {}) => {
         DFX_VERSION,
         DFX_NETWORK,
         CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8,
-        CANISTER_ID_LLAMA_CPP_CHARLES_42M,
         CANISTER_ID_LLAMA2_42M,
         CANISTER_ID_LLAMA2_260K,
-        CANISTER_ID_LLAMA2_110M,
         CANISTER_ID_LLAMA2_15M,
         CANISTER_ID_INTERNET_IDENTITY,
         CANISTER_ID_CANISTER_FRONTEND,
@@ -339,12 +327,11 @@ module.exports = (env = {}, args = {}) => {
       path: path.join(__dirname, 'dist', 'frontend'),
       clean: true,
     },
-    // proxy /api to port 4943 during development.
-    // if you edit dfx.json to define a project-specific local network, change the port to match.
+    // proxy /api to port 8080 during development (see dfx.json networks.local.bind).
     devServer: {
       proxy: {
         '/api': {
-          target: 'http://127.0.0.1:4943',
+          target: 'http://127.0.0.1:8080',
           changeOrigin: true,
           pathRewrite: {
             '^/api': '/api',

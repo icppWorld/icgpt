@@ -319,11 +319,6 @@ export async function doSubmit({
         moduleToImport = import('DeclarationsCanisterLlama2_42M')
         numStepsFetchInference = 80
         break
-      case '110M':
-        console.log('canister - TinyStories, 110M, Raw LLM')
-        moduleToImport = import('DeclarationsCanisterLlama2_110M')
-        numStepsFetchInference = 100
-        break
       default:
         console.log('canister - TinyStories, 42M, Raw LLM')
         moduleToImport = import('DeclarationsCanisterLlama2_42M')

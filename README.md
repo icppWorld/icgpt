@@ -41,6 +41,9 @@ git clone https://github.com/icppWorld/icpp_llm
 
 git clone https://github.com/onicai/llama_cpp_canister
 # FOLLOW Set Up INSTRUCTIONS OF llama_cpp_canister README !!!
+
+git clone https://github.com/onicai/Charles
+# FOLLOW INSTRUCTIONS OF Charles README to download the model from HuggingFace !!!
 ```
 
 Clone icgpt repo:
@@ -81,6 +84,8 @@ Install the toolchain:
 
 ```bash
 conda activate icgpt
+npm install
+
 make install-all-ubuntu  # for Ubuntu.
 make install-all-mac     # for Mac.
                          # see Makefile to replicate for other systems
@@ -128,8 +133,8 @@ The following models will be uploaded as ICGPT backend canisters:
 ../icpp_llm/llama2_c/models/stories15Mtok4096.bin
 
 # Charles: 42M with tok4096
-../charles/models/out-09/model.bin
-../charles/models/out-09/tok4096.bin
+../Charles/models/out-09/model.bin
+../Charles/models/out-09/tok4096.bin
 ```
 
 ### Setup for llama_cpp_canister
@@ -166,12 +171,9 @@ unset DFX_NETWORK
 # Start the local network
 dfx start --clean
 
-# Deploy the Internet Identity canister to the local network
-dfx deps pull
-dfx deps init
-dfx deps deploy --network local
+# Deploy the nns to the local network
+dfx nns install
 
-# In another terminal, deploy the canisters
 # IMPORTANT: dfx deploy ... updates .env for local canisters
 #            .env is used by the frontend webpack.config.js !!!
 
@@ -184,10 +186,6 @@ make upload-15M-local
 
 dfx deploy llama2_42M --network local
 make upload-charles-42M-local
-# make upload-42M-local
-
-dfx deploy llama2_110M --network local
-make upload-110M-local
 
 # llama.cpp qwen2.5 0.5b q8 (676 Mb)
 dfx deploy llama_cpp_qwen25_05b_q8 --network local [-m upgrade/reinstall] # upgrade preserves model in stable memory
@@ -196,7 +194,7 @@ dfx canister status llama_cpp_qwen25_05b_q8 --network local
 # if (re)installed:
   make upload-llama-cpp-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
 dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; } })'  --network local
-dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 13 : nat64; max_tokens_update = 13 : nat64 })'  --network local
+dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })'  --network local
 dfx canister call llama_cpp_qwen25_05b_q8 chats_resume  --network local
 #
 # Open up access:
@@ -208,14 +206,14 @@ dfx canister call llama_cpp_qwen25_05b_q8 get_access --network local
 # Final check
 dfx canister call llama_cpp_qwen25_05b_q8 ready  --network local
 
-
+# Generate the bindings
+dfx generate --network local
 
 # Deploy the frontend canisters to the local network
 dfx deploy canister_frontend  --network local # REQUIRED: redeploy each time backend candid interface is modified.
                                               #           it creates src/declarations used by webpack.config.js
 
-# Generate the bindings
-dfx generate --network local canister_frontend
+
 
 # Note: you can stop the local network with
 dfx stop 
@@ -344,10 +342,6 @@ Step 2: Deploy the backend canisters
   dfx canister update-settings --ic llama2_42M --compute-allocation 1 # (costs a rental fee)
   dfx canister status --ic llama2_42M 
   make upload-charles-42M-ic
-  # make upload-42M-ic
-
-  dfx deploy --ic llama2_110M -m reinstall
-  make upload-110M-ic
 
   # qwen2.5 0.5b q8 (676 Mb)
   dfx deploy --ic llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory

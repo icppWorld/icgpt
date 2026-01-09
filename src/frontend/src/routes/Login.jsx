@@ -31,55 +31,6 @@ export function Login({ setAuthClient }) {
             </Heading>
 
             <LogInWithInternetIdentity setAuthClient={setAuthClient} />
-
-            {/* <Divider></Divider>
-
-            <Box>
-              <Table>
-                <tbody>
-                  <tr>
-                    <td className="drac-text-bold drac-text-white">data set</td>
-                    <td className="drac-text-bold drac-text-white">
-                      model size
-                    </td>
-                    <td className="drac-text-bold drac-text-white">
-                      finetuned
-                    </td>
-                    <td className="drac-text-bold drac-text-white">status</td>
-                  </tr>
-                  <tr>
-                    <td className="drac-text drac-text-cyan">TinyStories</td>
-                    <td className="drac-text drac-text-cyan">15M</td>
-                    <td className="drac-text drac-text-cyan">LLM</td>
-                    <td className="drac-text drac-text-cyan">Deployed</td>
-                  </tr>
-                  <tr>
-                    <td className="drac-text drac-text-orange">TinyStories</td>
-                    <td className="drac-text drac-text-orange">260K</td>
-                    <td className="drac-text drac-text-orange">LLM</td>
-                    <td className="drac-text drac-text-orange">Coming soon</td>
-                  </tr>
-                  <tr>
-                    <td className="drac-text drac-text-orange">TinyStories</td>
-                    <td className="drac-text drac-text-orange">15M</td>
-                    <td className="drac-text drac-text-orange">Chat</td>
-                    <td className="drac-text drac-text-orange">Coming soon</td>
-                  </tr>
-                  <tr>
-                    <td className="drac-text drac-text-red">TinyStories</td>
-                    <td className="drac-text drac-text-red">42M, 110M</td>
-                    <td className="drac-text drac-text-red">LLM, Chat</td>
-                    <td className="drac-text drac-text-red">Research</td>
-                  </tr>
-                  <tr>
-                    <td className="drac-text drac-text-red">Llama2</td>
-                    <td className="drac-text drac-text-red">7B, 13B, 70B</td>
-                    <td className="drac-text drac-text-red">LLM, Chat</td>
-                    <td className="drac-text drac-text-red">Research</td>
-                  </tr>
-                </tbody>
-              </Table>
-            </Box> */}
           </Card>
         </div>
         <Footer />

@@ -55,13 +55,6 @@ function buildRunUpdateInput(
       // systemPrompt = '<|im_start|>system<|im_end|>\n'
       userPrompt = '<|im_start|>user\n' + inputString + '<|im_end|>\n'
       fullPrompt = systemPrompt + userPrompt + '<|im_start|>assistant\n'
-    } else if (
-      modelType === 'llama.cpp Charles' &&
-      finetuneType === 'Raw LLM'
-    ) {
-      systemPrompt = ''
-      userPrompt = inputString
-      fullPrompt = systemPrompt + userPrompt
     } else {
       console.log('buildRunUpdateInput - UNKNOWN modelType & finetuneType')
     }
@@ -421,13 +414,6 @@ export async function doSubmitLlamacpp({
         moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
         break
     }
-  } else if (modelType === 'llama.cpp Charles' && finetuneType === 'Raw LLM') {
-    switch (modelSize) {
-      case '42M':
-        console.log('canister - llama cpp Charles 42M, Raw LLM')
-        moduleToImport = import('DeclarationsCanisterLlamacpp_Charles_42m')
-        break
-    }
   } else {
     console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
     moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
@@ -625,13 +611,6 @@ export async function getChatsLlamacpp({
       case '0.5b_q8_0':
         console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
         moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
-        break
-    }
-  } else if (modelType === 'llama.cpp Charles' && finetuneType === 'Raw LLM') {
-    switch (modelSize) {
-      case '42M':
-        console.log('canister - llama cpp Charles 42M, Raw LLM')
-        moduleToImport = import('DeclarationsCanisterLlamacpp_Charles_42m')
         break
     }
   } else {

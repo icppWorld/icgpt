@@ -8,34 +8,122 @@
       "source": ["dist/frontend/"],
       "type": "assets"
     },
-    "internet-identity": {
-      "type": "pull",
-      "id": "rdmx6-jaaaa-aaaaa-aaadq-cai"
-    },
-    "llama2_260K": {
-      "type": "custom",
+    "llama2_15M": {
       "candid": "../icpp_llm/llama2_c/src/llama2.did",
+      "type": "custom",
       "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
     },
-    "llama2_15M": {
-      "type": "custom",
+    "llama2_260K": {
       "candid": "../icpp_llm/llama2_c/src/llama2.did",
+      "type": "custom",
       "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
     },
     "llama2_42M": {
-      "type": "custom",
       "candid": "../icpp_llm/llama2_c/src/llama2.did",
-      "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
-    },
-    "llama2_110M": {
       "type": "custom",
-      "candid": "../icpp_llm/llama2_c/src/llama2.did",
       "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
     },
     "llama_cpp_qwen25_05b_q8": {
-      "type": "custom",
       "candid": "../llama_cpp_canister/build/llama_cpp.did",
+      "type": "custom",
       "wasm": "../llama_cpp_canister/build/llama_cpp.wasm"
+    },
+    "nns-cycles-minting": {
+      "build": "",
+      "candid": "candid/nns-cycles-minting.did",
+      "remote": {
+        "id": {
+          "local": "rkp4c-7iaaa-aaaaa-aaaca-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-genesis-token": {
+      "build": "",
+      "candid": "candid/nns-genesis-token.did",
+      "remote": {
+        "id": {
+          "local": "renrk-eyaaa-aaaaa-aaada-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-governance": {
+      "build": "",
+      "candid": "candid/nns-governance.did",
+      "remote": {
+        "id": {
+          "local": "rrkah-fqaaa-aaaaa-aaaaq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-ledger": {
+      "build": "",
+      "candid": "candid/nns-ledger.did",
+      "remote": {
+        "id": {
+          "local": "ryjl3-tyaaa-aaaaa-aaaba-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-lifeline": {
+      "build": "",
+      "candid": "candid/nns-lifeline.did",
+      "remote": {
+        "id": {
+          "local": "rno2w-sqaaa-aaaaa-aaacq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-registry": {
+      "build": "",
+      "candid": "candid/nns-registry.did",
+      "remote": {
+        "id": {
+          "local": "rwlgt-iiaaa-aaaaa-aaaaa-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-root": {
+      "build": "",
+      "candid": "candid/nns-root.did",
+      "remote": {
+        "id": {
+          "local": "r7inp-6aaaa-aaaaa-aaabq-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    },
+    "nns-sns-wasm": {
+      "build": "",
+      "candid": "candid/nns-sns-wasm.did",
+      "remote": {
+        "id": {
+          "local": "qaa6y-5yaaa-aaaaa-aaafa-cai"
+        }
+      },
+      "type": "custom",
+      "wasm": ""
+    }
+  },
+  "networks": {
+    "local": {
+      "bind": "127.0.0.1:8080",
+      "replica": {
+        "subnet_type": "system"
+      },
+      "type": "ephemeral"
     }
   },
   "output_env_file": ".env",
