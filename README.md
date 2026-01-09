@@ -347,7 +347,15 @@ Step 2: Deploy the backend canisters
   dfx deploy --ic llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
   dfx canister --ic update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
   dfx canister --ic status llama_cpp_qwen25_05b_q8
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 10 : nat64; max_tokens_update = 10 : nat64 })'
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })'
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 chats_resume
+  #
+  # Open up access to all except anonymous (An upgrade resets it to 0 !):
+  # 0 = only controllers
+  # 1 = all except anonymous
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_access '(record { level = 1 : nat16 })'
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 get_access
+
   # To avoid time-outs:
   # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
   dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (costs a rental fee)
