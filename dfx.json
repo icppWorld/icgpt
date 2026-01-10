@@ -5,9 +5,7 @@
       "frontend": {
         "entrypoint": "src/frontend/src/index.html"
       },
-      "source": [
-        "dist/frontend/"
-      ],
+      "source": ["dist/frontend/"],
       "type": "assets"
     },
     "llama2_15M": {
