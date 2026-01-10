@@ -5,7 +5,9 @@
       "frontend": {
         "entrypoint": "src/frontend/src/index.html"
       },
-      "source": ["dist/frontend/"],
+      "source": [
+        "dist/frontend/"
+      ],
       "type": "assets"
     },
     "llama2_15M": {
@@ -24,9 +26,9 @@
       "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
     },
     "llama_cpp_qwen25_05b_q8": {
-      "candid": "../llama_cpp_canister/build/llama_cpp.did",
+      "candid": "llms/llama_cpp_canister/build/llama_cpp.did",
       "type": "custom",
-      "wasm": "../llama_cpp_canister/build/llama_cpp.wasm"
+      "wasm": "llms/llama_cpp_canister/build/llama_cpp.wasm"
     },
     "nns-cycles-minting": {
       "build": "",

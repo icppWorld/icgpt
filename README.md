@@ -7,8 +7,8 @@
 The full application consists of 3 GitHub repositories:
 
 1. [icgpt](https://github.com/icppWorld/icgpt) (This repo)
-2. [icpp_llm](https://github.com/icppWorld/icpp_llm)
-3. [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister)
+2. [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister)
+3. [icpp_llm](https://github.com/icppWorld/icpp_llm)
 
 # Setup
 
@@ -33,24 +33,25 @@ conda activate icgpt
 
 ## git
 
+Clone icgpt repo:
+
+```bash
+git clone git@github.com:icppWorld/icgpt.git
+cd icgpt
+```
+
+### Dependency git repos
+
+TODO: Remove these dependencies, similar to the way llama_cpp_canister is now using the official release build in the llms/llama_cpp_canister folder.
+
 Clone dependency repos:
 
 ```bash
 git clone https://github.com/icppWorld/icpp_llm
 # FOLLOW Set Up INSTRUCTIONS OF icpp_llm/llama2_c README !!!
 
-git clone https://github.com/onicai/llama_cpp_canister
-# FOLLOW Set Up INSTRUCTIONS OF llama_cpp_canister README !!!
-
 git clone https://github.com/onicai/Charles
 # FOLLOW INSTRUCTIONS OF Charles README to download the model from HuggingFace !!!
-```
-
-Clone icgpt repo:
-
-```bash
-git clone git@github.com:icppWorld/icgpt.git
-cd icgpt
 ```
 
 ## Update requirements-dev.txt
@@ -105,7 +106,17 @@ make all-static-check
 
 ## The backend LLM canisters
 
-ICGPT includes LLM backend canisters from [icpp_lmm](https://github.com/icppWorld/icpp_llm) & [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister)
+ICGPT includes LLM backend canisters from [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister) & [icpp_lmm](https://github.com/icppWorld/icpp_llm) 
+
+### Setup for llama_cpp_canister
+
+Download qwen2.5-0.5b-instruct-q8_0.gguf from https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF
+
+Place it in this location: 
+```
+llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+```
+
 
 ### Setup for icpp_llm
 - Clone [icpp_lmm](https://github.com/icppWorld/icpp_llm) as a sibling to this repo
@@ -135,28 +146,6 @@ The following models will be uploaded as ICGPT backend canisters:
 # Charles: 42M with tok4096
 ../Charles/models/out-09/model.bin
 ../Charles/models/out-09/tok4096.bin
-```
-
-### Setup for llama_cpp_canister
-- Clone [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister):
-- Follow instructions of the [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister) to :
-  - Build the wasm
-  - Download the GGUF model from Huggingface
-
-The following files are used by the ICGPT deployment steps:
-
-```
-# See: dfx.json 
-../llama_cpp_canister/build/llama_cpp.did
-../llama_cpp_canister/build/llama_cpp.wasm
-
-# See: Makefile
-../llama_cpp_canister/scripts/upload.py
-```
-
-The following models will be uploaded as ICGPT backend canisters:
-```
-../llama_cpp_canister/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
 ```
 
 ## Deploy ICGPT to local network
@@ -356,11 +345,12 @@ Step 2: Deploy the backend canisters
   dfx canister --ic call llama_cpp_qwen25_05b_q8 set_access '(record { level = 1 : nat16 })'
   dfx canister --ic call llama_cpp_qwen25_05b_q8 get_access
 
-  # To avoid time-outs:
+  # This is not longer needed, after updates to the Internet Computer.
+  # Leaving in the instructions to avoid time-outs during uploads, just in case:
   # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
-  dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (costs a rental fee)
-  dfx canister status --ic llama_cpp_qwen25_05b_q8 
-  #
+  # dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (costs a rental fee)
+  # dfx canister status --ic llama_cpp_qwen25_05b_q8 
+  
   # After `dfx deploy -m reinstall`: 
   make upload-llama-cpp-qwen25-05b-q8-ic  # Not needed after an upgrade, only after initial or reinstall
   #
@@ -368,7 +358,9 @@ Step 2: Deploy the backend canisters
   dfx canister --ic  call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; } })'
 
   #--------------------------------------------------------------------------
-  # IMPORTANT: ic-py might throw a timeout => patch it here:
+  # TODO: Upgrade from ic-py to icp-py-core and remove description of this issue
+  #
+  # IMPORTANT: during upload, ic-py might throw a timeout => patch it here:
   # Ubuntu:
   # /home/<user>/miniconda3/envs/<your-env>/lib/python3.11/site-packages/httpx/_config.py
   # Mac:

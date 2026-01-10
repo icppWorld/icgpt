@@ -134,8 +134,8 @@ z
 README-WIP.md
 Makefile-WIP
 
-# If you download the internet identity into this folder, you can install without wifi
-internet_identity_download
+# llm models for llama_cpp_canister
+*.gguf
 
 # If you reinitialize the git repo, outcomment this line during initial commit
 src/frontend/assets/deploy-info/commit.json
