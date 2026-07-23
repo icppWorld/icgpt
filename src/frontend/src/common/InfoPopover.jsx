@@ -21,23 +21,40 @@ export function InfoPopover({ ariaLabel, width, children }) {
 
   const isMouse = (e) => e.pointerType === 'mouse' || e.pointerType === 'pen'
 
-  // Place the popup just below the icon, but keep it inside the window.
+  // Place the popup next to the icon, but keep it inside the window.
   // Centering it on the icon alone would push it off screen whenever the icon
-  // sits close to an edge, which is exactly what happens on a phone.
+  // sits close to an edge, which is exactly what happens on a phone. And on a
+  // short window (a phone held in landscape) there is not enough room below
+  // the icon, so we put it on whichever side has the most space and cap its
+  // height, rather than letting the tail of the text fall off the screen.
   React.useLayoutEffect(() => {
     if (!isOpen) return undefined
 
     function place() {
       if (!buttonRef.current) return
       const icon = buttonRef.current.getBoundingClientRect()
-      const maxWidth = window.innerWidth - 2 * MARGIN
-      const popupWidth = Math.min(parseInt(width, 10), maxWidth)
+
+      const popupWidth = Math.min(
+        parseInt(width, 10),
+        window.innerWidth - 2 * MARGIN
+      )
       const centered = icon.left + icon.width / 2 - popupWidth / 2
       const left = Math.max(
         MARGIN,
         Math.min(centered, window.innerWidth - popupWidth - MARGIN)
       )
-      setPosition({ top: icon.bottom + MARGIN, left, width: popupWidth })
+
+      const spaceBelow = window.innerHeight - icon.bottom - 2 * MARGIN
+      const spaceAbove = icon.top - 2 * MARGIN
+      const below = spaceBelow >= spaceAbove
+
+      setPosition({
+        left,
+        width: popupWidth,
+        top: below ? icon.bottom + MARGIN : undefined,
+        bottom: below ? undefined : window.innerHeight - icon.top + MARGIN,
+        maxHeight: Math.max(below ? spaceBelow : spaceAbove, 0),
+      })
     }
 
     place()
@@ -91,9 +108,15 @@ export function InfoPopover({ ariaLabel, width, children }) {
             // layout it lives in. It stays a DOM child of the wrapper though,
             // so moving the pointer into it does not trigger a pointer leave.
             position: 'fixed',
-            top: `${position.top}px`,
+            top: position.top === undefined ? undefined : `${position.top}px`,
+            bottom:
+              position.bottom === undefined
+                ? undefined
+                : `${position.bottom}px`,
             left: `${position.left}px`,
             width: `${position.width}px`,
+            maxHeight: `${position.maxHeight}px`,
+            overflowY: 'auto',
             zIndex: 1100,
             backgroundColor: '#21222c',
             border: '1px solid #44475a',
