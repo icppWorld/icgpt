@@ -136,6 +136,62 @@ function wordDelayMs(numWords) {
   )
 }
 
+// -----------------------------------------------------------------------------
+// Retry transient failures of the on-chain calls.
+//
+// A call to the canister can fail at the transport level: a network blip, a
+// boundary-node 429/503, a request timeout, or - only on the local replica -
+// the fetchRootKey certificate race. These are transient: the canister was
+// either never reached or its reply was lost, so retrying is safe and usually
+// succeeds. This matters most on the IC under concurrent load, where without a
+// retry a single such blip mid-conversation would abort the whole chat.
+//
+// Application-level errors are NOT retried here: the canister returns those as
+// `{ Err }` in a SUCCESSFUL response (eg. access denied, model not loaded), not
+// as a thrown exception, so the callers below still handle those as final.
+//
+// Note on run_update: an update call that committed on-chain but whose reply
+// was lost will, on retry, resume from the already-advanced state - so at worst
+// one bunch of tokens is skipped. That is a far better failure mode than losing
+// the whole conversation, which is what happened before.
+const RETRY_MAX_ATTEMPTS = 4
+const RETRY_BASE_DELAY_MS = 500
+const RETRY_MAX_DELAY_MS = 8000
+
+// Returns { result, durationMs }, where durationMs times ONLY the successful
+// attempt (no backoff), which is exactly what the pacing budget wants.
+async function withRetry(fn, label, onRetry) {
+  for (let attempt = 1; ; attempt += 1) {
+    const startedMs = performance.now()
+    try {
+      const result = await fn()
+      return { result, durationMs: performance.now() - startedMs }
+    } catch (error) {
+      if (attempt >= RETRY_MAX_ATTEMPTS) {
+        console.error(
+          `withRetry [${label}] gave up after ${attempt} attempts: ${error.message}`
+        )
+        throw error
+      }
+      const delayMs = Math.min(
+        RETRY_MAX_DELAY_MS,
+        RETRY_BASE_DELAY_MS * 2 ** (attempt - 1)
+      )
+      console.warn(
+        `withRetry [${label}] attempt ${attempt} failed (${error.message}); retrying in ${delayMs}ms`
+      )
+      if (onRetry) onRetry(attempt, delayMs)
+      await sleep(delayMs)
+    }
+  }
+}
+
+// Show a retry notice in the wait animation while withRetry backs off.
+const notifyRetry = (setWaitAnimationMessage) => (attempt) =>
+  setWaitAnimationMessage(
+    `The on-chain LLM is busy, retrying (attempt ${attempt})...`
+  )
+
 async function waitForQueueToEmpty() {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered llamacpp.js waitForQueueToEmpty ')
@@ -190,7 +246,11 @@ async function fetchInference(
       try {
         const newChatInput = buildNewChatInput()
         console.log('Calling new_chat with input: ', newChatInput)
-        const responseNewChat = await actor.new_chat(newChatInput)
+        const { result: responseNewChat } = await withRetry(
+          () => actor.new_chat(newChatInput),
+          'new_chat',
+          notifyRetry(setWaitAnimationMessage)
+        )
         if ('Ok' in responseNewChat) {
           console.log(
             'Call to new_chat successful with responseNewChat: ',
@@ -234,9 +294,20 @@ async function fetchInference(
           finetuneType
         )
         console.log('Calling run_update with input: ', runUpdateInput)
-        const startMs = performance.now()
-        responseUpdate = await actor.run_update(runUpdateInput)
-        lastCallDurationMs = performance.now() - startMs
+        // Re-assert the phase message each iteration, so a lingering "retrying"
+        // notice from a previous transient failure self-corrects.
+        setWaitAnimationMessage(
+          generating
+            ? 'On-chain token generation in progress'
+            : 'On-chain token ingestion in progress'
+        )
+        const runUpdateResponse = await withRetry(
+          () => actor.run_update(runUpdateInput),
+          'run_update',
+          notifyRetry(setWaitAnimationMessage)
+        )
+        responseUpdate = runUpdateResponse.result
+        lastCallDurationMs = runUpdateResponse.durationMs
         console.log('run_update took (ms): ', lastCallDurationMs)
         if ('Ok' in responseUpdate) {
           console.log(
@@ -487,7 +558,11 @@ export async function doSubmitLlamacpp({
     // Force a re-render, showing the WaitAnimation
     setChatDisplay('WaitAnimation')
     console.log('Calling actor_.health ')
-    const responseHealth = await actor_.health()
+    const { result: responseHealth } = await withRetry(
+      () => actor_.health(),
+      'health',
+      notifyRetry(setWaitAnimationMessage)
+    )
     console.log('llm canister health: ', responseHealth)
 
     if ('Ok' in responseHealth) {
@@ -684,7 +759,11 @@ export async function getChatsLlamacpp({
     setWaitAnimationMessage('Retrieving your chats from on-chain storage')
     setChatDisplay('WaitAnimation')
     console.log('Calling actor_.health ')
-    const responseHealth = await actor_.health()
+    const { result: responseHealth } = await withRetry(
+      () => actor_.health(),
+      'health',
+      notifyRetry(setWaitAnimationMessage)
+    )
     console.log('llm canister health: ', responseHealth)
 
     if ('Ok' in responseHealth) {
@@ -692,7 +771,11 @@ export async function getChatsLlamacpp({
 
       // Ok, ready for show time...
       setWaitAnimationMessage('Retrieving your chats from on-chain storage')
-      const responseGetChats = await actor_.get_chats()
+      const { result: responseGetChats } = await withRetry(
+        () => actor_.get_chats(),
+        'get_chats',
+        notifyRetry(setWaitAnimationMessage)
+      )
       if ('Ok' in responseGetChats) {
         const chatData = convertChatsToChatData(responseGetChats.Ok.chats)
         setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
