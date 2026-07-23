@@ -116,6 +116,7 @@ export function Chat() {
               turns={turns}
               updateCalls={stats.updateCalls}
               tokens={stats.tokens}
+              genMs={stats.genMs}
               heightChatInput={heightChatInput}
             />
             <ChatNewChat

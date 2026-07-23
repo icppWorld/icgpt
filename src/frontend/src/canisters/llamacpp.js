@@ -328,7 +328,11 @@ async function fetchInference({
       genTotalMs += durationMs
       genTotalWords += chunk.split(/\s+/).filter(Boolean).length
       const tok = estimateTokens(chunk)
-      setStats((s) => ({ ...s, tokens: s.tokens + tok }))
+      setStats((s) => ({
+        ...s,
+        tokens: s.tokens + tok,
+        genMs: s.genMs + durationMs,
+      }))
     }
 
     if (responseUpdate.Ok.conversation) {
@@ -487,7 +491,7 @@ export async function doNewChatLlamacpp({
   setChatOutputText('')
   if (setMessages) setMessages([])
   if (setConversationBase) setConversationBase('')
-  if (setStats) setStats({ updateCalls: 0, tokens: 0 })
+  if (setStats) setStats({ updateCalls: 0, tokens: 0, genMs: 0 })
   setChatDisplay('SelectModel')
 }
 

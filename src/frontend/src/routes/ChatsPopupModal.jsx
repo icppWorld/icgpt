@@ -179,7 +179,7 @@ export function ChatsPopupModal({
                 setChatOutputText('')
                 setMessages(chat.messages || [])
                 setConversationBase('')
-                setStats({ updateCalls: 0, tokens: 0 })
+                setStats({ updateCalls: 0, tokens: 0, genMs: 0 })
                 setChatNew(true)
                 setChatDone(true)
                 setChatDisplay('ChatOutput')

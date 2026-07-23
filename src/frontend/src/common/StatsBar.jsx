@@ -1,6 +1,7 @@
 // eslint-disable-next-line no-use-before-define
 import React from 'react'
 import PropTypes from 'prop-types'
+import { InfoPopover } from './InfoPopover'
 
 // Rough, clearly-approximate cost model. Inference update calls are
 // instruction-heavy; this is an ORDER-OF-MAGNITUDE placeholder to be calibrated
@@ -16,12 +17,20 @@ function formatCycles(cycles) {
   return `${cycles}`
 }
 
-// A subtle live stats line for the conversation, pinned just above the input.
-export function StatsBar({ turns, updateCalls, tokens, heightChatInput }) {
+// A subtle live stats line for the conversation, pinned just above the input,
+// with an (i) popover explaining how each number is determined.
+export function StatsBar({
+  turns,
+  updateCalls,
+  tokens,
+  genMs,
+  heightChatInput,
+}) {
   if (updateCalls === 0 && turns === 0) return null
 
   const cycles = updateCalls * CYCLES_PER_UPDATE_CALL
   const usd = (cycles / 1e12) * USD_PER_TRILLION_CYCLES
+  const tokPerSec = genMs > 0 ? (tokens / (genMs / 1000)).toFixed(1) : null
 
   const style = {
     position: 'fixed',
@@ -32,6 +41,7 @@ export function StatsBar({ turns, updateCalls, tokens, heightChatInput }) {
     color: '#6272a4',
     letterSpacing: '0.02em',
     textAlign: 'right',
+    // The line itself must not block the page; only the (i) is interactive.
     pointerEvents: 'none',
   }
 
@@ -46,9 +56,41 @@ export function StatsBar({ turns, updateCalls, tokens, heightChatInput }) {
       <span>{updateCalls} on-chain calls</span>
       {sep}
       <span>~{tokens.toLocaleString()} tokens</span>
+      {tokPerSec !== null ? (
+        <>
+          {sep}
+          <span>~{tokPerSec} tok/s</span>
+        </>
+      ) : null}
       {sep}
       <span>
         ~{formatCycles(cycles)} cycles (~${usd.toFixed(4)})
+      </span>
+      <span style={{ pointerEvents: 'auto' }}>
+        <InfoPopover ariaLabel="How these stats are determined" width="340px">
+          These numbers describe the current conversation with the on-chain LLM:
+          <br />
+          <br />
+          <strong>turns</strong> — messages you have sent.
+          <br />
+          <strong>on-chain calls</strong> — update calls made to the canister
+          (one <code>new_chat</code> per conversation, then repeated{' '}
+          <code>run_update</code> calls that ingest your prompt and generate the
+          reply in batches).
+          <br />
+          <strong>tokens</strong> — <em>approximate</em>, estimated from the
+          word count (~1.35 tokens/word). The canister does not report exact
+          token counts.
+          <br />
+          <strong>tok/s</strong> — tokens divided by the on-chain generation
+          time (how fast the canister produced them; excludes network
+          round-trips).
+          <br />
+          <strong>cycles / $</strong> — a <em>rough estimate</em>: ~
+          {formatCycles(CYCLES_PER_UPDATE_CALL)} cycles per update call,
+          converted at ~1 XDR (~$1.33) per 1T cycles. To be calibrated with real
+          measurement.
+        </InfoPopover>
       </span>
     </div>
   )
@@ -58,5 +100,6 @@ StatsBar.propTypes = {
   turns: PropTypes.number.isRequired,
   updateCalls: PropTypes.number.isRequired,
   tokens: PropTypes.number.isRequired,
+  genMs: PropTypes.number,
   heightChatInput: PropTypes.number,
 }

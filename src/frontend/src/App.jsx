@@ -65,8 +65,13 @@ export function App() {
   }
 
   // Live conversation statistics (reset on New chat). turns is derived from
-  // messages; updateCalls & tokens accumulate across the conversation.
-  const [stats, setStats] = React.useState({ updateCalls: 0, tokens: 0 })
+  // messages; updateCalls, tokens & genMs (cumulative generation wall-time)
+  // accumulate across the conversation. tokens/sec = tokens / (genMs/1000).
+  const [stats, setStats] = React.useState({
+    updateCalls: 0,
+    tokens: 0,
+    genMs: 0,
+  })
 
   // for ChatsPopupModal
   const [chats, setChats] = React.useState()
