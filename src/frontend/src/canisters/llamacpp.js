@@ -65,7 +65,7 @@ function buildRunUpdateInput(
   let fullPrompt
   if (promptRemaining === '') {
     if (responseUpdate) {
-      setWaitAnimationMessage('Calling LLM canister - Generating tokens')
+      setWaitAnimationMessage('On-chain token generation in progress')
     }
     console.log('buildRunUpdateInput - promptRemaining is now empty')
     fullPrompt = ''
@@ -182,7 +182,7 @@ async function fetchInference(
 
   let count = 0
   let responseUpdate = null
-  setWaitAnimationMessage('Calling LLM canister - Ingesting the prompt tokens')
+  setWaitAnimationMessage('On-chain token ingestion in progress')
   for (let i = 0; i < numStepsFetchInference; i++) {
     count++
 
@@ -493,15 +493,15 @@ export async function doSubmitLlamacpp({
     if ('Ok' in responseHealth) {
       console.log('llm canister is healthy: ', responseHealth)
 
-      // setWaitAnimationMessage('Checking readiness of LLM canister')
+      // setWaitAnimationMessage('Checking readiness of the on-chain LLM')
       // console.log('Calling actor_.ready ')
       // const responseReady = await actor_.ready()
       // console.log('llm canister ready: ', responseReady)
-      // setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+      // setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
 
       // if ('Ok' in responseReady) {
       // Ok, ready for show time...
-      setWaitAnimationMessage('Calling LLM canister - generating tokens')
+      setWaitAnimationMessage('On-chain token generation in progress')
       await fetchInference(
         actor_,
         setChatOutputText,
@@ -519,31 +519,31 @@ export async function doSubmitLlamacpp({
         modelType,
         finetuneType
       )
-      setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+      setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
 
       await waitForQueueToEmpty()
       // } else {
       //   let ermsg = ''
       //   if ('Err' in responseReady && 'Other' in responseReady.Err)
       //     ermsg = responseReady.Err.Other
-      //   throw new Error(`LLM canister is not ready: ` + ermsg)
+      //   throw new Error(`The on-chain LLM is not ready: ` + ermsg)
       // }
     } else {
-      setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+      setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
       let ermsg = ''
       if ('Err' in responseHealth && 'Other' in responseHealth.Err)
         ermsg = responseHealth.Err.Other
-      throw new Error(`LLM canister is not healthy: ` + ermsg)
+      throw new Error(`The on-chain LLM is not healthy: ` + ermsg)
     }
   } catch (error) {
-    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+    setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
     console.error(error)
     setChatDone(true)
     chatFinished = true
     // Force a re-render, showing the ChatOutput
     setChatDisplay('CanisterError')
   } finally {
-    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+    setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
     setIsSubmitting(false)
   }
 }
@@ -681,7 +681,7 @@ export async function getChatsLlamacpp({
   try {
     // Call llm canister to check on health
     // Force a re-render, showing the WaitAnimation
-    setWaitAnimationMessage('Calling LLM canister - get_chats')
+    setWaitAnimationMessage('Retrieving your chats from on-chain storage')
     setChatDisplay('WaitAnimation')
     console.log('Calling actor_.health ')
     const responseHealth = await actor_.health()
@@ -691,34 +691,34 @@ export async function getChatsLlamacpp({
       console.log('llm canister is healthy: ', responseHealth)
 
       // Ok, ready for show time...
-      setWaitAnimationMessage('Calling LLM canister - get_chats')
+      setWaitAnimationMessage('Retrieving your chats from on-chain storage')
       const responseGetChats = await actor_.get_chats()
       if ('Ok' in responseGetChats) {
         const chatData = convertChatsToChatData(responseGetChats.Ok.chats)
-        setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+        setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
         setChatDisplay('ChatOutput')
         setChats(chatData)
       } else {
-        setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+        setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
         let ermsg = ''
         if ('Err' in responseGetChats && 'Other' in responseGetChats.Err)
           ermsg = responseGetChats.Err.Other
         throw new Error(`Call to getChats returns error: ` + ermsg)
       }
     } else {
-      setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+      setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
       let ermsg = ''
       if ('Err' in responseHealth && 'Other' in responseHealth.Err)
         ermsg = responseHealth.Err.Other
-      throw new Error(`LLM canister is not healthy: ` + ermsg)
+      throw new Error(`The on-chain LLM is not healthy: ` + ermsg)
     }
   } catch (error) {
-    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+    setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
     console.error(error)
     // Force a re-render, showing the ChatOutput
     setChatDisplay('CanisterError')
   } finally {
-    setWaitAnimationMessage('Calling LLM canister') // Reset it to default
+    setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
     setChatDisplay('ChatOutput')
   }
   setChatDisplay('ChatOutput')

@@ -81,7 +81,7 @@ export function Chat() {
     case 'CanisterError':
       DisplayComponent = (
         <CardError
-          message={`ERROR: The canister ${modelType}-${modelSize}-${finetuneType} is not ready...`}
+          message={`ERROR: The on-chain LLM ${modelType}-${modelSize}-${finetuneType} is not ready...`}
         />
       )
       break

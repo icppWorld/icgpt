@@ -385,13 +385,13 @@ export async function doSubmit({
         let ermsg = ''
         if ('Err' in responseReady && 'Other' in responseReady.Err)
           ermsg = responseReady.Err.Other
-        throw new Error(`LLM canister is not ready: ` + ermsg)
+        throw new Error(`The on-chain LLM is not ready: ` + ermsg)
       }
     } else {
       let ermsg = ''
       if ('Err' in responseHealth && 'Other' in responseHealth.Err)
         ermsg = responseHealth.Err.Other
-      throw new Error(`LLM canister is not healthy: ` + ermsg)
+      throw new Error(`The on-chain LLM is not healthy: ` + ermsg)
     }
   } catch (error) {
     console.error(error)
