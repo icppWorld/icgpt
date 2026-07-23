@@ -57,6 +57,36 @@ export function ChatInput({
     }
   }, [inputString])
 
+  function handleSubmit() {
+    if (isSubmitting) return // one submit at a time
+    // Force refetching of chats during mount of ChatsPopupModal
+    setChats(null)
+    if (DEBUG) {
+      console.log('ChatInput.jsx - chats have been reset.')
+    }
+
+    doSubmitLlamacpp({
+      authClient,
+      actorRef,
+      chatNew,
+      setActorRef,
+      setChatNew,
+      setChatDone,
+      inputString,
+      setInputString,
+      setInputPlaceholder,
+      isSubmitting,
+      setIsSubmitting,
+      setChatOutputText,
+      setMessages,
+      conversationBaseRef,
+      setConversationBase,
+      setStats,
+      setChatDisplay,
+      setWaitAnimationMessage,
+    })
+  }
+
   const floatingStyle = {
     position: 'fixed',
     bottom: '10px', // or however much spacing you want from the bottom
@@ -86,6 +116,13 @@ export function ChatInput({
         ref={textareaRef}
         value={inputString}
         onChange={(e) => setInputString(e.target.value)}
+        onKeyDown={(e) => {
+          // Enter sends; Shift+Enter inserts a new line.
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault()
+            handleSubmit()
+          }
+        }}
         placeholder={inputPlaceholder}
         style={{
           flex: 1,
@@ -102,34 +139,7 @@ export function ChatInput({
         p="none"
         mr="none"
         disabled={isSubmitting} // Always wait until current submit is done
-        onClick={() => {
-          // Force refetching of chats during mount of ChatsPopupModal
-          setChats(null)
-          if (DEBUG) {
-            console.log('ChatInput.jsx - chats have been reset.')
-          }
-
-          doSubmitLlamacpp({
-            authClient,
-            actorRef,
-            chatNew,
-            setActorRef,
-            setChatNew,
-            setChatDone,
-            inputString,
-            setInputString,
-            setInputPlaceholder,
-            isSubmitting,
-            setIsSubmitting,
-            setChatOutputText,
-            setMessages,
-            conversationBaseRef,
-            setConversationBase,
-            setStats,
-            setChatDisplay,
-            setWaitAnimationMessage,
-          })
-        }}
+        onClick={handleSubmit}
       >
         {/* https://icons.getbootstrap.com/ */}
         <i className="bi bi-caret-right"></i>
