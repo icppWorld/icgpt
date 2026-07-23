@@ -11,9 +11,12 @@ export function Head(props) {
 
       <meta
         name="description"
-        content="Internet Computer Generative Pre-trained Transformers"
+        content="ICGPT - the OG of on-chain LLMs. Released in September 2023 as the very first app to run LLM inference on-chain, and serving on-chain LLMs on the Internet Computer ever since."
       />
-      <meta name="keywords" content="Internet Computer, GPT, AI, LLM" />
+      <meta
+        name="keywords"
+        content="on-chain LLM, on-chain AI, Internet Computer, ICP, GPT, AI, LLM, llama.cpp"
+      />
       <meta name="author" content="icppWorld" />
 
       {/* TODO:
@@ -24,7 +27,7 @@ export function Head(props) {
       <link rel="manifest" href="manifest.json" />
       */}
 
-      <title>ICGPT</title>
+      <title>ICGPT - the OG of on-chain LLMs</title>
       <link rel="icon" href="favicon.ico" />
     </Helmet>
   )

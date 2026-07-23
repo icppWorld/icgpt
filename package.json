@@ -1,9 +1,11 @@
 {
   "name": "icgpt",
   "version": "0.1.0",
-  "description": "icgpt - on-chain LLMs for the Internet Computer",
+  "description": "ICGPT - the OG of on-chain LLMs. Released in September 2023 as the very first app to run LLM inference on-chain, and serving on-chain LLMs on the Internet Computer ever since.",
   "keywords": [
     "Internet Computer",
+    "on-chain LLM",
+    "on-chain AI",
     "AI",
     "LLM",
     "C++",
