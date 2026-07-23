@@ -3,7 +3,6 @@ import React from 'react'
 import { Helmet } from 'react-helmet'
 import { useOutletContext } from 'react-router-dom'
 import 'dracula-ui/styles/dracula-ui.css'
-import { Card, Heading, Divider, Text } from 'dracula-ui'
 
 import { Footer } from '../common/Footer'
 import { StatsBar } from '../common/StatsBar'
@@ -90,14 +89,9 @@ export function Chat() {
       </Helmet>
       <main>
         <div className="container-fluid text-center">
-          <Card
-            variant="subtle"
-            color="none"
-            my="sm"
-            p="sm"
-            display="inline-block"
-            style={{ position: 'relative' }}
-          >
+          {/* All children below are position:fixed, so this wrapper only needs
+              to exist - no box styling (a subtle Card left a faint empty outline). */}
+          <div style={{ position: 'relative' }}>
             <ModelSelector
               selectedModelId={selectedModelId}
               setSelectedModelId={setSelectedModelId}
@@ -196,7 +190,7 @@ export function Chat() {
               chats={chats}
               setChats={setChats}
             />
-          </Card>
+          </div>
         </div>
         <Footer />
       </main>
