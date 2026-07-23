@@ -32,9 +32,6 @@ export function Chats({
   setStats,
   setChatDisplay,
   setWaitAnimationMessage,
-  modelType,
-  modelSize,
-  finetuneType,
   chats,
   setChats,
 }) {
@@ -84,54 +81,47 @@ export function Chats({
       p="sm"
       m="sm"
     >
-      {modelType !== 'TinyStories' && (
-        <>
-          <Button
-            color="white"
-            size="sm"
-            disabled={isSubmitting || modelType === 'TinyStories'}
-            onClick={() => setShowChatsModal(true)}
-            style={buttonStyle}
-          >
-            Chats
-          </Button>
+      <Button
+        color="white"
+        size="sm"
+        disabled={isSubmitting}
+        onClick={() => setShowChatsModal(true)}
+        style={buttonStyle}
+      >
+        Chats
+      </Button>
 
-          {/* Conditionally render PopupModal */}
-          {showChatsModal && (
-            <ChatsPopupModal
-              authClient={authClient}
-              setAuthClient={setAuthClient}
-              actorRef={actorRef}
-              setActorRef={setActorRef}
-              chatNew={chatNew}
-              setChatNew={setChatNew}
-              chatDone={chatDone}
-              setChatDone={setChatDone}
-              widthChatInput={widthChatInput}
-              setWidthChatInput={setWidthChatInput}
-              heightChatInput={heightChatInput}
-              setHeightChatInput={setHeightChatInput}
-              inputString={inputString}
-              setInputString={setInputString}
-              inputPlaceholder={inputPlaceholder}
-              setInputPlaceholder={setInputPlaceholder}
-              isSubmitting={isSubmitting}
-              setIsSubmitting={setIsSubmitting}
-              setChatOutputText={setChatOutputText}
-              setMessages={setMessages}
-              setConversationBase={setConversationBase}
-              setStats={setStats}
-              setChatDisplay={setChatDisplay}
-              setWaitAnimationMessage={setWaitAnimationMessage}
-              modelType={modelType}
-              modelSize={modelSize}
-              finetuneType={finetuneType}
-              chats={chats}
-              setChats={setChats}
-              onClose={() => setShowChatsModal(false)}
-            />
-          )}
-        </>
+      {/* Conditionally render PopupModal */}
+      {showChatsModal && (
+        <ChatsPopupModal
+          authClient={authClient}
+          setAuthClient={setAuthClient}
+          actorRef={actorRef}
+          setActorRef={setActorRef}
+          chatNew={chatNew}
+          setChatNew={setChatNew}
+          chatDone={chatDone}
+          setChatDone={setChatDone}
+          widthChatInput={widthChatInput}
+          setWidthChatInput={setWidthChatInput}
+          heightChatInput={heightChatInput}
+          setHeightChatInput={setHeightChatInput}
+          inputString={inputString}
+          setInputString={setInputString}
+          inputPlaceholder={inputPlaceholder}
+          setInputPlaceholder={setInputPlaceholder}
+          isSubmitting={isSubmitting}
+          setIsSubmitting={setIsSubmitting}
+          setChatOutputText={setChatOutputText}
+          setMessages={setMessages}
+          setConversationBase={setConversationBase}
+          setStats={setStats}
+          setChatDisplay={setChatDisplay}
+          setWaitAnimationMessage={setWaitAnimationMessage}
+          chats={chats}
+          setChats={setChats}
+          onClose={() => setShowChatsModal(false)}
+        />
       )}
     </Box>
   )

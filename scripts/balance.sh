@@ -31,7 +31,7 @@ done
 echo "Using network type: $NETWORK_TYPE"
 
 #######################################################################
-canisters=("canister_frontend" "llama2_260K" "llama2_15M" "llama2_42M" "llama_cpp_qwen25_05b_q8")
+canisters=("canister_frontend" "llama_cpp_qwen25_05b_q8")
 
 echo -n "- dfx identity             : "; dfx identity whoami
 echo -n "- Wallet balance           : "; dfx wallet --network $NETWORK_TYPE balance

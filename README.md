@@ -20,11 +20,10 @@ makes longer chats possible.
 
 ---
 
-The full application consists of 3 GitHub repositories:
+The full application consists of 2 GitHub repositories:
 
 1. [icgpt](https://github.com/icppWorld/icgpt) (This repo)
 2. [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister)
-3. [icpp_llm](https://github.com/icppWorld/icpp_llm)
 
 # Setup
 
@@ -56,30 +55,11 @@ git clone git@github.com:icppWorld/icgpt.git
 cd icgpt
 ```
 
-### Dependency git repos
-
-TODO: Remove these dependencies, similar to the way llama_cpp_canister is now using the official release build in the llms/llama_cpp_canister folder.
-
-Clone dependency repos:
-
-```bash
-git clone https://github.com/icppWorld/icpp_llm
-# FOLLOW Set Up INSTRUCTIONS OF icpp_llm/llama2_c README !!!
-
-git clone https://github.com/onicai/Charles
-# FOLLOW INSTRUCTIONS OF Charles README to download the model from HuggingFace !!!
-```
-
 ## Python requirements
 
 `requirements-dev.txt` pulls the python dependencies (icpp-pro, icp-py-core, binaryen.py
 and the pinned linters) from the vendored llama_cpp_canister release, in
-`llms/llama_cpp_canister/requirements.txt`. No sibling repo needed for those.
-
-The icpp_llm repo is deliberately NOT pulled in, because it still pins an older
-pylint that conflicts. We do install `ic-py`, which the `make upload-*` targets of the
-llama2 canisters need. When you rebuild the llama2 wasms, install icpp_llm's own
-requirements in a separate environment.
+`llms/llama_cpp_canister/requirements.txt`. No sibling repo needed.
 
 ### pre-commit
 
@@ -126,9 +106,9 @@ make all-static-check
 
 # Development
 
-## The backend LLM canisters
+## The backend LLM canister
 
-ICGPT includes LLM backend canisters from [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister) & [icpp_lmm](https://github.com/icppWorld/icpp_llm) 
+ICGPT's LLM backend runs on [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister).
 
 ### Setup for llama_cpp_canister
 
@@ -154,39 +134,9 @@ ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e
 ```
 
 
-### Setup for icpp_llm
-- Clone [icpp_lmm](https://github.com/icppWorld/icpp_llm) as a sibling to this repo
-- Follow instructions of [llama2_c](https://github.com/icppWorld/icpp_llm/tree/main/llama2_c) to :
-  - Build the wasm
-  - Get the model checkpoints
-
-The following files are used by the ICGPT deployment steps:
-
-```
-# See: dfx.json 
-../icpp_llm/llama2_c/src/llama2.did
-../icpp_llm/llama2_c/build/llama2.wasm
-
-# See: Makefile
-../icpp_llm/llama2_c/scripts/upload.py
-```
-
-The following models will be uploaded as ICGPT backend canisters:
-```
-../icpp_llm/llama2_c/stories260K/stories260K.bin
-../icpp_llm/llama2_c/stories260K/tok512.bin
-
-../icpp_llm/llama2_c/tokenizers/tok4096.bin
-../icpp_llm/llama2_c/models/stories15Mtok4096.bin
-
-# Charles: 42M with tok4096
-../Charles/models/out-09/model.bin
-../Charles/models/out-09/tok4096.bin
-```
-
 ## Deploy ICGPT to local network
 
-Once the files of the backend LLMs are in place, as described in the previous step, you can deploy everything with:
+Once the model gguf is in place, as described in the previous step, you can deploy everything with:
 
 
 ```bash
@@ -202,15 +152,7 @@ dfx nns install
 # IMPORTANT: dfx deploy ... updates .env for local canisters
 #            .env is used by the frontend webpack.config.js !!!
 
-# Deploy the wasms & upload models & prime the canisters
-dfx deploy llama2_260K --network local
-make upload-260K-local
-
-dfx deploy llama2_15M --network local
-make upload-15M-local
-
-dfx deploy llama2_42M --network local
-make upload-charles-42M-local
+# Deploy the wasm & upload the model & prime the canister
 
 # llama.cpp qwen2.5 0.5b q8 (676 Mb)
 dfx deploy llama_cpp_qwen25_05b_q8 --network local [-m upgrade/reinstall] # upgrade preserves model in stable memory
@@ -363,29 +305,11 @@ Step 0: When deploying for the first time:
 
 - Delete **canister_ids.json**, because when you forked or cloned the github repo [icgpt](https://github.com/icppWorld/icgpt), it contained the canisters used by our deployment at https://icgpt.onicai.com/
 
-Step 1: Build the backend wasm files
+Step 1: Deploy the backend canister
 
-- Clone [icpp_llm](https://github.com/icppWorld/icpp_llm/) and follow the instructions in [llama2_c](https://github.com/icppWorld/icpp_llm/tree/main/llama2_c) to build the wasm for each backend canister.
-
-Step 2: Deploy the backend canisters
-
-- Note that **dfx.json** points to the wasm files build during Step 1
+- Note that **dfx.json** points to the vendored `llms/llama_cpp_canister` wasm.
 
   ```bash
-  # Deploy & upload models
-  dfx deploy --ic llama2_260K -m reinstall
-  make upload-260K-ic
-
-  dfx deploy --ic llama2_15M -m reinstall
-  make upload-15M-ic
-
-  dfx deploy --ic llama2_42M -m reinstall
-  # To avoid time-outs:
-  # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
-  dfx canister update-settings --ic llama2_42M --compute-allocation 1 # (costs a rental fee)
-  dfx canister status --ic llama2_42M 
-  make upload-charles-42M-ic
-
   # qwen2.5 0.5b q8 (676 Mb)
   dfx deploy --ic llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
   # 3.75 GiB heap: more KV/prompt-cache budget for long multi-turn conversations

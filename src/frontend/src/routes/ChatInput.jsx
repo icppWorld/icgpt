@@ -2,7 +2,6 @@
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
-import { doSubmit } from '../canisters/llama2'
 import { doSubmitLlamacpp } from '../canisters/llamacpp.js'
 
 const II_URL = process.env.II_URL
@@ -36,9 +35,6 @@ export function ChatInput({
   setStats,
   setChatDisplay,
   setWaitAnimationMessage,
-  modelType,
-  modelSize,
-  finetuneType,
   chats,
   setChats,
 }) {
@@ -113,79 +109,26 @@ export function ChatInput({
             console.log('ChatInput.jsx - chats have been reset.')
           }
 
-          if (modelType === 'TinyStories') {
-            doSubmit({
-              authClient,
-              actorRef,
-              chatNew,
-              chatDone,
-              setActorRef,
-              setChatNew,
-              setChatDone,
-              inputString,
-              setInputString,
-              inputPlaceholder,
-              setInputPlaceholder,
-              isSubmitting,
-              setIsSubmitting,
-              setChatOutputText,
-              setChatDisplay,
-              setWaitAnimationMessage,
-              isSubmitting,
-              setIsSubmitting,
-              modelType,
-              modelSize,
-              finetuneType,
-            })
-          } else if (modelType === 'Qwen2.5') {
-            doSubmitLlamacpp({
-              authClient,
-              actorRef,
-              chatNew,
-              setActorRef,
-              setChatNew,
-              setChatDone,
-              inputString,
-              setInputString,
-              setInputPlaceholder,
-              isSubmitting,
-              setIsSubmitting,
-              setChatOutputText,
-              setMessages,
-              conversationBaseRef,
-              setConversationBase,
-              setStats,
-              setChatDisplay,
-              setWaitAnimationMessage,
-              modelType,
-              modelSize,
-              finetuneType,
-            })
-          } else if (modelType === 'llama.cpp Charles') {
-            doSubmitLlamacpp({
-              authClient,
-              actorRef,
-              chatNew,
-              setActorRef,
-              setChatNew,
-              setChatDone,
-              inputString,
-              setInputString,
-              setInputPlaceholder,
-              isSubmitting,
-              setIsSubmitting,
-              setChatOutputText,
-              setMessages,
-              conversationBaseRef,
-              setConversationBase,
-              setStats,
-              setChatDisplay,
-              setWaitAnimationMessage,
-              modelType,
-              modelSize,
-              finetuneType,
-            })
-          }
+          doSubmitLlamacpp({
+            authClient,
+            actorRef,
+            chatNew,
+            setActorRef,
+            setChatNew,
+            setChatDone,
+            inputString,
+            setInputString,
+            setInputPlaceholder,
+            isSubmitting,
+            setIsSubmitting,
+            setChatOutputText,
+            setMessages,
+            conversationBaseRef,
+            setConversationBase,
+            setStats,
+            setChatDisplay,
+            setWaitAnimationMessage,
+          })
         }}
       >
         {/* https://icons.getbootstrap.com/ */}

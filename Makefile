@@ -71,27 +71,6 @@ git-on-origin-main:
 dfx-install:
 	sh -ci "$$(curl -fsSL https://sdk.dfinity.org/install.sh)"
 
-.PHONY: dfx-cycles-to-llama2_15M
-dfx-cycles-to-llama2_15M:
-	@$(eval CANISTER_ID_LLAMA2_15M := $(shell dfx canister --network ic id llama2_15M))
-	@echo "-------------------------------------------------------------------------"
-	@echo "dfx identity             : $(IDENTITY)"
-	@echo "- balance before: "
-	@dfx wallet --network ic balance
-	# @echo "-------------------------------------------------------------------------"
-	# @echo "llama2_15M canister  before    : $(CANISTER_ID_LLAMA2_15M)"
-	# @dfx canister --network=ic status llama2_15M
-	@echo "-------------------------------------------------------------------------"
-	@echo "Sending 0.5T cycles to llama2_15M"
-	dfx wallet --network ic send $(CANISTER_ID_LLAMA2_15M) 500000000000
-	@echo "-------------------------------------------------------------------------"
-	@echo "dfx identity             : $(IDENTITY)"
-	@echo "- balance after: "
-	@dfx wallet --network ic balance
-	@echo "-------------------------------------------------------------------------"
-	@echo "llama2_15M canister  after    : $(CANISTER_ID_LLAMA2_15M)"
-	@dfx canister --network=ic status llama2_15M
-
 .PHONY: dfx-cycles-to-frontend
 dfx-cycles-to-frontend:
 	@$(eval CANISTER_FRONTEND_ID := $(shell dfx canister --network ic id canister_frontend))
@@ -120,11 +99,7 @@ dfx-canisters-of-project-ic:
 	@$(eval IDENTITY_ICP_WALLET := $(shell dfx ledger --network ic account-id))
 	@$(eval IDENTITY_ICP_BALANCE := $(shell dfx ledger --network ic balance))
 	@$(eval IC_CANISTER_ID_FRONTEND := $(shell dfx canister --network ic id canister_frontend))
-	@$(eval IC_CANISTER_ID_LLAMA2_260K := $(shell dfx canister --network ic id llama2_260K))
-	@$(eval IC_CANISTER_ID_LLAMA2_15M := $(shell dfx canister --network ic id llama2_15M))
-	@$(eval IC_CANISTER_ID_LLAMA2_42M := $(shell dfx canister --network ic id llama2_42M))
 	@$(eval IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 := $(shell dfx canister --network ic id llama_cpp_qwen25_05b_q8))
-	@$(eval IC_CANISTER_ID_LLAMA_CPP_CHARLES_42M := $(shell dfx canister --network ic id llama_cpp_charles_42m))
 
 	@echo '-------------------------------------------------'
 	@echo "NETWORK                  : ic"
@@ -143,20 +118,8 @@ dfx-canisters-of-project-ic:
 	@echo "canister_frontend        : $(IC_CANISTER_ID_FRONTEND)"
 	@dfx canister --network=ic status canister_frontend
 	@echo '-------------------------------------------------'
-	@echo "llama2_260K canister     : $(IC_CANISTER_ID_LLAMA2_260K)"
-	@dfx canister --network=ic status llama2_260K
-	@echo '-------------------------------------------------'
-	@echo "llama2_15M canister (15M)    : $(IC_CANISTER_ID_LLAMA2_15M)"
-	@dfx canister --network=ic status llama2_15M
-	@echo '-------------------------------------------------'
-	@echo "llama2_42M canister      : $(IC_CANISTER_ID_LLAMA2_42M)"
-	@dfx canister --network=ic status llama2_42M
-	@echo '-------------------------------------------------'
 	@echo "llama_cpp_qwen25_05b_q8 canister      : $(IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8)"
 	@dfx canister --network=ic status llama_cpp_qwen25_05b_q8
-	@echo '-------------------------------------------------'
-	@echo "llama_cpp_charles_42m canister      : $(IC_CANISTER_ID_LLAMA_CPP_CHARLES_42M)"
-	@dfx canister --network=ic status llama_cpp_charles_42m
 	@echo '-------------------------------------------------'
 	@echo 'View in browser at:'
 	@echo  "canister_frontend (ICGPT) : https://$(CANISTER_FRONTEND).ic0.app/"
@@ -435,57 +398,11 @@ install-python:
 
 
 ###########################################################################
-# Llama2 model upload
+# Model upload
 # (-) The parent of this folder is added to Python path, for `python -m` to work
 # (-) Everything else just works, because the upload script:
 #     -> uses model & tokenizer path are relative to itself
 #     -> pulls the canister information out of the network info (.dfx in icgpt repo)
-
-.PHONY: upload-all-local
-upload-all-local: upload-260K-local upload-15M-local upload-42M-local
-
-.PHONY: upload-all-ic
-upload-all-ic: upload-260K-ic upload-15M-ic upload-42M-ic
-
-.PHONY: upload-260K-local
-upload-260K-local:
-	@echo "---"
-	@echo "Setting canister_mode to chat-principal"
-	dfx canister call llama2_260K set_canister_mode chat-principal --network local
-	@echo "---"
-	@echo "upload-260K-local"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_260K --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
-
-.PHONY: upload-15M-local
-upload-15M-local:
-	@echo "---"
-	@echo "Setting canister_mode to chat-principal"
-	dfx canister call llama2_15M set_canister_mode chat-principal --network local
-	@echo "---"
-	@echo "upload-15M-local"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_15M --model models/stories15Mtok4096.bin --tokenizer tokenizers/tok4096.bin
-
-.PHONY: upload-42M-local
-upload-42M-local:
-	@echo "---"
-	@echo "Setting canister_mode to chat-principal"
-	dfx canister call llama2_42M set_canister_mode chat-principal --network local
-	@echo "---"
-	@echo "upload-42M-local"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
-
-.PHONY: upload-charles-42M-local
-upload-charles-42M-local:
-	@echo "---"
-	@echo "Setting canister_mode to chat-principal"
-	dfx canister call llama2_42M set_canister_mode chat-principal --network local
-	@echo "---"
-	@echo "upload-charles-42M-local"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_42M --model ../../Charles/models/out-09/model.bin --tokenizer ../../Charles/models/out-09/tok4096.bin
 
 # The sha256 of qwen2.5-0.5b-instruct-q8_0.gguf, as published on HuggingFace.
 # The upload script verifies the file on disk against it before uploading.
@@ -501,46 +418,6 @@ upload-llama-cpp-qwen25-05b-q8-local:
 	@echo "---"
 	@echo "upload-llama-cpp-qwen25-05b-q8-local"
 	python -m llms.llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf --filetype gguf --hf-sha256 "$(QWEN25_05B_Q8_SHA256)" $(QWEN25_05B_Q8_GGUF)
-
-.PHONY: upload-260K-ic
-upload-260K-ic:
-	@echo "---"
-	@echo "Setting canister_mode to chat-principal"
-	dfx canister call llama2_260K set_canister_mode chat-principal --network ic
-	@echo "---"
-	@echo "upload-260K-ic"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_260K --model stories260K/stories260K.bin --tokenizer stories260K/tok512.bin
-
-.PHONY: upload-15M-ic
-upload-15M-ic:
-	@echo "---"
-	@echo "Setting canister_mode to chat-principal"
-	dfx canister call llama2_15M set_canister_mode chat-principal --network ic
-	@echo "---"
-	@echo "upload-15M-ic"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_15M --model models/stories15Mtok4096.bin --tokenizer tokenizers/tok4096.bin
-
-.PHONY: upload-42M-ic
-upload-42M-ic:
-	@echo "---"
-	@echo "Setting canister_mode to chat-principal"
-	dfx canister call llama2_42M set_canister_mode chat-principal --network ic
-	@echo "---"
-	@echo "upload-42M-ic"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_42M --model models/stories42M.bin --tokenizer tokenizers/tokenizer.bin
-
-.PHONY: upload-charles-42M-ic
-upload-charles-42M-ic:
-	@echo "---"
-	@echo "Setting canister_mode to chat-principal"
-	dfx canister call llama2_42M set_canister_mode chat-principal --network ic
-	@echo "---"
-	@echo "upload-charles-42M-ic"
-	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
-    python -m icpp_llm.llama2_c.scripts.upload --network ic --canister llama2_42M --model ../../charles/models/out-09/model.bin --tokenizer ../../charles/models/out-09/tok4096.bin
 
 .PHONY: upload-llama-cpp-qwen25-05b-q8-ic
 upload-llama-cpp-qwen25-05b-q8-ic:

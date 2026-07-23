@@ -10,8 +10,8 @@ import { WorkingIndicator } from '../common/WorkingIndicator'
 // in-progress assistant reply (chatOutputText) streaming into its own bubble,
 // and - while the canister is working - a subtle status line right under it.
 //
-// TinyStories (frozen llama2.js) leaves messages empty and only streams into
-// chatOutputText, so it shows a single assistant bubble - unchanged behavior.
+// An empty conversation renders an empty area (ready to type). The view sits
+// below the ModelSelector bar pinned at the top of the chat page.
 export function ChatOutput({
   chatOutputText,
   messages,
@@ -31,7 +31,8 @@ export function ChatOutput({
 
   const containerStyle = {
     ...floatingStyleTop,
-    maxHeight: `calc(100vh - ${heightChatInput}px - 90px)`,
+    top: '44px', // sit below the ModelSelector bar pinned at the top
+    maxHeight: `calc(100vh - ${heightChatInput}px - 130px)`,
     overflowY: 'auto',
     textAlign: 'left',
   }

@@ -75,9 +75,6 @@ console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
 const DFX_VERSION = process.env.DFX_VERSION || 'local'
 const DFX_NETWORK = process.env.DFX_NETWORK || 'local'
 const CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 = `${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
-const CANISTER_ID_LLAMA2_42M = `${process.env.CANISTER_ID_LLAMA2_42M}`
-const CANISTER_ID_LLAMA2_260K = `${process.env.CANISTER_ID_LLAMA2_260K}`
-const CANISTER_ID_LLAMA2_15M = `${process.env.CANISTER_ID_LLAMA2_15M}`
 const CANISTER_ID_INTERNET_IDENTITY = `${process.env.CANISTER_ID_INTERNET_IDENTITY}`
 const CANISTER_ID_CANISTER_FRONTEND = `${process.env.CANISTER_ID_CANISTER_FRONTEND}`
 console.warn(`DFX_VERSION: ${DFX_VERSION}`)
@@ -85,9 +82,6 @@ console.warn(`DFX_NETWORK: ${DFX_NETWORK}`)
 console.warn(
   `CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8: ${CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
 )
-console.warn(`CANISTER_ID_LLAMA2_42M: ${CANISTER_ID_LLAMA2_42M}`)
-console.warn(`CANISTER_ID_LLAMA2_260K: ${CANISTER_ID_LLAMA2_260K}`)
-console.warn(`CANISTER_ID_LLAMA2_15M: ${CANISTER_ID_LLAMA2_15M}`)
 console.warn(`CANISTER_ID_INTERNET_IDENTITY: ${CANISTER_ID_INTERNET_IDENTITY}`)
 console.warn(`CANISTER_ID_CANISTER_FRONTEND: ${CANISTER_ID_CANISTER_FRONTEND}`)
 
@@ -186,21 +180,6 @@ module.exports = (env = {}, args = {}) => {
           'src/declarations',
           'llama_cpp_qwen25_05b_q8'
         ),
-        DeclarationsCanisterLlama2_42M: path.resolve(
-          __dirname,
-          'src/declarations',
-          'llama2_42M'
-        ),
-        DeclarationsCanisterLlama2_260K: path.resolve(
-          __dirname,
-          'src/declarations',
-          'llama2_260K'
-        ),
-        DeclarationsCanisterLlama2_15M: path.resolve(
-          __dirname,
-          'src/declarations',
-          'llama2_15M'
-        ),
         DeclarationsCanisterFrontend: path.resolve(
           __dirname,
           'src/declarations',
@@ -271,9 +250,6 @@ module.exports = (env = {}, args = {}) => {
         DFX_VERSION,
         DFX_NETWORK,
         CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8,
-        CANISTER_ID_LLAMA2_42M,
-        CANISTER_ID_LLAMA2_260K,
-        CANISTER_ID_LLAMA2_15M,
         CANISTER_ID_INTERNET_IDENTITY,
         CANISTER_ID_CANISTER_FRONTEND,
         //

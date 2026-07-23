@@ -8,21 +8,6 @@
       "source": ["dist/frontend/"],
       "type": "assets"
     },
-    "llama2_15M": {
-      "candid": "../icpp_llm/llama2_c/src/llama2.did",
-      "type": "custom",
-      "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
-    },
-    "llama2_260K": {
-      "candid": "../icpp_llm/llama2_c/src/llama2.did",
-      "type": "custom",
-      "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
-    },
-    "llama2_42M": {
-      "candid": "../icpp_llm/llama2_c/src/llama2.did",
-      "type": "custom",
-      "wasm": "../icpp_llm/llama2_c/build/llama2.wasm"
-    },
     "llama_cpp_qwen25_05b_q8": {
       "candid": "llms/llama_cpp_canister/build/llama_cpp.did",
       "type": "custom",

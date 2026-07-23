@@ -2,7 +2,6 @@
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
-import { doNewChat } from '../canisters/llama2'
 import { doNewChatLlamacpp } from '../canisters/llamacpp.js'
 
 const DEBUG = true
@@ -32,7 +31,6 @@ export function ChatNewChat({
   setStats,
   setChatDisplay,
   setWaitAnimationMessage,
-  modelType,
   chats,
   setChats,
 }) {
@@ -101,40 +99,20 @@ export function ChatNewChat({
           if (setConversationBase) setConversationBase('')
           if (setStats)
             setStats({ updateCalls: 0, tokensIn: 0, tokensOut: 0, genMs: 0 })
-          setChatDisplay('SelectModel')
-          if (modelType === 'TinyStories') {
-            doNewChat({
-              authClient,
-              actorRef,
-              chatNew,
-              chatDone,
-              setActorRef,
-              setChatNew,
-              setChatDone,
-              inputString,
-              setInputString,
-              inputPlaceholder,
-              setInputPlaceholder,
-              isSubmitting,
-              setIsSubmitting,
-              setChatOutputText,
-              setChatDisplay,
-              setWaitAnimationMessage,
-            })
-          } else {
-            // Qwen2.5 and llama.cpp Charles (lazy cache reset)
-            doNewChatLlamacpp({
-              setChatNew,
-              setChatDone,
-              setInputString,
-              setInputPlaceholder,
-              setChatOutputText,
-              setMessages,
-              setConversationBase,
-              setStats,
-              setChatDisplay,
-            })
-          }
+          setChatDisplay('ChatOutput')
+          // Lazy cache reset: clear the UI here; the next first message's
+          // new_chat resets the canister prompt cache.
+          doNewChatLlamacpp({
+            setChatNew,
+            setChatDone,
+            setInputString,
+            setInputPlaceholder,
+            setChatOutputText,
+            setMessages,
+            setConversationBase,
+            setStats,
+            setChatDisplay,
+          })
         }}
         style={buttonStyle}
       >

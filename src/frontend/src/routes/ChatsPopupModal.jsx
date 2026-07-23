@@ -32,9 +32,6 @@ export function ChatsPopupModal({
   setStats,
   setChatDisplay,
   setWaitAnimationMessage,
-  modelType,
-  modelSize,
-  finetuneType,
   chats,
   setChats,
   onClose,
@@ -75,9 +72,6 @@ export function ChatsPopupModal({
             setChatOutputText,
             setChatDisplay,
             setWaitAnimationMessage,
-            modelType,
-            modelSize,
-            finetuneType,
             chats,
             setChats,
           })
@@ -216,7 +210,7 @@ export function ChatsPopupModal({
             setChatDone(false)
             setInputString('')
             setChatOutputText('')
-            setChatDisplay('SelectModel')
+            setChatDisplay('ChatOutput')
             onClose()
           }}
         >

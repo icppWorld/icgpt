@@ -31,8 +31,8 @@ done
 echo "Using network type: $NETWORK_TYPE"
 
 #######################################################################
-# canisters=("canister_frontend" "llama2_260K" "llama2_15M" "llama2_42M" "llama_cpp_qwen25_05b_q8")
-canisters=("llama2_42M")
+# canisters=("canister_frontend" "llama_cpp_qwen25_05b_q8")
+canisters=("llama_cpp_qwen25_05b_q8")
 
 # Define the target balance in cycles
 TOPPED_OFF_BALANCE_T=10  # Adjust this to your desired balance in cycles

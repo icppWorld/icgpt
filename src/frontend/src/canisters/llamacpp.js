@@ -1,5 +1,4 @@
-// Functions to interact with the llama_cpp_canister (Qwen2.5 Instruct chat, and
-// the Raw-LLM "Charles" continuation mode).
+// Functions to interact with the llama_cpp_canister (Qwen Instruct chat).
 //
 // Multi-turn: the canister keeps the conversation in its prompt cache
 // (--prompt-cache-all). To continue a conversation we resend the growing
@@ -247,11 +246,8 @@ async function fetchInference({
   setConversationBase,
   userMessage,
   numSteps,
-  finetuneType,
 }) {
   if (DEBUG) console.log('DEBUG-FLOW: fetchInference for message:', userMessage)
-
-  const isInstruct = finetuneType === 'Instruct'
 
   resetStreamState()
   setChatOutputText('') // clear the in-progress assistant bubble
@@ -278,18 +274,14 @@ async function fetchInference({
         ermsg = responseNewChat.Err.Other
       throw new Error('Call to new_chat failed: ' + ermsg)
     }
-    // Raw-LLM (Charles) mode: echo the user's prompt as the start of the stream.
-    if (!isInstruct) {
-      pendingText += userMessage
-      fullReply += userMessage
-    }
   }
 
-  // The prompt for this turn. Instruct: conversation base + new user turn.
-  // Raw-LLM: the user's text is the seed to continue.
-  const turnPrompt = isInstruct
-    ? buildInstructTurnPrompt(conversationBaseRef.current, userMessage)
-    : userMessage
+  // The prompt for this turn: conversation base (system + all prior turns) + the
+  // new user turn.
+  const turnPrompt = buildInstructTurnPrompt(
+    conversationBaseRef.current,
+    userMessage
+  )
 
   // tokens IN = what is NEWLY ingested this turn = the turn prompt minus the
   // cached conversation prefix (which the canister reuses, not re-ingests).
@@ -356,16 +348,14 @@ async function fetchInference({
   generationDone = true
   await painterDone
 
-  if (isInstruct) {
-    const reply = stripSpecialTokens(fullReply).trim()
-    // Move the completed assistant reply from the streaming bubble into the
-    // conversation, and clear the streaming bubble in the same tick.
-    setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
-    setChatOutputText('')
-    // The canister's conversation is the exact cache prefix for the next turn.
-    setConversationBase(conversationText)
-    setChatNew(false) // subsequent submits CONTINUE this conversation
-  }
+  const reply = stripSpecialTokens(fullReply).trim()
+  // Move the completed assistant reply from the streaming bubble into the
+  // conversation, and clear the streaming bubble in the same tick.
+  setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+  setChatOutputText('')
+  // The canister's conversation is the exact cache prefix for the next turn.
+  setConversationBase(conversationText)
+  setChatNew(false) // subsequent submits CONTINUE this conversation
 
   setChatDone(true)
   setInputPlaceholder('Message ICGPT')
@@ -393,17 +383,9 @@ export async function doSubmitLlamacpp({
   setConversationBase,
   setChatDisplay,
   setWaitAnimationMessage,
-  modelType,
-  modelSize,
-  finetuneType,
 }) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: doSubmitLlamacpp', {
-      modelType,
-      modelSize,
-      finetuneType,
-      chatNew,
-    })
+    console.log('DEBUG-FLOW: doSubmitLlamacpp', { chatNew })
   }
 
   const userMessage = inputString.trim()
@@ -427,9 +409,7 @@ export async function doSubmitLlamacpp({
   }
 
   // Show the user's message immediately, and clear the input box.
-  if (finetuneType === 'Instruct') {
-    setMessages((prev) => [...prev, { role: 'user', content: userMessage }])
-  }
+  setMessages((prev) => [...prev, { role: 'user', content: userMessage }])
   setInputString('')
 
   try {
@@ -463,7 +443,6 @@ export async function doSubmitLlamacpp({
       setConversationBase,
       userMessage,
       numSteps,
-      finetuneType,
     })
   } catch (error) {
     console.error(error)
@@ -500,7 +479,7 @@ export async function doNewChatLlamacpp({
   if (setConversationBase) setConversationBase('')
   if (setStats)
     setStats({ updateCalls: 0, tokensIn: 0, tokensOut: 0, genMs: 0 })
-  setChatDisplay('SelectModel')
+  setChatDisplay('ChatOutput')
 }
 
 // -----------------------------------------------------------------------------
