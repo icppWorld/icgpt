@@ -99,7 +99,8 @@ export function ChatNewChat({
           setChatOutputText('')
           if (setMessages) setMessages([])
           if (setConversationBase) setConversationBase('')
-          if (setStats) setStats({ updateCalls: 0, tokens: 0, genMs: 0 })
+          if (setStats)
+            setStats({ updateCalls: 0, tokensIn: 0, tokensOut: 0, genMs: 0 })
           setChatDisplay('SelectModel')
           if (modelType === 'TinyStories') {
             doNewChat({

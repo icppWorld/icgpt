@@ -14,7 +14,7 @@ import PropTypes from 'prop-types'
 // then let the click toggle it straight back off, so it would never show.
 const MARGIN = 8 // keep at least this much space to the window edges
 
-export function InfoPopover({ ariaLabel, width, children }) {
+export function InfoPopover({ ariaLabel, width, iconStyle, children }) {
   const [isOpen, setIsOpen] = React.useState(false)
   const [position, setPosition] = React.useState(null)
   const buttonRef = React.useRef(null)
@@ -76,7 +76,10 @@ export function InfoPopover({ ariaLabel, width, children }) {
         type="button"
         aria-label={ariaLabel}
         aria-expanded={isOpen}
-        onClick={() => setIsOpen((open) => !open)}
+        // Open on click (not toggle): a real mouse click is preceded by
+        // pointerenter which already opened it, so a toggle would close it
+        // right back. It closes on pointer-leave / blur / Escape instead.
+        onClick={() => setIsOpen(true)}
         onFocus={() => setIsOpen(true)}
         onBlur={() => setIsOpen(false)}
         onKeyDown={(e) => {
@@ -89,11 +92,12 @@ export function InfoPopover({ ariaLabel, width, children }) {
           padding: '0 0 0 4px',
           margin: 0,
           color: '#f1fa8c',
-          opacity: isOpen ? 1 : 0.65,
+          opacity: isOpen ? 1 : 0.85,
           cursor: 'pointer',
           fontSize: '0.7em',
           lineHeight: 1,
           verticalAlign: 'super',
+          ...iconStyle,
         }}
       >
         {/* https://icons.getbootstrap.com/ */}
@@ -142,9 +146,11 @@ export function InfoPopover({ ariaLabel, width, children }) {
 InfoPopover.propTypes = {
   ariaLabel: PropTypes.string.isRequired,
   width: PropTypes.string,
+  iconStyle: PropTypes.object,
   children: PropTypes.node.isRequired,
 }
 
 InfoPopover.defaultProps = {
   width: '320px',
+  iconStyle: undefined,
 }

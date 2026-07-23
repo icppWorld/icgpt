@@ -115,7 +115,8 @@ export function Chat() {
             <StatsBar
               turns={turns}
               updateCalls={stats.updateCalls}
-              tokens={stats.tokens}
+              tokensIn={stats.tokensIn}
+              tokensOut={stats.tokensOut}
               genMs={stats.genMs}
               heightChatInput={heightChatInput}
             />

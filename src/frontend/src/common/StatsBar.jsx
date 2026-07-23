@@ -22,7 +22,8 @@ function formatCycles(cycles) {
 export function StatsBar({
   turns,
   updateCalls,
-  tokens,
+  tokensIn,
+  tokensOut,
   genMs,
   heightChatInput,
 }) {
@@ -30,7 +31,7 @@ export function StatsBar({
 
   const cycles = updateCalls * CYCLES_PER_UPDATE_CALL
   const usd = (cycles / 1e12) * USD_PER_TRILLION_CYCLES
-  const tokPerSec = genMs > 0 ? (tokens / (genMs / 1000)).toFixed(1) : null
+  const tokPerSec = genMs > 0 ? (tokensOut / (genMs / 1000)).toFixed(1) : null
 
   const style = {
     position: 'fixed',
@@ -55,7 +56,10 @@ export function StatsBar({
       {sep}
       <span>{updateCalls} on-chain calls</span>
       {sep}
-      <span>~{tokens.toLocaleString()} tokens</span>
+      <span>
+        ~{tokensIn.toLocaleString()} in / ~{tokensOut.toLocaleString()} out
+        tokens
+      </span>
       {tokPerSec !== null ? (
         <>
           {sep}
@@ -67,7 +71,17 @@ export function StatsBar({
         ~{formatCycles(cycles)} cycles (~${usd.toFixed(4)})
       </span>
       <span style={{ pointerEvents: 'auto' }}>
-        <InfoPopover ariaLabel="How these stats are determined" width="340px">
+        <InfoPopover
+          ariaLabel="How these stats are determined"
+          width="340px"
+          iconStyle={{
+            fontSize: '14px',
+            opacity: 1,
+            color: '#16a34a', // green - readable on the light stats-bar band
+            verticalAlign: 'middle',
+            paddingLeft: '6px',
+          }}
+        >
           These numbers describe the current conversation with the on-chain LLM:
           <br />
           <br />
@@ -78,11 +92,13 @@ export function StatsBar({
           <code>run_update</code> calls that ingest your prompt and generate the
           reply in batches).
           <br />
-          <strong>tokens</strong> — <em>approximate</em>, estimated from the
-          word count (~1.35 tokens/word). The canister does not report exact
-          token counts.
+          <strong>tokens in / out</strong> — <em>approximate</em>, estimated
+          from word counts (~1.35 tokens/word). <strong>in</strong> = prompt
+          tokens ingested (only the new part each turn; the cached conversation
+          is reused). <strong>out</strong> = tokens generated. The canister does
+          not report exact token counts.
           <br />
-          <strong>tok/s</strong> — tokens divided by the on-chain generation
+          <strong>tok/s</strong> — tokens out divided by the on-chain generation
           time (how fast the canister produced them; excludes network
           round-trips).
           <br />
@@ -99,7 +115,8 @@ export function StatsBar({
 StatsBar.propTypes = {
   turns: PropTypes.number.isRequired,
   updateCalls: PropTypes.number.isRequired,
-  tokens: PropTypes.number.isRequired,
+  tokensIn: PropTypes.number.isRequired,
+  tokensOut: PropTypes.number.isRequired,
   genMs: PropTypes.number,
   heightChatInput: PropTypes.number,
 }

@@ -65,11 +65,13 @@ export function App() {
   }
 
   // Live conversation statistics (reset on New chat). turns is derived from
-  // messages; updateCalls, tokens & genMs (cumulative generation wall-time)
-  // accumulate across the conversation. tokens/sec = tokens / (genMs/1000).
+  // messages; the rest accumulate across the conversation. tokensIn = ingested
+  // (prompt) tokens, tokensOut = generated tokens, genMs = cumulative generation
+  // wall-time. tokens/sec = tokensOut / (genMs/1000).
   const [stats, setStats] = React.useState({
     updateCalls: 0,
-    tokens: 0,
+    tokensIn: 0,
+    tokensOut: 0,
     genMs: 0,
   })
 

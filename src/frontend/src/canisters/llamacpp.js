@@ -291,6 +291,13 @@ async function fetchInference({
     ? buildInstructTurnPrompt(conversationBaseRef.current, userMessage)
     : userMessage
 
+  // tokens IN = what is NEWLY ingested this turn = the turn prompt minus the
+  // cached conversation prefix (which the canister reuses, not re-ingests).
+  // First turn: includes the system prompt. Approximate, like tokens OUT.
+  const tokensInDelta =
+    estimateTokens(turnPrompt) - estimateTokens(conversationBaseRef.current)
+  setStats((s) => ({ ...s, tokensIn: s.tokensIn + Math.max(0, tokensInDelta) }))
+
   let responseUpdate = null
   for (let step = 0; step < numSteps; step += 1) {
     const generating =
@@ -330,7 +337,7 @@ async function fetchInference({
       const tok = estimateTokens(chunk)
       setStats((s) => ({
         ...s,
-        tokens: s.tokens + tok,
+        tokensOut: s.tokensOut + tok,
         genMs: s.genMs + durationMs,
       }))
     }
@@ -491,7 +498,8 @@ export async function doNewChatLlamacpp({
   setChatOutputText('')
   if (setMessages) setMessages([])
   if (setConversationBase) setConversationBase('')
-  if (setStats) setStats({ updateCalls: 0, tokens: 0, genMs: 0 })
+  if (setStats)
+    setStats({ updateCalls: 0, tokensIn: 0, tokensOut: 0, genMs: 0 })
   setChatDisplay('SelectModel')
 }
 
