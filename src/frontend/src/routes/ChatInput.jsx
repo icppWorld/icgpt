@@ -35,6 +35,7 @@ export function ChatInput({
   setStats,
   setChatDisplay,
   setWaitAnimationMessage,
+  systemPromptText,
   chats,
   setChats,
 }) {
@@ -84,6 +85,7 @@ export function ChatInput({
       setStats,
       setChatDisplay,
       setWaitAnimationMessage,
+      systemPromptText,
     })
   }
 

@@ -3,13 +3,19 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { MODELS, getModelById } from './models'
 
-// A slim bar pinned to the top of the chat page: a dropdown whose option text
-// is the model's full gguf filename, with a HuggingFace link (↗) beside it.
+// A slim bar pinned to the top of the chat page: the two experiment knobs of
+// the test bed side by side - the model dropdown (option text = full gguf
+// filename, with a HuggingFace ↗ link) and the active system prompt (a button
+// showing its name that opens the editor modal).
 //
-// Only one model is live now (Qwen2.5); Qwen3-0.6B is present as a disabled
-// "coming soon" placeholder. Built data-driven from MODELS so adding a model is
-// just a new entry there.
-export function ModelSelector({ selectedModelId, setSelectedModelId }) {
+// Only one model is live now (Qwen2.5); Qwen3-0.6B is a disabled "coming soon"
+// placeholder. Built data-driven from MODELS so adding a model is just a new entry.
+export function ModelSelector({
+  selectedModelId,
+  setSelectedModelId,
+  activeSystemPromptName,
+  onOpenSystemPrompt,
+}) {
   const selected = getModelById(selectedModelId)
 
   const barStyle = {
@@ -47,6 +53,29 @@ export function ModelSelector({ selectedModelId, setSelectedModelId }) {
     alignItems: 'center',
   }
 
+  const dividerStyle = {
+    width: '1px',
+    height: '18px',
+    backgroundColor: '#44475a',
+    margin: '0 2px',
+  }
+
+  const promptButtonStyle = {
+    pointerEvents: 'auto',
+    backgroundColor: '#21222c',
+    color: '#f8f8f2',
+    border: '1px solid #44475a',
+    borderRadius: '6px',
+    padding: '4px 8px',
+    fontFamily: 'monospace',
+    fontSize: '13px',
+    cursor: 'pointer',
+    maxWidth: '40vw',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  }
+
   return (
     <div style={barStyle}>
       <select
@@ -71,6 +100,17 @@ export function ModelSelector({ selectedModelId, setSelectedModelId }) {
         {/* https://icons.getbootstrap.com/ */}
         <i className="bi bi-box-arrow-up-right"></i>
       </a>
+      <span style={dividerStyle} />
+      <button
+        type="button"
+        aria-label="Edit system prompt"
+        title="View / edit the system prompt"
+        onClick={onOpenSystemPrompt}
+        style={promptButtonStyle}
+      >
+        <i className="bi bi-gear" style={{ marginRight: '5px' }}></i>
+        System: {activeSystemPromptName}
+      </button>
     </div>
   )
 }
@@ -78,4 +118,6 @@ export function ModelSelector({ selectedModelId, setSelectedModelId }) {
 ModelSelector.propTypes = {
   selectedModelId: PropTypes.string.isRequired,
   setSelectedModelId: PropTypes.func.isRequired,
+  activeSystemPromptName: PropTypes.string.isRequired,
+  onOpenSystemPrompt: PropTypes.func.isRequired,
 }

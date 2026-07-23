@@ -6,6 +6,13 @@ import { StagingBanner } from './common/StagingBanner'
 import { Outlet } from 'react-router-dom'
 import { Login } from './routes/Login'
 import { DEFAULT_MODEL_ID } from './common/models'
+import {
+  loadCustomPrompts,
+  saveCustomPrompts,
+  loadActiveId,
+  saveActiveId,
+  getPromptById,
+} from './common/systemPrompts'
 
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
@@ -39,6 +46,23 @@ export function App() {
   const [chatNew, setChatNew] = React.useState(true)
   const [chatDone, setChatDone] = React.useState(false)
   const [selectedModelId, setSelectedModelId] = React.useState(DEFAULT_MODEL_ID)
+
+  // System prompt test bed: Default + 3 editable custom slots, persisted per
+  // browser in localStorage. The active prompt's text feeds the first turn of a
+  // conversation (see llamacpp.js buildInstructTurnPrompt).
+  const [customPrompts, setCustomPrompts] = React.useState(loadCustomPrompts())
+  const [activeSystemPromptId, setActiveSystemPromptId] = React.useState(
+    loadActiveId()
+  )
+  React.useEffect(() => saveCustomPrompts(customPrompts), [customPrompts])
+  React.useEffect(
+    () => saveActiveId(activeSystemPromptId),
+    [activeSystemPromptId]
+  )
+  const activeSystemPromptText = getPromptById(
+    customPrompts,
+    activeSystemPromptId
+  ).text
 
   // ChatInput
   const [widthChatInput, setWidthChatInput] = React.useState('100%')
@@ -131,6 +155,11 @@ export function App() {
           setChatDone,
           selectedModelId,
           setSelectedModelId,
+          customPrompts,
+          setCustomPrompts,
+          activeSystemPromptId,
+          setActiveSystemPromptId,
+          activeSystemPromptText,
           widthChatInput,
           setWidthChatInput,
           heightChatInput,

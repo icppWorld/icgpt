@@ -16,9 +16,16 @@ const CACHE_TYPE_K = 'q8_0'
 const TEMP = '0.6'
 const REPEAT_PENALTY = '1.1'
 
-// The Qwen chat template pieces
-const SYSTEM_PROMPT =
-  '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+// The Qwen chat template pieces. The system prompt TEXT is user-configurable
+// (the system-prompt test bed); we wrap the chosen text in the template here.
+const DEFAULT_SYSTEM_PROMPT_TEXT = 'You are a helpful assistant.'
+function wrapSystemPrompt(text) {
+  return (
+    '<|im_start|>system\n' +
+    (text ?? DEFAULT_SYSTEM_PROMPT_TEXT) +
+    '<|im_end|>\n'
+  )
+}
 
 // Special tokens llama.cpp emits with `-sp`. We strip them from what the user
 // SEES, but keep them in the conversation base (from the canister's `conversation`
@@ -51,9 +58,14 @@ function buildNewChatInput() {
 // The full prompt for ONE turn. First turn: system + user. Later turns: the
 // canister's previous `conversation` (which already holds system + all prior
 // turns) + the new user turn. Ends with the assistant tag so the LLM continues
-// as the assistant.
-function buildInstructTurnPrompt(conversationBase, userMessage) {
-  const base = conversationBase || SYSTEM_PROMPT
+// as the assistant. The system prompt only appears on the first turn (empty
+// conversationBase), so switching it requires a New chat to take effect.
+function buildInstructTurnPrompt(
+  conversationBase,
+  userMessage,
+  systemPromptText
+) {
+  const base = conversationBase || wrapSystemPrompt(systemPromptText)
   return (
     base +
     '<|im_start|>user\n' +
@@ -246,6 +258,7 @@ async function fetchInference({
   setConversationBase,
   userMessage,
   numSteps,
+  systemPromptText,
 }) {
   if (DEBUG) console.log('DEBUG-FLOW: fetchInference for message:', userMessage)
 
@@ -280,7 +293,8 @@ async function fetchInference({
   // new user turn.
   const turnPrompt = buildInstructTurnPrompt(
     conversationBaseRef.current,
-    userMessage
+    userMessage,
+    systemPromptText
   )
 
   // tokens IN = what is NEWLY ingested this turn = the turn prompt minus the
@@ -383,6 +397,7 @@ export async function doSubmitLlamacpp({
   setConversationBase,
   setChatDisplay,
   setWaitAnimationMessage,
+  systemPromptText,
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: doSubmitLlamacpp', { chatNew })
@@ -443,6 +458,7 @@ export async function doSubmitLlamacpp({
       setConversationBase,
       userMessage,
       numSteps,
+      systemPromptText,
     })
   } catch (error) {
     console.error(error)

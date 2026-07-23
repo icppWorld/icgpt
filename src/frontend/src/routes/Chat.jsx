@@ -9,10 +9,12 @@ import { StatsBar } from '../common/StatsBar'
 import { CardError } from '../common/CardError'
 import { ModelSelector } from '../common/ModelSelector'
 import { getModelById } from '../common/models'
+import { getPromptById } from '../common/systemPrompts'
 import { ChatOutput } from './ChatOutput'
 import { ChatNewChat } from './ChatNewChat'
 import { Chats } from './Chats'
 import { ChatInput } from './ChatInput'
+import { SystemPromptModal } from './SystemPromptModal'
 
 const DEBUG = true
 
@@ -22,6 +24,9 @@ export function Chat() {
   const { chatNew, setChatNew } = useOutletContext()
   const { chatDone, setChatDone } = useOutletContext()
   const { selectedModelId, setSelectedModelId } = useOutletContext()
+  const { customPrompts, setCustomPrompts } = useOutletContext()
+  const { activeSystemPromptId, setActiveSystemPromptId } = useOutletContext()
+  const { activeSystemPromptText } = useOutletContext()
   const { widthChatInput, setWidthChatInput } = useOutletContext()
   const { heightChatInput, setHeightChatInput } = useOutletContext()
   const { inputString, setInputString } = useOutletContext()
@@ -47,6 +52,13 @@ export function Chat() {
   const turns = (messages || []).filter((m) => m.role === 'user').length
 
   const selectedModel = getModelById(selectedModelId)
+  const activeSystemPromptName = getPromptById(
+    customPrompts,
+    activeSystemPromptId
+  ).name
+
+  const [showSystemPromptModal, setShowSystemPromptModal] =
+    React.useState(false)
 
   let DisplayComponent
 
@@ -95,6 +107,8 @@ export function Chat() {
             <ModelSelector
               selectedModelId={selectedModelId}
               setSelectedModelId={setSelectedModelId}
+              activeSystemPromptName={activeSystemPromptName}
+              onOpenSystemPrompt={() => setShowSystemPromptModal(true)}
             />
             {DisplayComponent}
             <StatsBar
@@ -187,6 +201,7 @@ export function Chat() {
               setStats={setStats}
               setChatDisplay={setChatDisplay}
               setWaitAnimationMessage={setWaitAnimationMessage}
+              systemPromptText={activeSystemPromptText}
               chats={chats}
               setChats={setChats}
             />
@@ -194,6 +209,24 @@ export function Chat() {
         </div>
         <Footer />
       </main>
+      {showSystemPromptModal ? (
+        <SystemPromptModal
+          customPrompts={customPrompts}
+          setCustomPrompts={setCustomPrompts}
+          activeSystemPromptId={activeSystemPromptId}
+          setActiveSystemPromptId={setActiveSystemPromptId}
+          onClose={() => setShowSystemPromptModal(false)}
+          setChatNew={setChatNew}
+          setChatDone={setChatDone}
+          setInputString={setInputString}
+          setInputPlaceholder={setInputPlaceholder}
+          setChatOutputText={setChatOutputText}
+          setMessages={setMessages}
+          setConversationBase={setConversationBase}
+          setStats={setStats}
+          setChatDisplay={setChatDisplay}
+        />
+      ) : null}
     </div>
   )
 }
