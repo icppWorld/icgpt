@@ -50,7 +50,23 @@ export function App() {
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
   // ChatOutput
+  // chatOutputText is the IN-PROGRESS assistant reply that streams in.
+  // messages holds the COMPLETED turns of the conversation (Qwen multi-turn).
+  // TinyStories (frozen llama2.js) leaves messages empty and only uses chatOutputText.
   const [chatOutputText, setChatOutputText] = React.useState('')
+  const [messages, setMessages] = React.useState([])
+
+  // The exact `conversation` text the canister last returned, used as the
+  // cache-matching prefix when continuing a multi-turn Qwen conversation.
+  // useRef: mutated across async inference calls without triggering re-renders.
+  const conversationBaseRef = React.useRef('')
+  const setConversationBase = (value) => {
+    conversationBaseRef.current = value
+  }
+
+  // Live conversation statistics (reset on New chat). turns is derived from
+  // messages; updateCalls & tokens accumulate across the conversation.
+  const [stats, setStats] = React.useState({ updateCalls: 0, tokens: 0 })
 
   // for ChatsPopupModal
   const [chats, setChats] = React.useState()
@@ -130,6 +146,12 @@ export function App() {
           setIsSubmitting,
           chatOutputText,
           setChatOutputText,
+          messages,
+          setMessages,
+          conversationBaseRef,
+          setConversationBase,
+          stats,
+          setStats,
           chatDisplay,
           setChatDisplay,
           waitAnimationMessage,

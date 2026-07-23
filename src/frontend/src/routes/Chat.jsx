@@ -6,7 +6,7 @@ import 'dracula-ui/styles/dracula-ui.css'
 import { Card, Heading, Divider, Text } from 'dracula-ui'
 
 import { Footer } from '../common/Footer'
-import { WaitAnimation } from '../common/WaitAnimation'
+import { StatsBar } from '../common/StatsBar'
 import { CardError } from '../common/CardError'
 import { ChatSelectModel } from './ChatSelectModel'
 import { ChatOutput } from './ChatOutput'
@@ -30,6 +30,9 @@ export function Chat() {
   const { inputPlaceholder, setInputPlaceholder } = useOutletContext()
   const { isSubmitting, setIsSubmitting } = useOutletContext()
   const { chatOutputText, setChatOutputText } = useOutletContext()
+  const { messages, setMessages } = useOutletContext()
+  const { conversationBaseRef, setConversationBase } = useOutletContext()
+  const { stats, setStats } = useOutletContext()
   const { chatDisplay, setChatDisplay } = useOutletContext()
   const { waitAnimationMessage, setWaitAnimationMessage } = useOutletContext()
   const { chats, setChats } = useOutletContext()
@@ -42,18 +45,21 @@ export function Chat() {
     console.log('principal  : ' + principal)
   }
 
+  // Turns = number of user messages in the conversation.
+  const turns = (messages || []).filter((m) => m.role === 'user').length
+
   let DisplayComponent
 
   switch (chatDisplay) {
     case 'WaitAnimation':
       DisplayComponent = (
-        <>
-          <ChatOutput
-            chatOutputText={chatOutputText}
-            heightChatInput={heightChatInput}
-          />
-          <WaitAnimation message={waitAnimationMessage} />
-        </>
+        <ChatOutput
+          chatOutputText={chatOutputText}
+          messages={messages}
+          isWorking={true}
+          workingMessage={waitAnimationMessage}
+          heightChatInput={heightChatInput}
+        />
       )
       break
     case 'SelectModel':
@@ -74,6 +80,7 @@ export function Chat() {
       DisplayComponent = (
         <ChatOutput
           chatOutputText={chatOutputText}
+          messages={messages}
           heightChatInput={heightChatInput}
         />
       )
@@ -105,6 +112,12 @@ export function Chat() {
             style={{ position: 'relative' }}
           >
             {DisplayComponent}
+            <StatsBar
+              turns={turns}
+              updateCalls={stats.updateCalls}
+              tokens={stats.tokens}
+              heightChatInput={heightChatInput}
+            />
             <ChatNewChat
               authClient={authClient}
               setAuthClient={setAuthClient}
@@ -125,6 +138,9 @@ export function Chat() {
               isSubmitting={isSubmitting}
               setIsSubmitting={setIsSubmitting}
               setChatOutputText={setChatOutputText}
+              setMessages={setMessages}
+              setConversationBase={setConversationBase}
+              setStats={setStats}
               setChatDisplay={setChatDisplay}
               setWaitAnimationMessage={setWaitAnimationMessage}
               modelType={modelType}
@@ -151,6 +167,9 @@ export function Chat() {
               isSubmitting={isSubmitting}
               setIsSubmitting={setIsSubmitting}
               setChatOutputText={setChatOutputText}
+              setMessages={setMessages}
+              setConversationBase={setConversationBase}
+              setStats={setStats}
               setChatDisplay={setChatDisplay}
               setWaitAnimationMessage={setWaitAnimationMessage}
               modelType={modelType}
@@ -179,6 +198,10 @@ export function Chat() {
               isSubmitting={isSubmitting}
               setIsSubmitting={setIsSubmitting}
               setChatOutputText={setChatOutputText}
+              setMessages={setMessages}
+              conversationBaseRef={conversationBaseRef}
+              setConversationBase={setConversationBase}
+              setStats={setStats}
               setChatDisplay={setChatDisplay}
               setWaitAnimationMessage={setWaitAnimationMessage}
               modelType={modelType}

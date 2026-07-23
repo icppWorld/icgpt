@@ -27,6 +27,9 @@ export function ChatNewChat({
   isSubmitting,
   setIsSubmitting,
   setChatOutputText,
+  setMessages,
+  setConversationBase,
+  setStats,
   setChatDisplay,
   setWaitAnimationMessage,
   modelType,
@@ -89,10 +92,14 @@ export function ChatNewChat({
             console.log('ChatInput.jsx - chats have been reset.')
           }
 
+          // Clear the on-screen conversation for a fresh start (both paths).
           setChatNew(true)
           setChatDone(false)
           setInputString('')
           setChatOutputText('')
+          if (setMessages) setMessages([])
+          if (setConversationBase) setConversationBase('')
+          if (setStats) setStats({ updateCalls: 0, tokens: 0 })
           setChatDisplay('SelectModel')
           if (modelType === 'TinyStories') {
             doNewChat({
@@ -113,43 +120,18 @@ export function ChatNewChat({
               setChatDisplay,
               setWaitAnimationMessage,
             })
-          } else if (modelType === 'Qwen2.5') {
+          } else {
+            // Qwen2.5 and llama.cpp Charles (lazy cache reset)
             doNewChatLlamacpp({
-              authClient,
-              actorRef,
-              chatNew,
-              chatDone,
-              setActorRef,
               setChatNew,
               setChatDone,
-              inputString,
               setInputString,
-              inputPlaceholder,
               setInputPlaceholder,
-              isSubmitting,
-              setIsSubmitting,
               setChatOutputText,
+              setMessages,
+              setConversationBase,
+              setStats,
               setChatDisplay,
-              setWaitAnimationMessage,
-            })
-          } else if (modelType === 'llama.cpp Charles') {
-            doNewChatLlamacpp({
-              authClient,
-              actorRef,
-              chatNew,
-              chatDone,
-              setActorRef,
-              setChatNew,
-              setChatDone,
-              inputString,
-              setInputString,
-              inputPlaceholder,
-              setInputPlaceholder,
-              isSubmitting,
-              setIsSubmitting,
-              setChatOutputText,
-              setChatDisplay,
-              setWaitAnimationMessage,
             })
           }
         }}

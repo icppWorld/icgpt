@@ -214,7 +214,9 @@ make upload-charles-42M-local
 
 # llama.cpp qwen2.5 0.5b q8 (676 Mb)
 dfx deploy llama_cpp_qwen25_05b_q8 --network local [-m upgrade/reinstall] # upgrade preserves model in stable memory
-# dfx canister update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
+# Raise the wasm heap to 3.75 GiB (just under the wasm32 4 GiB ceiling) so long
+# multi-turn conversations have more KV/prompt-cache budget before hitting a trap.
+dfx canister update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 3840MiB --network local
 dfx canister status llama_cpp_qwen25_05b_q8 --network local
 # if (re)installed:
   make upload-llama-cpp-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
@@ -386,7 +388,8 @@ Step 2: Deploy the backend canisters
 
   # qwen2.5 0.5b q8 (676 Mb)
   dfx deploy --ic llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
-  dfx canister --ic update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
+  # 3.75 GiB heap: more KV/prompt-cache budget for long multi-turn conversations
+  dfx canister --ic update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 3840MiB
   dfx canister --ic status llama_cpp_qwen25_05b_q8
   dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 1 : nat64; max_tokens_update = 25 : nat64 })'
   dfx canister --ic call llama_cpp_qwen25_05b_q8 chats_resume

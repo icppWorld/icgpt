@@ -27,6 +27,9 @@ export function Chats({
   isSubmitting,
   setIsSubmitting,
   setChatOutputText,
+  setMessages,
+  setConversationBase,
+  setStats,
   setChatDisplay,
   setWaitAnimationMessage,
   modelType,
@@ -115,6 +118,9 @@ export function Chats({
               isSubmitting={isSubmitting}
               setIsSubmitting={setIsSubmitting}
               setChatOutputText={setChatOutputText}
+              setMessages={setMessages}
+              setConversationBase={setConversationBase}
+              setStats={setStats}
               setChatDisplay={setChatDisplay}
               setWaitAnimationMessage={setWaitAnimationMessage}
               modelType={modelType}

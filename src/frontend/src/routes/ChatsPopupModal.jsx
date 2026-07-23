@@ -27,6 +27,9 @@ export function ChatsPopupModal({
   isSubmitting,
   setIsSubmitting,
   setChatOutputText,
+  setMessages,
+  setConversationBase,
+  setStats,
   setChatDisplay,
   setWaitAnimationMessage,
   modelType,
@@ -169,8 +172,16 @@ export function ChatsPopupModal({
               }}
               onClick={() => {
                 console.log(`${chat.label} clicked`)
-                setInputString(chat.inputString)
-                setChatOutputText(chat.outputString)
+                // Load the saved conversation as read-only history bubbles.
+                // Continuing it starts a fresh on-chain conversation (chatNew),
+                // since the canister prompt cache may already be gone.
+                setInputString('')
+                setChatOutputText('')
+                setMessages(chat.messages || [])
+                setConversationBase('')
+                setStats({ updateCalls: 0, tokens: 0 })
+                setChatNew(true)
+                setChatDone(true)
                 setChatDisplay('ChatOutput')
                 onClose()
               }}

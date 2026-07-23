@@ -1,25 +1,44 @@
-// Functions to interact with the llama2_cpp_canister
+// Functions to interact with the llama_cpp_canister (Qwen2.5 Instruct chat, and
+// the Raw-LLM "Charles" continuation mode).
+//
+// Multi-turn: the canister keeps the conversation in its prompt cache
+// (--prompt-cache-all). To continue a conversation we resend the growing
+// conversation as the prompt; the canister prefix-matches its cache and only
+// ingests the new turn. new_chat (cache reset) fires ONLY on the first message
+// of a fresh conversation. See the "multi-turn chat" plan.
 
 const IC_HOST_URL = process.env.IC_HOST_URL
 
-const displayQueue = []
-let isDisplaying = false
-let chatStarted = false
-let chatFinished = false
-
-// The KV cache quantization the model was loaded with (`load_model`).
-// It must be passed to new_chat & run_update as well, so the prompt cache of a
-// session matches the model. See llama_cpp_canister README, Appendix A: this is
-// the configuration the 25-tokens-per-update-call figure was measured on.
+// The KV cache quantization the model was loaded with (`load_model`). It must be
+// passed to new_chat & run_update so the session's prompt cache matches the model.
 const CACHE_TYPE_K = 'q8_0'
 
 // Sampling settings recommended on the Qwen2.5 model card
 const TEMP = '0.6'
 const REPEAT_PENALTY = '1.1'
 
+// The Qwen chat template pieces
+const SYSTEM_PROMPT =
+  '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
+
+// Special tokens llama.cpp emits with `-sp`. We strip them from what the user
+// SEES, but keep them in the conversation base (from the canister's `conversation`
+// field) so the next turn's cache prefix still matches exactly.
+const SPECIAL_TOKEN_RE = /<\|im_start\|>|<\|im_end\|>|<\|endoftext\|>/g
+function stripSpecialTokens(s) {
+  return s.replace(SPECIAL_TOKEN_RE, '')
+}
+
+const DEBUG = true
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+// -----------------------------------------------------------------------------
+// Prompt building
+
 function buildNewChatInput() {
-  // TODO: prompt.cache as a variable to save/delete chats
-  // '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
   return {
     args: [
       '--prompt-cache',
@@ -30,62 +49,25 @@ function buildNewChatInput() {
   }
 }
 
-// The part of the prompt that the LLM has not ingested yet.
-// Before the first run_update call, that is the whole input string.
-function promptRemainingOf(inputString, responseUpdate) {
-  if (responseUpdate && 'Ok' in responseUpdate) {
-    return responseUpdate.Ok.prompt_remaining
-  }
-  return inputString
+// The full prompt for ONE turn. First turn: system + user. Later turns: the
+// canister's previous `conversation` (which already holds system + all prior
+// turns) + the new user turn. Ends with the assistant tag so the LLM continues
+// as the assistant.
+function buildInstructTurnPrompt(conversationBase, userMessage) {
+  const base = conversationBase || SYSTEM_PROMPT
+  return (
+    base +
+    '<|im_start|>user\n' +
+    userMessage +
+    '<|im_end|>\n' +
+    '<|im_start|>assistant\n'
+  )
 }
 
-// True once the whole prompt is ingested and the LLM is generating new tokens.
-function isGenerating(inputString, responseUpdate) {
-  return promptRemainingOf(inputString, responseUpdate) === ''
-}
-
-function buildRunUpdateInput(
-  inputString,
-  responseUpdate,
-  setWaitAnimationMessage,
-  modelType,
-  finetuneType
-) {
-  const promptRemaining = promptRemainingOf(inputString, responseUpdate)
-  let output = ''
-  if (responseUpdate && 'Ok' in responseUpdate) {
-    output = responseUpdate.Ok.output
-  }
-  console.log('buildRunUpdateInput - responseUpdate = ', responseUpdate)
-  console.log('buildRunUpdateInput - inputString = ', inputString)
-  console.log('buildRunUpdateInput - promptRemaining = ', promptRemaining)
-  console.log('buildRunUpdateInput - output = ', output)
-  let systemPrompt
-  let userPrompt
-  let fullPrompt
-  if (promptRemaining === '') {
-    if (responseUpdate) {
-      setWaitAnimationMessage('On-chain token generation in progress')
-    }
-    console.log('buildRunUpdateInput - promptRemaining is now empty')
-    fullPrompt = ''
-  } else {
-    // We're still feeding the original prompt
-    if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
-      systemPrompt =
-        '<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n'
-      // systemPrompt = '<|im_start|>system<|im_end|>\n'
-      userPrompt = '<|im_start|>user\n' + inputString + '<|im_end|>\n'
-      fullPrompt = systemPrompt + userPrompt + '<|im_start|>assistant\n'
-    } else {
-      console.log('buildRunUpdateInput - UNKNOWN modelType & finetuneType')
-    }
-  }
-  // While still ingesting the prompt, use '1' so the LLM does not generate new
-  // tokens yet. Once the prompt is fully ingested (fullPrompt is empty), use
-  // '512' to let it generate until it reaches end-of-generation.
-  // Either way, the canister caps it at the max_tokens_update it was set to.
-  const numtokens = fullPrompt === '' ? '512' : '1'
+// run_update args. Ingestion (generating=false): resend the turn prompt, -n 1 so
+// no new tokens are generated yet. Generation (generating=true): empty prompt,
+// -n 512 so it generates until EOG. The canister caps -n at max_tokens_update.
+function runUpdateArgs(turnPrompt, generating) {
   return {
     args: [
       '--prompt-cache',
@@ -99,67 +81,30 @@ function buildRunUpdateInput(
       REPEAT_PENALTY,
       '-sp',
       '-p',
-      fullPrompt,
+      generating ? '' : turnPrompt,
       '-n',
-      numtokens,
+      generating ? '512' : '1',
     ],
   }
-}
-
-const DEBUG = true
-
-// -----------------------------------------------------------------------------
-// Adaptive pacing of the typewriter effect.
-//
-// Each run_update call returns a bunch of tokens at once (25 for the Qwen2.5
-// 0.5b q8_0 canister, since llama_cpp_canister v0.12.0). We paint those words
-// one by one, but the delay per word must not be hardcoded: if the words of a
-// bunch take longer to paint than the next run_update call takes to return, the
-// displayQueue grows without bound and the text falls further behind the LLM
-// with every bunch.
-//
-// So we measure how long the previous run_update call actually took and spread
-// the words of a bunch over that same duration, divided by the queue backlog.
-// The deeper the backlog, the faster we paint, so the display always catches up.
-const MIN_WORD_DELAY_MS = 25
-const MAX_WORD_DELAY_MS = 250
-const DEFAULT_CALL_DURATION_MS = 3000
-let lastCallDurationMs = DEFAULT_CALL_DURATION_MS
-
-// The time budget to paint one bunch of words, and the delay per word in it
-function wordDelayMs(numWords) {
-  if (numWords <= 0) return MIN_WORD_DELAY_MS
-  const budgetMs = lastCallDurationMs / (displayQueue.length + 1)
-  return Math.min(
-    MAX_WORD_DELAY_MS,
-    Math.max(MIN_WORD_DELAY_MS, budgetMs / numWords)
-  )
 }
 
 // -----------------------------------------------------------------------------
 // Retry transient failures of the on-chain calls.
 //
 // A call to the canister can fail at the transport level: a network blip, a
-// boundary-node 429/503, a request timeout, or - only on the local replica -
-// the fetchRootKey certificate race. These are transient: the canister was
-// either never reached or its reply was lost, so retrying is safe and usually
-// succeeds. This matters most on the IC under concurrent load, where without a
-// retry a single such blip mid-conversation would abort the whole chat.
+// boundary-node 429/503, a request timeout, or - only on the local replica - the
+// fetchRootKey certificate race. These are transient: the canister was either
+// never reached or its reply was lost, so retrying is safe and usually succeeds.
 //
 // Application-level errors are NOT retried here: the canister returns those as
 // `{ Err }` in a SUCCESSFUL response (eg. access denied, model not loaded), not
-// as a thrown exception, so the callers below still handle those as final.
-//
-// Note on run_update: an update call that committed on-chain but whose reply
-// was lost will, on retry, resume from the already-advanced state - so at worst
-// one bunch of tokens is skipped. That is a far better failure mode than losing
-// the whole conversation, which is what happened before.
+// as a thrown exception, so callers still handle those as final.
 const RETRY_MAX_ATTEMPTS = 4
 const RETRY_BASE_DELAY_MS = 500
 const RETRY_MAX_DELAY_MS = 8000
 
 // Returns { result, durationMs }, where durationMs times ONLY the successful
-// attempt (no backoff), which is exactly what the pacing budget wants.
+// attempt (no backoff), which is what the streaming pace budget wants.
 async function withRetry(fn, label, onRetry) {
   for (let attempt = 1; ; attempt += 1) {
     const startedMs = performance.now()
@@ -186,326 +131,255 @@ async function withRetry(fn, label, onRetry) {
   }
 }
 
-// Show a retry notice in the wait animation while withRetry backs off.
 const notifyRetry = (setWaitAnimationMessage) => (attempt) =>
   setWaitAnimationMessage(
     `The on-chain LLM is busy, retrying (attempt ${attempt})...`
   )
 
-async function waitForQueueToEmpty() {
-  if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js waitForQueueToEmpty ')
-  }
-  while (displayQueue.length > 0) {
-    await sleep(100)
-  }
+// -----------------------------------------------------------------------------
+// Smooth streaming: a word buffer + a steady painter.
+//
+// The canister generates in bursts (~25 tokens per ~2-3s update call, with a
+// round-trip gap between calls). If we paint each burst as fast as it arrives,
+// the text bursts then stalls while the next burst is generated. Instead we
+// paint at the SUSTAINED generation rate (measured ms-per-word), so painting one
+// burst takes about as long as generating the next one - continuous, no stall.
+//
+// `pendingText` is the unpainted raw suffix; the painter moves it word-by-word
+// into chatOutputText, so `displayed + pendingText` always equals the exact
+// generated text so far (never transformed, only moved).
+const MIN_WORD_DELAY_MS = 30
+// MAX is deliberately high: on the local replica the canister generates ~10x
+// slower than the IC (~30s per 25-token call vs ~2.5s), so to stay CONTINUOUS
+// (no burst-then-stall) the painter must be allowed to slow down to the actual
+// generation rate. On the IC the sustained rate is ~150ms/word, so this ceiling
+// never binds there - it just keeps local streaming smooth instead of bursty.
+const MAX_WORD_DELAY_MS = 2000
+const DEFAULT_WORD_DELAY_MS = 300 // first batch, before we have throughput stats
+const CATCHUP_WORD_DELAY_MS = 40 // brisk drain of the tail once generation is done
+const BUFFER_POLL_MS = 60 // recheck cadence while waiting for more tokens
+
+let pendingText = ''
+let generationDone = false
+let genTotalMs = 0
+let genTotalWords = 0
+
+function resetStreamState() {
+  pendingText = ''
+  generationDone = false
+  genTotalMs = 0
+  genTotalWords = 0
 }
 
-async function fetchInference(
-  actor,
-  setChatOutputText,
-  chatNew,
-  setChatNew,
-  chatDone,
-  setChatDone,
-  setChatDisplay,
-  setWaitAnimationMessage,
-  inputString,
-  setInputString,
-  inputPlaceholder,
-  setInputPlaceholder,
-  numStepsFetchInference,
-  modelType,
-  finetuneType
-) {
-  if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js fetchInference ')
-  }
-
-  displayQueue.length = 0 // Reset the displayQueue
-  lastCallDurationMs = DEFAULT_CALL_DURATION_MS // Reset the pacing budget
-  setChatOutputText('') // Reset the output text box
-
-  // Start the display loop in the background
-  processDisplayQueue(
-    chatDone,
-    setChatDisplay,
-    setWaitAnimationMessage,
-    setChatOutputText,
-    setInputString,
-    setInputPlaceholder
-  )
-
-  let count = 0
-  let responseUpdate = null
-  setWaitAnimationMessage('On-chain token ingestion in progress')
-  for (let i = 0; i < numStepsFetchInference; i++) {
-    count++
-
-    if (i === 0 && chatNew) {
-      try {
-        const newChatInput = buildNewChatInput()
-        console.log('Calling new_chat with input: ', newChatInput)
-        const { result: responseNewChat } = await withRetry(
-          () => actor.new_chat(newChatInput),
-          'new_chat',
-          notifyRetry(setWaitAnimationMessage)
-        )
-        if ('Ok' in responseNewChat) {
-          console.log(
-            'Call to new_chat successful with responseNewChat: ',
-            responseNewChat
-          )
-
-          // This is a little hacky, but works like a charm
-          if (finetuneType === 'Raw LLM') {
-            if (DEBUG) {
-              console.log(
-                'DEBUG-FLOW: llamacpp.js adding inputString to processQueue'
-              )
-            }
-            responseNewChat.Ok.output = inputString
-            // Push the output to the queue and the display loop will pick it up
-            displayQueue.push(responseNewChat)
-          }
-        } else {
-          console.log(
-            'Call to new_chat failed with responseNewChat: ',
-            responseNewChat
-          )
-          let ermsg = ''
-          if ('Err' in responseNewChat && 'Other' in responseNewChat.Err)
-            ermsg = responseNewChat.Err.Other
-          throw new Error(`Call to new_chat failed: ` + ermsg)
-        }
-      } catch (error) {
-        // caught by caller and printed to console there
-        throw new Error(`Error: ${error.message}`)
-      }
-    } else {
-      try {
-        // Determine the phase BEFORE the call, based on the previous response
-        const generating = isGenerating(inputString, responseUpdate)
-        const runUpdateInput = buildRunUpdateInput(
-          inputString,
-          responseUpdate,
-          setWaitAnimationMessage,
-          modelType,
-          finetuneType
-        )
-        console.log('Calling run_update with input: ', runUpdateInput)
-        // Re-assert the phase message each iteration, so a lingering "retrying"
-        // notice from a previous transient failure self-corrects.
-        setWaitAnimationMessage(
-          generating
-            ? 'On-chain token generation in progress'
-            : 'On-chain token ingestion in progress'
-        )
-        const runUpdateResponse = await withRetry(
-          () => actor.run_update(runUpdateInput),
-          'run_update',
-          notifyRetry(setWaitAnimationMessage)
-        )
-        responseUpdate = runUpdateResponse.result
-        lastCallDurationMs = runUpdateResponse.durationMs
-        console.log('run_update took (ms): ', lastCallDurationMs)
-        if ('Ok' in responseUpdate) {
-          console.log(
-            'Call to run_update successful, with responseUpdate: ',
-            responseUpdate
-          )
-
-          // if (i === 1) {
-          //   setChatOutputText('')
-          //   setInputPlaceholder('The LLM is generating text...')
-          // }
-          // Only display the output of the generating phase.
-          // The ingesting calls return an empty output, except for the last
-          // one, which returns the 1 token that "-n 1" made it generate. That
-          // token is NOT carried over into the next call: the generating phase
-          // restarts at the end of the prompt and emits it again. Displaying it
-          // here would print it twice (eg. "LL" + "LLMs, ..." -> "LLLLMs, ...")
-          if (generating) {
-            // Push the output to the queue, the display loop will pick it up
-            displayQueue.push(responseUpdate)
-          }
-          // We reached end of story if the LLM says so
-          if (responseUpdate.Ok.generated_eog) {
-            // Reset the inputString and provide a new placeHolder
-            setInputString('')
-            console.log('-A- setChatDone(true)')
-            setChatDone(true)
-            chatStarted = false
-            chatFinished = true
-            setInputPlaceholder('The end!')
-            break
-          }
-        } else {
-          console.log(
-            'Call to run_update failed, with responseUpdate: ',
-            responseUpdate
-          )
-          let ermsg = ''
-          if ('Err' in responseUpdate) ermsg = responseUpdate.Err.error
-          throw new Error(`Call to run_update failed: ` + ermsg)
-        }
-      } catch (error) {
-        // caught by caller and printed to console there
-        throw new Error(`Error: ${error.message}`)
-      }
-    }
-  }
-  if (count >= numStepsFetchInference) {
-    setInputString('')
-    setChatDone(true)
-    chatStarted = false
-    chatFinished = true
-    setInputPlaceholder('Message ICGPT')
-  }
+// Paint at the SUSTAINED generation rate (measured ms-per-word), so painting one
+// burst takes about as long as generating the next one - continuous, no stall.
+// Once generation is done, drain whatever is buffered briskly so the tail does
+// not drag.
+function currentWordDelayMs() {
+  if (generationDone) return CATCHUP_WORD_DELAY_MS
+  if (genTotalWords <= 0) return DEFAULT_WORD_DELAY_MS
+  const perWord = genTotalMs / genTotalWords
+  return Math.min(MAX_WORD_DELAY_MS, Math.max(MIN_WORD_DELAY_MS, perWord))
 }
 
-async function processDisplayQueue(
-  chatDone,
-  setChatDisplay,
-  setWaitAnimationMessage,
-  setChatOutputText,
-  setInputString,
-  setInputPlaceholder
-) {
-  if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js processDisplayQueue ')
-    console.log('- displayQueue.length = ', displayQueue.length)
-    console.log('- isDisplaying        = ', isDisplaying)
+// Pop the next word-unit (leading whitespace + one word + its trailing
+// whitespace) to paint, or null to wait. We require the word to be whitespace-
+// terminated so we never paint a word that is split across two bursts - unless
+// `flush` (generation done), where we paint the remaining tail.
+function nextWordUnit(flush) {
+  if (pendingText === '') return null
+  const m = pendingText.match(/^\s*\S+\s+/)
+  if (m) {
+    pendingText = pendingText.slice(m[0].length)
+    return m[0]
   }
-
-  let loopCounter = 0
-  while (true) {
-    loopCounter++
-    if (DEBUG) {
-      console.log(
-        'DEBUG-FLOW: entered llamacpp.js processDisplayQueue is still looping'
-      )
-      console.log('- loopCounter         = ', loopCounter)
-      console.log('- displayQueue.length = ', displayQueue.length)
-      console.log('- isDisplaying        = ', isDisplaying)
-      console.log('- chatStarted         = ', chatStarted)
-      console.log('- chatFinished        = ', chatFinished)
-    }
-    if (chatStarted && chatFinished) {
-      break
-    }
-    if (displayQueue.length > 0 && !isDisplaying) {
-      if (DEBUG) {
-        console.log('DEBUG-FLOW: llamacpp.js processDisplayQueue - A')
-      }
-      isDisplaying = true
-      const response = displayQueue.shift()
-      await displayResponse(
-        response,
-        setChatDisplay,
-        setWaitAnimationMessage,
-        setChatOutputText,
-        setInputString,
-        setInputPlaceholder
-      )
-      isDisplaying = false
-      if (!chatFinished) {
-        setChatDisplay('WaitAnimation')
-      }
-    } else {
-      if (DEBUG) {
-        console.log('DEBUG-FLOW: llamacpp.js processDisplayQueue - B')
-      }
-      if (chatStarted && !chatFinished) {
-        if (DEBUG) {
-          console.log('DEBUG-FLOW: llamacpp.js processDisplayQueue - C')
-        }
-        setChatDisplay('WaitAnimation')
-      }
-      await sleep(1000)
-    }
+  if (flush) {
+    const rest = pendingText
+    pendingText = ''
+    return rest
   }
+  return null
 }
 
-function displayResponse(
-  response,
-  setChatDisplay,
-  setWaitAnimationMessage,
-  setChatOutputText,
-  setInputString,
-  setInputPlaceholder
-) {
-  if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js displayResponse ')
-  }
-  // force a re-render showing the ChatOutput
-  setChatDisplay('ChatOutput')
-
-  console.log('response to display:', response)
-  console.log('- response.Ok.output =', response.Ok.output)
-
-  const responseString = response.Ok.output
-
-  if (typeof responseString !== 'string') {
-    console.error('Received unexpected response format:', response)
-    return Promise.reject(new Error('Unexpected response format'))
-  }
-
-  const words = responseString.split(' ')
-  const delayMs = wordDelayMs(words.length)
-  if (DEBUG) {
-    console.log('- displayQueue.length = ', displayQueue.length)
-    console.log('- words.length        = ', words.length)
-    console.log('- delayMs per word    = ', delayMs)
-  }
-
-  // Use reduce to chain promises sequentially
-  return words.reduce((acc, word, j) => {
-    return acc.then(() => {
-      const prependSpace = j !== 0
-      return delayAndAppend(setChatOutputText, word, prependSpace, delayMs)
-    })
-  }, Promise.resolve())
-}
-
-function sleep(ms) {
-  if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js sleep ')
-  }
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-// Function to add a delay and then update the chat output.
-async function delayAndAppend(setChatOutputText, word, prependSpace, delayMs) {
-  if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js delayAndAppend ')
-  }
+// Steady painter. Resolves when the buffer is fully drained AND generation is
+// done. Runs concurrently with the inference loop that fills pendingText.
+function runPainter(setChatOutputText) {
   return new Promise((resolve) => {
-    setTimeout(() => {
-      // Append word to the current chat output
-      const textToAppend = prependSpace ? ' ' + word : word
-      setChatOutputText((prevText) => prevText + textToAppend)
-      resolve() // Signal that the promise is done
-    }, delayMs) // ms delay between each word, see wordDelayMs
+    const tick = () => {
+      const unit = nextWordUnit(generationDone)
+      if (unit !== null) {
+        setChatOutputText((prev) => prev + unit)
+        setTimeout(tick, currentWordDelayMs())
+        return
+      }
+      if (generationDone && pendingText === '') {
+        resolve()
+        return
+      }
+      setTimeout(tick, BUFFER_POLL_MS)
+    }
+    tick()
   })
 }
 
-// Called when user clicks 'submit' button
+// -----------------------------------------------------------------------------
+// Inference: run one user turn (ingest the prompt, then generate to EOG).
+
+// Rough token estimate from word count (~1.35 tokens/word for English). The
+// canister does not report exact token counts, so this is clearly approximate.
+function estimateTokens(text) {
+  const words = text.split(/\s+/).filter(Boolean).length
+  return Math.round(words * 1.35)
+}
+
+async function fetchInference({
+  actor,
+  chatNew,
+  setChatNew,
+  setChatDone,
+  setChatDisplay,
+  setWaitAnimationMessage,
+  setChatOutputText,
+  setMessages,
+  setInputPlaceholder,
+  setStats,
+  conversationBaseRef,
+  setConversationBase,
+  userMessage,
+  numSteps,
+  finetuneType,
+}) {
+  if (DEBUG) console.log('DEBUG-FLOW: fetchInference for message:', userMessage)
+
+  const isInstruct = finetuneType === 'Instruct'
+
+  resetStreamState()
+  setChatOutputText('') // clear the in-progress assistant bubble
+  setChatDisplay('WaitAnimation')
+
+  // Start the steady painter; it drains pendingText as the loop fills it.
+  const painterDone = runPainter(setChatOutputText)
+
+  let fullReply = '' // the assistant reply (special tokens stripped)
+  let conversationText = conversationBaseRef.current
+
+  // Reset the canister prompt cache ONLY on the first message of a conversation.
+  if (chatNew) {
+    setWaitAnimationMessage('Starting a new on-chain conversation')
+    const { result: responseNewChat } = await withRetry(
+      () => actor.new_chat(buildNewChatInput()),
+      'new_chat',
+      notifyRetry(setWaitAnimationMessage)
+    )
+    setStats((s) => ({ ...s, updateCalls: s.updateCalls + 1 }))
+    if (!('Ok' in responseNewChat)) {
+      let ermsg = ''
+      if ('Err' in responseNewChat && 'Other' in responseNewChat.Err)
+        ermsg = responseNewChat.Err.Other
+      throw new Error('Call to new_chat failed: ' + ermsg)
+    }
+    // Raw-LLM (Charles) mode: echo the user's prompt as the start of the stream.
+    if (!isInstruct) {
+      pendingText += userMessage
+      fullReply += userMessage
+    }
+  }
+
+  // The prompt for this turn. Instruct: conversation base + new user turn.
+  // Raw-LLM: the user's text is the seed to continue.
+  const turnPrompt = isInstruct
+    ? buildInstructTurnPrompt(conversationBaseRef.current, userMessage)
+    : userMessage
+
+  let responseUpdate = null
+  for (let step = 0; step < numSteps; step += 1) {
+    const generating =
+      responseUpdate &&
+      'Ok' in responseUpdate &&
+      responseUpdate.Ok.prompt_remaining === ''
+
+    setWaitAnimationMessage(
+      generating
+        ? 'On-chain token generation in progress'
+        : 'On-chain token ingestion in progress'
+    )
+
+    const { result, durationMs } = await withRetry(
+      () => actor.run_update(runUpdateArgs(turnPrompt, generating)),
+      'run_update',
+      notifyRetry(setWaitAnimationMessage)
+    )
+    responseUpdate = result
+    setStats((s) => ({ ...s, updateCalls: s.updateCalls + 1 }))
+
+    if (!('Ok' in responseUpdate)) {
+      let ermsg = ''
+      if ('Err' in responseUpdate) ermsg = responseUpdate.Err.error
+      throw new Error('Call to run_update failed: ' + ermsg)
+    }
+
+    // Only a generating call's output is real new text to display. The last
+    // ingestion call (-n 1) emits 1 token that the first generation call
+    // re-emits, so displaying it here would double-print the first word.
+    if (generating) {
+      const chunk = stripSpecialTokens(responseUpdate.Ok.output)
+      pendingText += chunk
+      fullReply += chunk
+      genTotalMs += durationMs
+      genTotalWords += chunk.split(/\s+/).filter(Boolean).length
+      const tok = estimateTokens(chunk)
+      setStats((s) => ({ ...s, tokens: s.tokens + tok }))
+    }
+
+    if (responseUpdate.Ok.conversation) {
+      conversationText = responseUpdate.Ok.conversation
+    }
+
+    if (responseUpdate.Ok.generated_eog) {
+      if (DEBUG) console.log('DEBUG-FLOW: EOG reached')
+      break
+    }
+  }
+
+  // Let the painter finish streaming what is buffered, then settle the turn.
+  generationDone = true
+  await painterDone
+
+  if (isInstruct) {
+    const reply = stripSpecialTokens(fullReply).trim()
+    // Move the completed assistant reply from the streaming bubble into the
+    // conversation, and clear the streaming bubble in the same tick.
+    setMessages((prev) => [...prev, { role: 'assistant', content: reply }])
+    setChatOutputText('')
+    // The canister's conversation is the exact cache prefix for the next turn.
+    setConversationBase(conversationText)
+    setChatNew(false) // subsequent submits CONTINUE this conversation
+  }
+
+  setChatDone(true)
+  setInputPlaceholder('Message ICGPT')
+  setChatDisplay('ChatOutput')
+}
+
+// -----------------------------------------------------------------------------
+// Called when user clicks 'submit'
 export async function doSubmitLlamacpp({
   authClient,
   actorRef,
   chatNew,
-  chatDone,
   setActorRef,
   setChatNew,
   setChatDone,
   inputString,
   setInputString,
-  inputPlaceholder,
+  setInputPlaceholder,
   isSubmitting,
   setIsSubmitting,
-  setInputPlaceholder,
   setChatOutputText,
+  setMessages,
+  setStats,
+  conversationBaseRef,
+  setConversationBase,
   setChatDisplay,
   setWaitAnimationMessage,
   modelType,
@@ -513,296 +387,193 @@ export async function doSubmitLlamacpp({
   finetuneType,
 }) {
   if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js doSubmitLlamacpp ')
-    console.log('- modelType ', modelType)
-    console.log('- modelSize ', modelSize)
-    console.log('- finetuneType ', finetuneType)
+    console.log('DEBUG-FLOW: doSubmitLlamacpp', {
+      modelType,
+      modelSize,
+      finetuneType,
+      chatNew,
+    })
   }
+
+  const userMessage = inputString.trim()
+  if (userMessage === '') return
+
   setIsSubmitting(true)
 
-  // Based on the values of modelType, modelSize, and finetuneType, determine the module to import
-  let moduleToImport
-  const numStepsFetchInference = 1000 // Basically, just keep going...
-  if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
-    switch (modelSize) {
-      case '0.5b_q8_0':
-        console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
-        moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
-        break
-    }
-  } else {
-    console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
-    moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
-  }
+  const numSteps = 1000 // safety cap on the ingest+generate loop
+  const moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
   const { canisterId, createActor } = await moduleToImport
 
-  console.log('chatNew : ', chatNew)
-  console.log('chatDone : ', chatDone)
-  console.log('chatFinished : ', chatFinished)
+  // Create the actor on the first message; reuse it for continuation turns (it
+  // already has the root key, avoiding the local fetchRootKey race).
   let actor_ = actorRef.current
-  if (chatNew) {
-    console.log('Creating identity ')
+  if (chatNew || !actor_) {
     const identity = await authClient.getIdentity()
-    console.log('Creating actor ')
     actor_ = createActor(canisterId, {
-      agentOptions: {
-        identity,
-        host: IC_HOST_URL,
-      },
+      agentOptions: { identity, host: IC_HOST_URL },
     })
     setActorRef(actor_)
   }
 
+  // Show the user's message immediately, and clear the input box.
+  if (finetuneType === 'Instruct') {
+    setMessages((prev) => [...prev, { role: 'user', content: userMessage }])
+  }
+  setInputString('')
+
   try {
-    // Call llm canister to check on health
-    // Force a re-render, showing the WaitAnimation
     setChatDisplay('WaitAnimation')
-    console.log('Calling actor_.health ')
+    setWaitAnimationMessage('On-chain token ingestion in progress')
     const { result: responseHealth } = await withRetry(
       () => actor_.health(),
       'health',
       notifyRetry(setWaitAnimationMessage)
     )
-    console.log('llm canister health: ', responseHealth)
 
-    if ('Ok' in responseHealth) {
-      console.log('llm canister is healthy: ', responseHealth)
-
-      // setWaitAnimationMessage('Checking readiness of the on-chain LLM')
-      // console.log('Calling actor_.ready ')
-      // const responseReady = await actor_.ready()
-      // console.log('llm canister ready: ', responseReady)
-      // setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
-
-      // if ('Ok' in responseReady) {
-      // Ok, ready for show time...
-      setWaitAnimationMessage('On-chain token generation in progress')
-      await fetchInference(
-        actor_,
-        setChatOutputText,
-        chatNew,
-        setChatNew,
-        chatDone,
-        setChatDone,
-        setChatDisplay,
-        setWaitAnimationMessage,
-        inputString,
-        setInputString,
-        inputPlaceholder,
-        setInputPlaceholder,
-        numStepsFetchInference,
-        modelType,
-        finetuneType
-      )
-      setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
-
-      await waitForQueueToEmpty()
-      // } else {
-      //   let ermsg = ''
-      //   if ('Err' in responseReady && 'Other' in responseReady.Err)
-      //     ermsg = responseReady.Err.Other
-      //   throw new Error(`The on-chain LLM is not ready: ` + ermsg)
-      // }
-    } else {
-      setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
+    if (!('Ok' in responseHealth)) {
       let ermsg = ''
       if ('Err' in responseHealth && 'Other' in responseHealth.Err)
         ermsg = responseHealth.Err.Other
-      throw new Error(`The on-chain LLM is not healthy: ` + ermsg)
+      throw new Error('The on-chain LLM is not healthy: ' + ermsg)
     }
+
+    await fetchInference({
+      actor: actor_,
+      chatNew,
+      setChatNew,
+      setChatDone,
+      setChatDisplay,
+      setWaitAnimationMessage,
+      setChatOutputText,
+      setMessages,
+      setInputPlaceholder,
+      setStats,
+      conversationBaseRef,
+      setConversationBase,
+      userMessage,
+      numSteps,
+      finetuneType,
+    })
   } catch (error) {
-    setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
     console.error(error)
     setChatDone(true)
-    chatFinished = true
-    // Force a re-render, showing the ChatOutput
     setChatDisplay('CanisterError')
   } finally {
-    setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
+    setWaitAnimationMessage('Calling the on-chain LLM')
     setIsSubmitting(false)
   }
 }
 
-// Called when user clicks '+ New chat' button
+// -----------------------------------------------------------------------------
+// Called when user clicks 'New chat'. Lazy cache reset: we only clear the UI +
+// conversation state here; the canister prompt cache is reset by the next first
+// message's new_chat. The canister's cleanup timer sweeps abandoned caches.
 export async function doNewChatLlamacpp({
-  authClient,
-  actorRef,
-  chatNew,
-  chatDone,
-  setActorRef,
   setChatNew,
   setChatDone,
-  inputString,
   setInputString,
-  inputPlaceholder,
-  isSubmitting,
-  setIsSubmitting,
   setInputPlaceholder,
   setChatOutputText,
+  setMessages,
+  setConversationBase,
+  setStats,
   setChatDisplay,
-  setWaitAnimationMessage,
 }) {
-  if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js doNewChatLlamacpp ')
-  }
+  if (DEBUG) console.log('DEBUG-FLOW: doNewChatLlamacpp ')
   setChatNew(true)
   setChatDone(false)
-  chatFinished = false
+  setInputString('')
+  if (setInputPlaceholder) setInputPlaceholder('Message ICGPT')
   setChatOutputText('')
+  if (setMessages) setMessages([])
+  if (setConversationBase) setConversationBase('')
+  if (setStats) setStats({ updateCalls: 0, tokens: 0 })
   setChatDisplay('SelectModel')
 }
 
-// Conversion function with extraction logic
+// -----------------------------------------------------------------------------
+// Saved chats (Chats button).
+
+// Parse a saved conversation (Qwen template) into ordered {role, content} turns,
+// for rendering a loaded chat as bubbles. System turns are skipped.
+function parseConversationToMessages(text) {
+  const messages = []
+  const re = /<\|im_start\|>(user|assistant)\n([\s\S]*?)(?:<\|im_end\|>|$)/g
+  let m
+  while ((m = re.exec(text)) !== null) {
+    const content = m[2].trim()
+    if (content) messages.push({ role: m[1], content })
+  }
+  return messages
+}
+
 const convertChatsToChatData = (chats) => {
-  return chats.map((chat, index) => {
-    // Extract systemPrompt, inputString, and outputString using regex
-    const systemPromptMatch = chat.chat.match(
-      /<\|im_start\|>system\n(.*?)<\|im_end\|>/s
-    )
-    const inputStringMatch = chat.chat.match(
-      /<\|im_start\|>user\n(.*?)<\|im_end\|>/s
-    )
-    let outputStringMatch = chat.chat.match(
-      /<\|im_start\|>assistant\n(.*?)<\|im_end\|>/s
-    )
-
-    const systemPrompt = systemPromptMatch ? systemPromptMatch[1] : ''
-    const inputString = inputStringMatch ? inputStringMatch[1] : ''
-    let outputString = outputStringMatch ? outputStringMatch[1] : ''
-
-    // If outputString is still empty, perhaps the chat is not finished. Get whatever there is.
-    if (!outputString) {
-      outputStringMatch = outputStringMatch = chat.chat.match(
-        /<\|im_start\|>assistant\n(.*?)(<\|im_end\|>|$)/s
-      )
-      outputString = outputStringMatch ? outputStringMatch[1] : ''
-    }
-
-    // Generate label: chat.timestamp + first N words of inputString
-    const inputWords = inputString.split(' ').slice(0, 25).join(' ')
+  return chats.map((chat) => {
+    const messages = parseConversationToMessages(chat.chat)
+    const firstUser = messages.find((m) => m.role === 'user')
+    const inputWords = (firstUser ? firstUser.content : '')
+      .split(' ')
+      .slice(0, 25)
+      .join(' ')
     const dateLabel = chat.timestamp.split('_')[0]
     const label = `(${dateLabel}) ${inputWords}`
-
-    return {
-      label: label,
-      systemPrompt: systemPrompt,
-      inputString: inputString,
-      outputString: outputString,
-    }
+    return { label, messages }
   })
 }
 
-// Called when user clicks 'Chats' button and ChatsPopupModal is (re)mounted
-// Returns a JSON object with the chatData
+// Called when user clicks 'Chats'
 export async function getChatsLlamacpp({
   authClient,
-  actorRef,
-  chatNew,
-  chatDone,
   setActorRef,
-  setChatNew,
-  setChatDone,
-  inputString,
-  setInputString,
-  inputPlaceholder,
-  isSubmitting,
-  setIsSubmitting,
-  setInputPlaceholder,
-  setChatOutputText,
   setChatDisplay,
   setWaitAnimationMessage,
-  modelType,
-  modelSize,
-  finetuneType,
-  chats,
   setChats,
 }) {
-  if (DEBUG) {
-    console.log('DEBUG-FLOW: entered llamacpp.js getChatsLlamacpp ')
-    console.log('- modelType ', modelType)
-    console.log('- modelSize ', modelSize)
-    console.log('- finetuneType ', finetuneType)
-  }
+  if (DEBUG) console.log('DEBUG-FLOW: getChatsLlamacpp ')
 
-  // Based on the values of modelType, modelSize, and finetuneType, determine the module to import
-  let moduleToImport
-  if (modelType === 'Qwen2.5' && finetuneType === 'Instruct') {
-    switch (modelSize) {
-      case '0.5b_q8_0':
-        console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
-        moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
-        break
-    }
-  } else {
-    console.log('canister - Qwen2.5, 0.5b_q8_0, Instruct')
-    moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
-  }
-  const { canisterId, createActor } = await moduleToImport
-
-  // let actor_ = actorRef.current
-  // if (chatNew) {
-  console.log('Creating identity ')
+  const { canisterId, createActor } = await import(
+    'DeclarationsCanisterLlamacpp_Qwen25_05B_Q8'
+  )
   const identity = await authClient.getIdentity()
-  console.log('Creating actor ')
   const actor_ = createActor(canisterId, {
-    agentOptions: {
-      identity,
-      host: IC_HOST_URL,
-    },
+    agentOptions: { identity, host: IC_HOST_URL },
   })
   setActorRef(actor_)
-  // }
 
   try {
-    // Call llm canister to check on health
-    // Force a re-render, showing the WaitAnimation
     setWaitAnimationMessage('Retrieving your chats from on-chain storage')
     setChatDisplay('WaitAnimation')
-    console.log('Calling actor_.health ')
     const { result: responseHealth } = await withRetry(
       () => actor_.health(),
       'health',
       notifyRetry(setWaitAnimationMessage)
     )
-    console.log('llm canister health: ', responseHealth)
 
-    if ('Ok' in responseHealth) {
-      console.log('llm canister is healthy: ', responseHealth)
-
-      // Ok, ready for show time...
-      setWaitAnimationMessage('Retrieving your chats from on-chain storage')
-      const { result: responseGetChats } = await withRetry(
-        () => actor_.get_chats(),
-        'get_chats',
-        notifyRetry(setWaitAnimationMessage)
-      )
-      if ('Ok' in responseGetChats) {
-        const chatData = convertChatsToChatData(responseGetChats.Ok.chats)
-        setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
-        setChatDisplay('ChatOutput')
-        setChats(chatData)
-      } else {
-        setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
-        let ermsg = ''
-        if ('Err' in responseGetChats && 'Other' in responseGetChats.Err)
-          ermsg = responseGetChats.Err.Other
-        throw new Error(`Call to getChats returns error: ` + ermsg)
-      }
-    } else {
-      setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
+    if (!('Ok' in responseHealth)) {
       let ermsg = ''
       if ('Err' in responseHealth && 'Other' in responseHealth.Err)
         ermsg = responseHealth.Err.Other
-      throw new Error(`The on-chain LLM is not healthy: ` + ermsg)
+      throw new Error('The on-chain LLM is not healthy: ' + ermsg)
+    }
+
+    const { result: responseGetChats } = await withRetry(
+      () => actor_.get_chats(),
+      'get_chats',
+      notifyRetry(setWaitAnimationMessage)
+    )
+    if ('Ok' in responseGetChats) {
+      setChats(convertChatsToChatData(responseGetChats.Ok.chats))
+    } else {
+      let ermsg = ''
+      if ('Err' in responseGetChats && 'Other' in responseGetChats.Err)
+        ermsg = responseGetChats.Err.Other
+      throw new Error('Call to getChats returns error: ' + ermsg)
     }
   } catch (error) {
-    setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
     console.error(error)
-    // Force a re-render, showing the ChatOutput
     setChatDisplay('CanisterError')
   } finally {
-    setWaitAnimationMessage('Calling the on-chain LLM') // Reset it to default
+    setWaitAnimationMessage('Calling the on-chain LLM')
     setChatDisplay('ChatOutput')
   }
-  setChatDisplay('ChatOutput')
 }
