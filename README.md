@@ -54,10 +54,16 @@ git clone https://github.com/onicai/Charles
 # FOLLOW INSTRUCTIONS OF Charles README to download the model from HuggingFace !!!
 ```
 
-## Update requirements-dev.txt
+## Python requirements
 
-We install python requirements from the icpp_llm & llama_cpp_canister repos as sibling repos.
-If you do it differently, make sure that requirements-dev.txt is pointing to the correct locations.
+`requirements-dev.txt` pulls the python dependencies (icpp-pro, icp-py-core, binaryen.py
+and the pinned linters) from the vendored llama_cpp_canister release, in
+`llms/llama_cpp_canister/requirements.txt`. No sibling repo needed for those.
+
+The icpp_llm repo is deliberately NOT pulled in, because it still pins an older
+pylint that conflicts. We do install `ic-py`, which the `make upload-*` targets of the
+llama2 canisters need. When you rebuild the llama2 wasms, install icpp_llm's own
+requirements in a separate environment.
 
 ### pre-commit
 
@@ -110,11 +116,25 @@ ICGPT includes LLM backend canisters from [llama_cpp_canister](https://github.co
 
 ### Setup for llama_cpp_canister
 
+The `llms/llama_cpp_canister` folder contains an unzipped official release of
+[llama_cpp_canister](https://github.com/onicai/llama_cpp_canister), currently
+**v0.12.0** (see `llms/llama_cpp_canister/version.txt`).
+
+The wasm & did are not committed (see .gitignore), so after a fresh clone you must
+unzip the release yourself. To do that, or to upgrade to a newer release, follow
+`llms/llama_cpp_canister/README-instructions.md`.
+
 Download qwen2.5-0.5b-instruct-q8_0.gguf from https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF
 
 Place it in this location: 
 ```
 llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+```
+
+Verify the sha256 (`make upload-...` checks this too):
+```bash
+$ shasum -a 256 llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e
 ```
 
 
@@ -182,8 +202,8 @@ dfx deploy llama_cpp_qwen25_05b_q8 --network local [-m upgrade/reinstall] # upgr
 dfx canister status llama_cpp_qwen25_05b_q8 --network local
 # if (re)installed:
   make upload-llama-cpp-qwen25-05b-q8-local # Not needed after an upgrade, only after initial or reinstall
-dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; } })'  --network local
-dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })'  --network local
+dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; "--cache-type-k"; "q8_0"; } })'  --network local
+dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 1 : nat64; max_tokens_update = 25 : nat64 })'  --network local
 dfx canister call llama_cpp_qwen25_05b_q8 chats_resume  --network local
 #
 # Open up access:
@@ -191,6 +211,13 @@ dfx canister call llama_cpp_qwen25_05b_q8 chats_resume  --network local
 # 1 = all except anonymous
 dfx canister call llama_cpp_qwen25_05b_q8 set_access '(record { level = 1 : nat16 })' --network local
 dfx canister call llama_cpp_qwen25_05b_q8 get_access --network local
+#
+# Arm the recurring timers. They are in-memory only, so this is REQUIRED
+# after EVERY install/upgrade (see llama_cpp_canister README):
+# - cache cleanup : deletes prompt caches older than 6 hours
+# - cycle balance : refreshes the cached cycle balance every hour
+dfx canister call llama_cpp_qwen25_05b_q8 cache_cleanup_start_timer --network local
+dfx canister call llama_cpp_qwen25_05b_q8 cycle_balance_start_timer --network local
 #
 # Final check
 dfx canister call llama_cpp_qwen25_05b_q8 ready  --network local
@@ -223,21 +250,30 @@ It is handy to be able to verify the Qwen2.5 backend canister with dfx:
     Details how to use the Qwen models with llama.cpp:
     https://qwen.readthedocs.io/en/latest/run_locally/llama.cpp.html
 
+    NOTE: These are the same args that the frontend sends, see
+          `src/frontend/src/canisters/llamacpp.js`. The `--cache-type-k q8_0`
+          must match the value used in `load_model`.
+
     ```bash
     # Start a new chat - this resets the prompt-cache for this conversation
-    dfx canister call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"} })'
+    dfx canister call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--cache-type-k"; "q8_0"} })'
 
-    # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT 
+    # Ingest the prompt.
+    # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT
+    # Use "-n"; "1", so the LLM does not yet generate new tokens
 
     # Example of a longer prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })' 
 
     # Example of a very short prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "512" } })' 
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })' 
 
      ...
-    # Once prompt_remaining is empty, repeat this call, with an empty prompt, until `generated_eog=true`:
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "-sp"; "-p"; ""; "-n"; "512" } })'
+    # Generate new tokens.
+    # Once prompt_remaining is empty, repeat this call, with an empty prompt, until `generated_eog=true`.
+    # Now use "-n"; "512", so it generates until end-of-generation.
+    # The canister returns up to max_tokens_update (25) tokens per call.
+    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; ""; "-n"; "512" } })'
 
     ...
 
@@ -336,7 +372,7 @@ Step 2: Deploy the backend canisters
   dfx deploy --ic llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
   dfx canister --ic update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 4GiB
   dfx canister --ic status llama_cpp_qwen25_05b_q8
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 12 : nat64; max_tokens_update = 12 : nat64 })'
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 1 : nat64; max_tokens_update = 25 : nat64 })'
   dfx canister --ic call llama_cpp_qwen25_05b_q8 chats_resume
   #
   # Open up access to all except anonymous (An upgrade resets it to 0 !):
@@ -344,6 +380,13 @@ Step 2: Deploy the backend canisters
   # 1 = all except anonymous
   dfx canister --ic call llama_cpp_qwen25_05b_q8 set_access '(record { level = 1 : nat16 })'
   dfx canister --ic call llama_cpp_qwen25_05b_q8 get_access
+  #
+  # Arm the recurring timers. They are in-memory only, so this is REQUIRED
+  # after EVERY install/upgrade (see llama_cpp_canister README):
+  # - cache cleanup : deletes prompt caches older than 6 hours
+  # - cycle balance : refreshes the cached cycle balance every hour
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 cache_cleanup_start_timer
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 cycle_balance_start_timer
 
   # This is not longer needed, after updates to the Internet Computer.
   # Leaving in the instructions to avoid time-outs during uploads, just in case:
@@ -355,36 +398,19 @@ Step 2: Deploy the backend canisters
   make upload-llama-cpp-qwen25-05b-q8-ic  # Not needed after an upgrade, only after initial or reinstall
   #
   # After `dfx deploy -m upgrade`:
-  dfx canister --ic  call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; } })'
+  dfx canister --ic  call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; "--cache-type-k"; "q8_0"; } })'
 
   #--------------------------------------------------------------------------
-  # TODO: Upgrade from ic-py to icp-py-core and remove description of this issue
+  # ONE TIME, after upgrading to llama_cpp_canister v0.12.0:
   #
-  # IMPORTANT: during upload, ic-py might throw a timeout => patch it here:
-  # Ubuntu:
-  # /home/<user>/miniconda3/envs/<your-env>/lib/python3.11/site-packages/httpx/_config.py
-  # Mac:
-  # /Users/<user>/miniconda3/envs/<your-env>/lib/python3.11/site-packages/httpx/_config.py
-  # DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=5.0)
-  DEFAULT_TIMEOUT_CONFIG = Timeout(timeout=99999999.0)
-  # And perhaps here:
-  # Ubuntu:
-  # /home/<user>/miniconda3/envs/<your-env>/lib/python3.11/site-packages/httpcore/_backends/sync.py #L28-L29
-  # Mac:
-  # /Users/<user>/miniconda3/envs/<your-env>/lib/python3.11/site-packages/httpcore/_backends/sync.py #L28-L29
-  #
-  class SyncStream(NetworkStream):
-      def __init__(self, sock: socket.socket) -> None:
-          self._sock = sock
-
-      def read(self, max_bytes: int, timeout: typing.Optional[float] = None) -> bytes:
-          exc_map: ExceptionMapping = {socket.timeout: ReadTimeout, OSError: ReadError}
-          with map_exceptions(exc_map):
-              # PATCH AB
-              timeout = 999999999
-              # ENDPATCH
-              self._sock.settimeout(timeout)
-              return self._sock.recv(max_bytes)
+  # The prompt cache files written by the previous build are not compatible
+  # with the llama.cpp b10076 build, nor with `--cache-type-k q8_0`.
+  # Purge them all by dropping the cleanup TTL to 0, sweeping, then restoring
+  # the defaults:
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_cache_cleanup_config '(record { period_seconds = null; ttl_seconds = opt (0 : nat64); max_files_per_run = opt (10_000 : nat64) })'
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 cache_cleanup_now
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_cache_cleanup_config '(record { period_seconds = null; ttl_seconds = opt (21_600 : nat64); max_files_per_run = opt (256 : nat64) })'
+  dfx canister --ic call llama_cpp_qwen25_05b_q8 get_cache_cleanup_stats
   # ------------------------------------------------------------------------
 
   ```

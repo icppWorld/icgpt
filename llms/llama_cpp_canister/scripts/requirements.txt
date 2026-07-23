@@ -2,6 +2,17 @@ ipykernel
 jupyter_black
 requests
 python-dotenv
-black
-mypy
-pylint==2.13.9
+
+# Pinned to the same versions used by icpp-pro after its Python 3.10–3.14
+# matrix bump. Keeping all three repos on the same toolchain avoids style/
+# check drift across PRs. Older pylint+astroid crashed on Python 3.12+
+# syntax (PEP 695 `type X = ...`).
+black==24.10.0
+pylint==3.3.4
+mypy==1.13.0
+
+# Dev/debug only: used by scripts/wasm_harness.py to run canister wasm under a
+# faithful ic0 harness and get NAMED trap backtraces the IC does not provide
+# (see README-0003-305ba519.md "Debugging technique"). Also required so pylint/
+# mypy can resolve the harness's `import wasmtime`. NOT a canister runtime dep.
+wasmtime

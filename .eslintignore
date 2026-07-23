@@ -18,3 +18,8 @@ scripts/.mypy_cache
 
 # Ignore submodules
 src/git-submodules
+
+# Ignore vendored third party releases.
+# llms/llama_cpp_canister is an unzipped llama_cpp_canister release; keep it
+# byte-identical to the release zip so the vendored content stays verifiable.
+llms/llama_cpp_canister

@@ -49,28 +49,50 @@ You can just grab the latest [release](https://github.com/onicai/llama_cpp_canis
 
 # Set up
 
-- Install dfx:
+- Install dfx (version 0.31.0 or later is required):
 
   ```bash
   sh -ci "$(curl -fsSL https://internetcomputer.org/install.sh)"
 
   # Configure your shell
   source "$HOME/.local/share/dfx/env"
+
+  # Verify the version (must be >= 0.31.0)
+  dfx --version
   ```
+
+  > **Note:** dfx 0.31+ is required because `icp-py-core` uses the `/api/v3/`
+  > endpoint, which is not supported by older dfx versions.
 
 - Clone the repo and it's children:
 
   _(skip when using the [release](https://github.com/onicai/llama_cpp_canister/releases))_
 
-  ```bash
-  # Clone this repo
-  git clone git@github.com:onicai/llama_cpp_canister.git
+  Approach 1: HTTPS — no GitHub SSH keys required
 
-  # Clone llama_cpp_onicai_fork, our forked version of llama.cpp
-  # Into the ./src folder
+  ```bash
+  # Clone this repository
+  git clone https://github.com/onicai/llama_cpp_canister.git
+  cd llama_cpp_canister
+
+  # Clone llama_cpp_onicai_fork (our fork of llama.cpp) into ./src
+  cd src
+  git clone https://github.com/onicai/llama_cpp_onicai_fork.git
+  ```
+
+  Approach 2: SSH — requires a configured GitHub SSH key
+  ```bash
+  # Clone this repository
+  git clone git@github.com:onicai/llama_cpp_canister.git
+  cd llama_cpp_canister
+
+  # Clone llama_cpp_onicai_fork into ./src
   cd src
   git clone git@github.com:onicai/llama_cpp_onicai_fork.git
   ```
+
+  Note: If you see Permission denied (publickey) errors, use the HTTPS method above or configure an SSH key in your GitHub account.
+
 
 - Create a Python environment with dependencies installed
 
@@ -220,7 +242,7 @@ You can just grab the latest [release](https://github.com/onicai/llama_cpp_canis
   ```bash
   dfx canister call llama_cpp set_max_tokens '(record {
     max_tokens_query = 1 : nat64;
-    max_tokens_update = 12 : nat64
+    max_tokens_update = 25 : nat64
   })'
 
   dfx canister call llama_cpp get_max_tokens
@@ -330,7 +352,7 @@ You can just grab the latest [release](https://github.com/onicai/llama_cpp_canis
     ```
 
     Note: The sequence of update calls to the canister is required because the Internet Computer has a limitation
-    on the number of instructions it allows per call. For this model, 13 tokens can be generated per update call.
+    on the number of instructions it allows per call. For this model, ~25 tokens can be generated per update call (measured on the b10076 build; the hard ceiling is 28 before a call traps).
 
     This sequence of update calls is equivalent to using the [ggml-org/llama.cpp](https://github.com/ggml-org/llama.cpp)
     repo directly and running the `llama-cli` locally, with the command:
@@ -620,6 +642,155 @@ dfx canister call llama_cpp get_creation_timestamp_ns '(record {filename = "<fil
 dfx canister call llama_cpp filesystem_remove '(record {filename = "<filename>"})'
 ```
 
+# Prompt-Cache Cleanup Timer
+
+The canister can self-maintain its prompt-cache directory on a recurring
+schedule, deleting files in `.canister_cache/<principal>/sessions/` whose
+`mtime` is older than a configurable Time to Live (TTL). Once you start the
+timer, the canister handles prompt-cache hygiene on its own.
+
+**Defaults:**
+- period: 600 seconds (10 minutes between cleanup ticks)
+- TTL: 21600 seconds (6 hours — older files are deleted)
+- per-tick cap: 256 files (caps work-per-tick to stay under the IC's
+  per-message instruction budget; the next tick continues)
+
+**Operator-driven lifecycle.** The timer is **not** auto-armed in
+`canister_init` or `canister_post_upgrade`. After every install / upgrade
+you must explicitly call `cache_cleanup_start_timer`. Timer state is
+in-memory only and does not survive an upgrade.
+
+All endpoints below require **admin role**:
+- `cache_cleanup_start_timer`, `cache_cleanup_stop_timer`,
+  `cache_cleanup_now`, `set_cache_cleanup_config` need `AdminUpdate` role
+  (controller or whitelisted via `assignAdminRole`).
+- `get_cache_cleanup_stats` needs `AdminQuery` role.
+
+```bash
+# ------------------------------------------------------------------
+# Arm the recurring timer (REQUIRED after every install / upgrade)
+dfx canister call llama_cpp cache_cleanup_start_timer '()'
+# -> (variant { Ok = record { ok = true; is_running = true } })
+
+# Stop the recurring timer
+dfx canister call llama_cpp cache_cleanup_stop_timer '()'
+# -> (variant { Ok = record { ok = true; is_running = false } })
+
+# Trigger one cleanup pass immediately (independent of the timer state)
+dfx canister call llama_cpp cache_cleanup_now '()'
+# -> (variant { Ok = record { runs = ...; files_examined = ...;
+#                             files_deleted = ...; files_failed = ...;
+#                             last_run_ns = ...; period_seconds = 600;
+#                             ttl_seconds = 21_600;
+#                             max_files_per_run = 256;
+#                             is_running = ... } })
+
+# Inspect stats (query, fast). `runs` and `last_run_ns` are lifetime
+# counters; `files_examined`, `files_deleted`, `files_failed` reflect the
+# MOST RECENT cleanup run only.
+dfx canister call llama_cpp get_cache_cleanup_stats '()'
+
+# Adjust config (each field is `opt nat64`; null = no change).
+#   - period_seconds: must be > 0; opt 0 is silently rejected.
+#   - ttl_seconds   : 0 is valid ("delete every file under sessions/").
+#   - max_files_per_run: clamped to [1, 10000].
+# If the timer is already running, the new period is applied transparently.
+dfx canister call llama_cpp set_cache_cleanup_config '(record {
+  period_seconds    = opt (300 : nat64);
+  ttl_seconds       = opt (3600 : nat64);
+  max_files_per_run = opt (128 : nat64)
+})'
+
+# Same call to update only the TTL, leaving period and cap unchanged
+dfx canister call llama_cpp set_cache_cleanup_config '(record {
+  period_seconds    = null;
+  ttl_seconds       = opt (3600 : nat64);
+  max_files_per_run = null
+})'
+```
+
+# Cycle Balance Monitoring
+
+The canister can track its own cycle balance on a recurring schedule. An
+hourly timer refreshes a cached snapshot of the balance (via the IC's
+`canister_cycle_balance128` system call), which admins read cheaply through
+the `get_cycle_balance` query — no need for a live system call on every check.
+
+**Defaults:**
+- period: 3600 seconds (refreshed once per hour)
+
+**Operator-driven lifecycle.** The timer is **not** auto-armed in
+`canister_init` or `canister_post_upgrade`. After every install / upgrade you
+must explicitly call `cycle_balance_start_timer`. Timer state and the cached
+balance are in-memory only and do not survive an upgrade. While tracking is
+off, `get_cycle_balance` returns a clear error instead of a stale value.
+
+All endpoints below require **admin role**:
+- `cycle_balance_start_timer`, `cycle_balance_stop_timer` need `AdminUpdate`
+  role (controller or whitelisted via `assignAdminRole`).
+- `get_cycle_balance` needs `AdminQuery` role.
+
+```bash
+# ------------------------------------------------------------------
+# Turn ON cycle-balance tracking (REQUIRED after every install / upgrade).
+# Refreshes the balance once immediately, then re-reads it hourly.
+dfx canister call llama_cpp cycle_balance_start_timer '()'
+# -> (variant { Ok = record { status_code = 200 : nat16 } })
+
+# Read the cached balance (admin query, fast). updated_at_ns is the
+# IC_API::time() at which the snapshot was taken.
+dfx canister call llama_cpp get_cycle_balance '()'
+# -> (variant { Ok = record { cycle_balance = ... : nat; updated_at_ns = ... : nat64 } })
+
+# If tracking is OFF, the query returns a clear error instead of a stale value:
+# -> (variant { Err = variant { Other = "cycle balance tracking is off — an admin must call cycle_balance_start_timer" } })
+
+# Turn OFF cycle-balance tracking
+dfx canister call llama_cpp cycle_balance_stop_timer '()'
+# -> (variant { Ok = record { status_code = 200 : nat16 } })
+```
+
+# Wasm Verification (pre onicai SNS)
+
+> **NOTE:** This workflow was created for the **pre onicai SNS verification
+> process** ([NNS Proposal 140268](https://dashboard.internetcomputer.org/proposal/140268)).
+> It pins the build environment to icpp-pro 5.3.0 / Rust 1.86.0 to reproduce the
+> exact wasm from the v0.7.3 release that is currently deployed to the funnAI LLM
+> canisters. **Post onicai SNS, the build process and pinned versions must be
+> updated** to match the then-current release and toolchain.
+
+The GitHub Actions workflow [verify-funnAI-LLMs](.github/workflows/verify-funnAI-LLMs.yml) verifies that the `llama_cpp.wasm` built from this repo matches the wasm deployed to the funnAI LLM canisters on the Internet Computer mainnet.
+
+Anyone can independently verify that the on-chain LLM canisters are running the exact code from this open-source repo.
+
+**What it does:**
+
+1. Builds `llama_cpp.wasm` from source (same build steps as the release workflow)
+2. Computes the sha256 hash of the built wasm
+3. Queries the module hash of each deployed funnAI LLM canister on IC mainnet via `dfx canister info`
+4. Compares the hashes and reports pass/fail for each canister
+
+**Canisters verified (30 total):**
+
+| Category                        | Count | Description                                |
+| ------------------------------- | ----- | ------------------------------------------ |
+| funnAI Challenger LLM           | 1     | Generates challenges for the funnAI game   |
+| funnAI Judge LLMs               | 16    | Judge responses in the funnAI game         |
+| funnAI mAIner ShareService LLMs | 13    | Provide LLM inference for mAIner services  |
+
+**How to run:**
+
+Trigger the workflow manually from the Actions tab on GitHub (`workflow_dispatch`).
+
+# Acknowledgments
+
+The b10076 upgrade — recovering ~2.8x generation throughput for Q8_0 models — was motivated and informed by the work of **Julien Aerni** (Meotis Sàrl), **Siméon Fluck** (Kaizen Corp SA), and **Dustin Becker** (ORIGYN Foundation):
+
+- Their [forum analysis](https://forum.dfinity.org/t/on-chain-llm-inference-under-instruction-budgets-measured-live-on-icp-mainnet/74709) diagnosed that the previous build ran the `ggml_vec_dot_q8_0_q8_0` matmul kernel without a hand-written WASM SIMD path — the deficiency this upgrade fixes.
+- We adapted their **WASI shim strategy** (no-op `<thread>`/`<mutex>`/`<future>`/`<condition_variable>` plus exception/dl stubs) for building recent llama.cpp on ICP, replacing the earlier per-file patching approach.
+
+Their preprint: _On-Chain LLM Inference Under Instruction Budgets: An Instruction-Budget Cost Model, Ternary Floor Evidence, and Session Costs_ (2026), DOI [10.5281/zenodo.20607598](https://doi.org/10.5281/zenodo.20607598). The companion artifact is MIT-licensed.
+
 # Appendix A: max_tokens
 
 The size and settings for models impact the number of tokens that can be generated
@@ -631,18 +802,19 @@ We tested several LLM models available on HuggingFace:
 
 | Model                                                                                                                    | # weights | file size | quantization   | --cache-type-k | max*tokens<br> *(ingestion)\_ | max*tokens<br> *(generation)\_ |
 | ------------------------------------------------------------------------------------------------------------------------ | --------- | --------- | -------------- | -------------- | ----------------------------- | ------------------------------ |
-| [SmolLM2-135M-Instruct-Q8_0.gguf](https://huggingface.co/tensorblock/SmolLM2-135M-Instruct-GGUF)                         | 135 M     | 0.15 GB   | q8_0           | f16            | -                             | 40                             |
-| [qwen2.5-0.5b-instruct-q4_k_m.gguf](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF)                              | 630 M     | 0.49 GB   | q4_k_m         | f16            | -                             | 14                             |
-| [qwen2.5-0.5b-instruct-q8_0.gguf](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF)                                | 630 M     | 0.68 GB   | q8_0           | q8_0           | -                             | 12                             |
-| [Llama-3.2-1B-Instruct-Q4_K_M.gguf](https://huggingface.co/unsloth/Llama-3.2-1B-Instruct-GGUF)                           | 1.24 B    | 0.81 GB   | q4_k_m         | q5_0           | 5                             | 4                              |
-| [qwen2.5-1.5b-instruct-q4_k_m.gguf](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF)                              | 1.78 B    | 1.10 GB   | q4_k_m         | q8_0           | -                             | 3                              |
-| [DeepSeek-R1-Distill-Qwen-1.5B-NexaQuant.gguf](https://huggingface.co/NexaAIDev/DeepSeek-R1-Distill-Qwen-1.5B-NexaQuant) | 1.78 B    | 1.34 GB   | NexaQuant-4Bit | f16            | 4                             | 3                              |
-| [DeepSeek-R1-Distill-Qwen-1.5B-Q6_K.gguf](https://huggingface.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF)             | 1.78 B    | 1.46 GB   | q6_k           | q8_0           | 4                             | 3                              |
-| [DeepSeek-R1-Distill-Qwen-1.5B-Q4_K_M.gguf](https://huggingface.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF)           | 1.78 B    | 1.12 GB   | q4_k_m         | q8_0           | 4                             | 3                              |
-| [DeepSeek-R1-Distill-Qwen-1.5B-Q2_K.gguf](https://huggingface.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF)             | 1.78 B    | 0.75 GB   | q2_k           | q8_0           | 2                             | 2                              |
+| [SmolLM2-135M-Instruct-Q8_0.gguf](https://huggingface.co/tensorblock/SmolLM2-135M-Instruct-GGUF)                         | 135 M     | 0.15 GB   | q8_0           | f16            | -                             | ~~40~~                         |
+| [qwen2.5-0.5b-instruct-q4_k_m.gguf](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF)                              | 630 M     | 0.49 GB   | q4_k_m         | f16            | -                             | ~~14~~                         |
+| [qwen2.5-0.5b-instruct-q8_0.gguf](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF)                                | 630 M     | 0.68 GB   | q8_0           | q8_0           | -                             | 25                             |
+| [Llama-3.2-1B-Instruct-Q4_K_M.gguf](https://huggingface.co/unsloth/Llama-3.2-1B-Instruct-GGUF)                           | 1.24 B    | 0.81 GB   | q4_k_m         | q5_0           | ~~5~~                         | ~~4~~                          |
+| [qwen2.5-1.5b-instruct-q4_k_m.gguf](https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct-GGUF)                              | 1.78 B    | 1.10 GB   | q4_k_m         | q8_0           | -                             | ~~3~~                          |
+| [DeepSeek-R1-Distill-Qwen-1.5B-NexaQuant.gguf](https://huggingface.co/NexaAIDev/DeepSeek-R1-Distill-Qwen-1.5B-NexaQuant) | 1.78 B    | 1.34 GB   | NexaQuant-4Bit | f16            | ~~4~~                         | ~~3~~                          |
+| [DeepSeek-R1-Distill-Qwen-1.5B-Q6_K.gguf](https://huggingface.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF)             | 1.78 B    | 1.46 GB   | q6_k           | q8_0           | ~~4~~                         | ~~3~~                          |
+| [DeepSeek-R1-Distill-Qwen-1.5B-Q4_K_M.gguf](https://huggingface.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF)           | 1.78 B    | 1.12 GB   | q4_k_m         | q8_0           | ~~4~~                         | ~~3~~                          |
+| [DeepSeek-R1-Distill-Qwen-1.5B-Q2_K.gguf](https://huggingface.co/unsloth/DeepSeek-R1-Distill-Qwen-1.5B-GGUF)             | 1.78 B    | 0.75 GB   | q2_k           | q8_0           | ~~2~~                         | ~~2~~                          |
 
 NOTEs:
 
+- **The ~~struck-through~~ values are from the previous (pre-b10076) build and must be re-determined for b10076.** Only the `qwen2.5-0.5b-instruct-q8_0` row has been re-measured: 25 tokens/call sustained to EOG, 28 first-call ceiling — up ~2.8x from ~10 on the previous build, thanks to the hand-written WASM SIMD q8_0 kernel.
 - During prompt ingestion phase, the max_tokens before hitting the instruction limit is higher as during the generation phase.
 - We use `"--temp"; "0.6"; "--repeat-penalty"; "1.1";`, as recommended on several model cards
 - For each model, we selected a `--cache-type-k` that gives the highest max_tokens while still providing good results.

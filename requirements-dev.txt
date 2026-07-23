@@ -1,9 +1,16 @@
--r ../llama_cpp_canister/requirements.txt
--r ../icpp_llm/requirements.txt
+# The llama.cpp backend deps come from the vendored llama_cpp_canister release.
+# This pulls in icpp-pro, icp-py-core, binaryen.py and the pinned linters
+# (black, pylint, mypy) - do not pin those again here, it causes pip conflicts.
+-r llms/llama_cpp_canister/requirements.txt
 
-black
-pylint==2.13.9
-mypy
+# NOTE: the llama2 backends (icpp_llm sibling repo) are intentionally NOT
+#       included here via `-r ../icpp_llm/requirements.txt`, because that repo
+#       still pins pylint==2.13.9, which collides with the pins above.
+#       We do keep ic-py, because the `make upload-*-{local,ic}` targets run
+#       `python -m icpp_llm.llama2_c.scripts.upload` from this environment.
+#       ic-py (package `ic`) and icp-py-core (package `icp_core`) coexist fine.
+ic-py==1.0.1
+
 pytest
 aiohttp[speedups]
 requests

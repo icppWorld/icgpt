@@ -487,11 +487,20 @@ upload-charles-42M-local:
 	export PYTHONPATH="${PYTHONPATH}:$(shell realpath ..)"; \
     python -m icpp_llm.llama2_c.scripts.upload --network local --canister llama2_42M --model ../../Charles/models/out-09/model.bin --tokenizer ../../Charles/models/out-09/tok4096.bin
 
+# The sha256 of qwen2.5-0.5b-instruct-q8_0.gguf, as published on HuggingFace.
+# The upload script verifies the file on disk against it before uploading.
+QWEN25_05B_Q8_SHA256 ?= ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e
+
+# NOTE: pass an ABSOLUTE path for the model.
+#       The upload script resolves a relative path against its own repo root
+#       (llms/llama_cpp_canister), not against our working directory.
+QWEN25_05B_Q8_GGUF ?= $(CURDIR)/llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+
 .PHONY: upload-llama-cpp-qwen25-05b-q8-local
 upload-llama-cpp-qwen25-05b-q8-local:
 	@echo "---"
 	@echo "upload-llama-cpp-qwen25-05b-q8-local"
-	python -m llms.llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+	python -m llms.llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf --filetype gguf --hf-sha256 "$(QWEN25_05B_Q8_SHA256)" $(QWEN25_05B_Q8_GGUF)
 
 .PHONY: upload-260K-ic
 upload-260K-ic:
@@ -537,7 +546,7 @@ upload-charles-42M-ic:
 upload-llama-cpp-qwen25-05b-q8-ic:
 	@echo "---"
 	@echo "upload-llama-cpp-qwen25-05b-q8-ic"
-	python -m llms.llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+	python -m llms.llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf --filetype gguf --hf-sha256 "$(QWEN25_05B_Q8_SHA256)" $(QWEN25_05B_Q8_GGUF)
 	
 .PHONY: download-log-llama-cpp-qwen25-05b-q8-ic
 download-log-llama-cpp-qwen25-05b-q8-ic:
