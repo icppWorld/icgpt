@@ -1,13 +1,11 @@
 {
   "name": "icgpt",
   "version": "0.1.0",
-  "description": "ICGPT On-chain Prompt Studio - design, test & refine prompts against a real LLM running verifiably inside Internet Computer canisters: the same on-chain LLM the funnAI mAIners run. Built for the funnAI task board (coming soon).",
+  "description": "ICGPT On-chain Prompt Studio - optimize your prompts against LLMs running verifiably inside Internet Computer canisters: fully on-chain, in-canister, with no off-chain API.",
   "keywords": [
     "prompt design",
     "on-chain LLM",
-    "funnAI",
-    "Proof of AI Work",
-    "mAIner",
+    "in-canister LLM",
     "Internet Computer",
     "ICP",
     "onicai",

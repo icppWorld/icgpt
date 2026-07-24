@@ -1,5 +1,6 @@
 // eslint-disable-next-line no-use-before-define
 import React from 'react'
+import { Link } from 'react-router-dom'
 import 'dracula-ui/styles/dracula-ui.css'
 
 // ICGPT's on-chain heritage, demoted to a quiet trust signal in the footer
@@ -22,6 +23,12 @@ export function Footer({ fixed = false }) {
       The story →
     </a>
   )
+  const docs = (
+    <Link to="/docs" style={{ color: '#6272a4', textDecoration: 'underline' }}>
+      Docs
+    </Link>
+  )
+  const dot = <span style={{ margin: '0 6px' }}>·</span>
 
   if (fixed) {
     return (
@@ -42,8 +49,9 @@ export function Footer({ fixed = false }) {
       >
         <p style={{ margin: 0, pointerEvents: 'auto' }}>
           ICGPT has served on-chain LLMs since 2023. {story}
-          <span style={{ margin: '0 6px' }}>·</span>© {new Date().getFullYear()}{' '}
-          | onicai
+          {dot}
+          {docs}
+          {dot}© {new Date().getFullYear()} | onicai
         </p>
       </footer>
     )
@@ -61,6 +69,8 @@ export function Footer({ fixed = false }) {
     >
       <p style={{ margin: '0 0 4px' }}>
         ICGPT has served on-chain LLMs since 2023. {story}
+        {dot}
+        {docs}
       </p>
       <p style={{ margin: 0 }}>© {new Date().getFullYear()} | onicai</p>
     </footer>

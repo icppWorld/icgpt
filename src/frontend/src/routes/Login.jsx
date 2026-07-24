@@ -1,6 +1,7 @@
 // eslint-disable-next-line no-use-before-define
 import React from 'react'
 import { Helmet } from 'react-helmet'
+import { Link } from 'react-router-dom'
 import 'dracula-ui/styles/dracula-ui.css'
 
 import { Footer } from '../common/Footer'
@@ -10,8 +11,6 @@ const OPENCHAT_URL =
   'https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157'
 
 export function Login({ setAuthClient }) {
-  const [showDocsComingSoon, setShowDocsComingSoon] = React.useState(false)
-
   const linkStyle = {
     color: '#8be9fd',
     textDecoration: 'none',
@@ -77,16 +76,9 @@ export function Login({ setAuthClient }) {
                 marginTop: '48px',
               }}
             >
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault()
-                  setShowDocsComingSoon(true)
-                }}
-                style={linkStyle}
-              >
+              <Link to="/docs" style={linkStyle}>
                 Docs →
-              </a>
+              </Link>
               <a
                 href={OPENCHAT_URL}
                 target="_blank"
@@ -100,82 +92,6 @@ export function Login({ setAuthClient }) {
         </div>
         <Footer />
       </main>
-
-      {showDocsComingSoon ? (
-        <DocsComingSoonModal onClose={() => setShowDocsComingSoon(false)} />
-      ) : null}
-    </div>
-  )
-}
-
-// Placeholder shown until the dedicated docs page (studio + funnAI explainer)
-// is designed and built.
-function DocsComingSoonModal({ onClose }) {
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 2000,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '24px',
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width: 'min(420px, 92vw)',
-          backgroundColor: '#282a36',
-          border: '1px solid #44475a',
-          borderRadius: '12px',
-          padding: '28px 24px',
-          textAlign: 'center',
-          color: '#f8f8f2',
-        }}
-      >
-        <div style={{ fontSize: '28px', marginBottom: '10px' }}>📖</div>
-        <h2
-          style={{
-            fontSize: '20px',
-            fontWeight: 'bold',
-            color: '#f1fa8c',
-            margin: '0 0 10px',
-          }}
-        >
-          Docs coming soon
-        </h2>
-        <p
-          style={{
-            fontSize: '14px',
-            lineHeight: 1.6,
-            color: '#6272a4',
-            margin: '0 0 22px',
-          }}
-        >
-          A full guide to the on-chain Prompt Studio and how it feeds the funnAI
-          mAIners is on its way. In the meantime, join the community below.
-        </p>
-        <button
-          type="button"
-          onClick={onClose}
-          style={{
-            backgroundColor: '#bd93f9',
-            color: '#21222c',
-            border: 'none',
-            borderRadius: '10px',
-            padding: '10px 22px',
-            fontSize: '15px',
-            fontWeight: 'bold',
-            cursor: 'pointer',
-          }}
-        >
-          Got it
-        </button>
-      </div>
     </div>
   )
 }

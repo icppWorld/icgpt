@@ -1,0 +1,70 @@
+<section>
+  <h1>Models</h1>
+  <p class="lead">
+    Two on-chain models, each served from its own Internet Computer canister.
+    Switch between them from the dropdown at the top of the studio.
+  </p>
+
+  <h2>Qwen3-0.6B <span class="tag">Default</span></h2>
+  <p>
+    Our recommended default — a state-of-the-art small model run in
+    <strong>non-thinking mode</strong> for clean, direct answers over multi-turn
+    conversations. It runs with a large ~12,000-word context window entirely
+    in-canister.
+  </p>
+  <ul>
+    <li>
+      <strong>File:</strong> <code>Qwen3-0.6B-Q8_0.gguf</code> (q8_0 quantized)
+    </li>
+    <li><strong>Context:</strong> 16K tokens (~12K words)</li>
+    <li>
+      <strong>Model card:</strong>
+      <a
+        href="https://huggingface.co/Qwen/Qwen3-0.6B-GGUF"
+        target="_blank"
+        rel="noreferrer"
+        >Qwen/Qwen3-0.6B-GGUF on HuggingFace</a
+      >
+    </li>
+  </ul>
+
+  <h2>Qwen2.5-0.5B-Instruct</h2>
+  <p>
+    The previous default — an excellent, lightweight instruct model, kept
+    available for comparison. It uses the classic chat template (no thinking
+    block).
+  </p>
+  <ul>
+    <li>
+      <strong>File:</strong> <code>qwen2.5-0.5b-instruct-q8_0.gguf</code> (q8_0
+      quantized)
+    </li>
+    <li><strong>Context:</strong> 16K tokens (~12K words)</li>
+    <li>
+      <strong>Model card:</strong>
+      <a
+        href="https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF"
+        target="_blank"
+        rel="noreferrer"
+        >Qwen/Qwen2.5-0.5B-Instruct-GGUF on HuggingFace</a
+      >
+    </li>
+  </ul>
+
+  <h2>How they're tuned</h2>
+  <p>
+    Both models are quantized to q8_0 with a quantized KV cache and a small
+    batch size, which keeps a large context inside the canister's memory budget.
+    The Internet Computer's per-message instruction limit caps how many tokens a
+    single call generates, so replies are produced across several update calls —
+    which is why generation streams in batches.
+  </p>
+
+  <div class="callout">
+    Switching models starts a new conversation. A chat is pinned to one model's
+    canister (where its prompt cache lives), so it can't continue on a different
+    model. See <a href="/docs/how-it-works">How it works</a>.
+  </div>
+
+  <p><a href="/">Request early access →</a></p>
+</section>

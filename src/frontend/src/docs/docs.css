@@ -1,0 +1,172 @@
+/*
+ * Styling for the public /docs pages. `.docs-prose` scopes everything so the
+ * author-written HTML fragments (plain semantic HTML) get the dracula look with
+ * no per-element classes. See src/frontend/src/routes/DocsLayout.jsx.
+ */
+
+.docs-prose {
+  color: #f8f8f2;
+  font-size: 16px;
+  line-height: 1.7;
+  max-width: 760px;
+}
+
+.docs-prose > *:first-child {
+  margin-top: 0;
+}
+
+.docs-prose h1 {
+  font-size: clamp(26px, 4vw, 34px);
+  font-weight: 800;
+  color: #f1fa8c;
+  letter-spacing: -0.01em;
+  margin: 0 0 8px;
+  line-height: 1.15;
+}
+
+.docs-prose h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #f8f8f2;
+  margin: 40px 0 12px;
+  padding-top: 8px;
+  border-top: 1px solid #44475a;
+}
+
+.docs-prose h3 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #bd93f9;
+  margin: 26px 0 8px;
+}
+
+.docs-prose p {
+  margin: 0 0 14px;
+}
+
+.docs-prose .lead {
+  font-size: 18px;
+  color: #f8f8f2;
+  margin: 0 0 22px;
+}
+
+.docs-prose a {
+  color: #8be9fd;
+  text-decoration: none;
+}
+.docs-prose a:hover {
+  text-decoration: underline;
+}
+
+.docs-prose strong {
+  color: #f8f8f2;
+  font-weight: 700;
+}
+
+.docs-prose ul,
+.docs-prose ol {
+  margin: 0 0 16px;
+  padding-left: 22px;
+}
+.docs-prose li {
+  margin: 6px 0;
+}
+
+.docs-prose code {
+  font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size: 13px;
+  background: #21222c;
+  border: 1px solid #44475a;
+  border-radius: 5px;
+  padding: 1px 5px;
+  color: #f1fa8c;
+}
+
+.docs-prose pre {
+  background: #21222c;
+  border: 1px solid #44475a;
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  margin: 0 0 16px;
+}
+.docs-prose pre code {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #f8f8f2;
+  font-size: 13px;
+}
+
+.docs-prose blockquote {
+  margin: 0 0 16px;
+  padding: 2px 16px;
+  border-left: 3px solid #bd93f9;
+  color: #d6d9e6;
+}
+
+.docs-prose hr {
+  border: none;
+  border-top: 1px solid #44475a;
+  margin: 28px 0;
+}
+
+.docs-prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+/* Callout box for tips / important notes: <div class="callout">…</div> */
+.docs-prose .callout {
+  background: #21222c;
+  border: 1px solid #44475a;
+  border-left: 3px solid #50fa7b;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 0 0 18px;
+  font-size: 15px;
+}
+.docs-prose .callout.warn {
+  border-left-color: #ffb86c;
+}
+
+/* Tables */
+.docs-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 18px;
+  font-size: 14px;
+  display: block;
+  overflow-x: auto;
+}
+.docs-prose th,
+.docs-prose td {
+  border: 1px solid #44475a;
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.docs-prose th {
+  background: #21222c;
+  color: #f8f8f2;
+  font-weight: 700;
+}
+
+/* A pill/tag, e.g. <span class="tag">Live</span> */
+.docs-prose .tag {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #50fa7b22;
+  color: #50fa7b;
+  border: 1px solid #50fa7b55;
+  vertical-align: middle;
+}
+.docs-prose .tag.soon {
+  background: #ffb86c22;
+  color: #ffb86c;
+  border-color: #ffb86c55;
+}

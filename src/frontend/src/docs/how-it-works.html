@@ -1,0 +1,63 @@
+<section>
+  <h1>How it works</h1>
+  <p class="lead">
+    Real LLMs, running inside Internet Computer canisters — no off-chain API,
+    fully verifiable.
+  </p>
+
+  <h2>In-canister LLMs</h2>
+  <p>
+    Each model is deployed as a smart contract using
+    <a
+      href="https://github.com/onicai/llama_cpp_canister"
+      target="_blank"
+      rel="noreferrer"
+      >llama_cpp_canister</a
+    >
+    (llama.cpp on the Internet Computer). The gguf weights are uploaded into the
+    canister's stable memory, loaded into working memory, and inference runs
+    on-chain. Because the Internet Computer caps the work per message, a reply
+    is produced across a sequence of update calls — the app streams each batch
+    of tokens to you as it arrives.
+  </p>
+
+  <h2>The studio</h2>
+  <ul>
+    <li>
+      <strong>Model switch.</strong> Pick a model from the dropdown; each is a
+      separate on-chain canister. Switching starts a fresh conversation.
+    </li>
+    <li>
+      <strong>System prompts.</strong> Use the default persona or open the
+      editor to write and save your own prompt slots. The system prompt shapes
+      every reply in a conversation.
+    </li>
+    <li>
+      <strong>Live stats.</strong> A conversation shows turns, in-canister
+      calls, approximate tokens in/out, tok/s, and the exact cycle cost.
+    </li>
+  </ul>
+
+  <h2>Exact cost &amp; speed, measured in-canister</h2>
+  <p>
+    All inference is routed through a single controller canister
+    (<code>icgpt_admin</code>), which is the only caller allowed to reach the
+    model canisters. Because it is the sole caller, it measures each call
+    precisely: it reads the model canister's live cycle balance right before and
+    after the call (and brackets the IC system time) to report the
+    <strong>exact cycle cost</strong> and <strong>exact tok/s</strong> —
+    excluding network round-trips and the controller itself.
+  </p>
+
+  <h2>Isolation &amp; concurrency</h2>
+  <p>
+    Every user's conversation lives in its own prompt-cache file inside the
+    model canister, keyed by their principal — so no one can read or affect
+    anyone else's chat. A single model canister serves many users by
+    time-sharing one compute buffer, swapping each user's cache in and out per
+    request. The design is safe under concurrency; the ceiling is throughput
+    (one inference per model canister at a time).
+  </p>
+
+  <p><a href="/">Request early access →</a></p>
+</section>

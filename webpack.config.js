@@ -237,6 +237,19 @@ module.exports = (env = {}, args = {}) => {
           test: /\.(ts|tsx|jsx)?$/i,
           loader: 'ts-loader',
         },
+        {
+          // Docs content: import the author-written HTML fragments in src/.../docs
+          // as raw strings. SCOPED to the docs dir with `include` so it does NOT
+          // intercept index.html (owned by HtmlWebpackPlugin).
+          test: /\.html$/i,
+          include: path.resolve(
+            __dirname,
+            'src',
+            frontendDirectory,
+            'src/docs'
+          ),
+          type: 'asset/source',
+        },
       ],
     },
     plugins: [
@@ -300,6 +313,11 @@ module.exports = (env = {}, args = {}) => {
             to: path.join(__dirname, 'dist', 'frontend'),
           },
           {
+            // sitemap.xml for the public /docs pages (served at the site root)
+            from: path.join(__dirname, 'src', 'frontend/assets/sitemap.xml'),
+            to: path.join(__dirname, 'dist', 'frontend'),
+          },
+          {
             // icgpt-social.png, referenced by the social card tags in index.html
             from: path.join(__dirname, 'src', 'frontend/assets/social'),
             to: path.join(__dirname, 'dist', 'frontend'),
@@ -324,6 +342,10 @@ module.exports = (env = {}, args = {}) => {
       filename: '[name].[contenthash].js',
       path: path.join(__dirname, 'dist', 'frontend'),
       clean: true,
+      // Absolute asset URLs so the bundle loads on nested routes (e.g. /docs/:slug).
+      // With the default (relative) publicPath, a hard-load of /docs/x resolves the
+      // script against /docs/ and 404s → blank page.
+      publicPath: '/',
     },
     // proxy /api to port 8080 during development (see dfx.json networks.local.bind).
     devServer: {
@@ -340,6 +362,9 @@ module.exports = (env = {}, args = {}) => {
       hot: true,
       watchFiles: [path.resolve(__dirname, 'src', frontendDirectory)],
       liveReload: true,
+      // SPA fallback: serve index.html for client-side routes (e.g. /docs, /docs/:slug)
+      // so hard-loads / deep links resolve to the app instead of 404.
+      historyApiFallback: true,
     },
   }
 }
