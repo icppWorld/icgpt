@@ -300,7 +300,7 @@ module.exports = (env = {}, args = {}) => {
             to: path.join(__dirname, 'dist', 'frontend'),
           },
           {
-            // og-image.png, referenced by the social card tags in index.html
+            // icgpt-social.png, referenced by the social card tags in index.html
             from: path.join(__dirname, 'src', 'frontend/assets/social'),
             to: path.join(__dirname, 'dist', 'frontend'),
           },
