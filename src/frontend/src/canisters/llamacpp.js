@@ -1,12 +1,42 @@
-// Functions to interact with the llama_cpp_canister (Qwen Instruct chat).
+// Functions to interact with the Qwen Instruct chat.
 //
-// Multi-turn: the canister keeps the conversation in its prompt cache
+// HARD GATE: inference is routed through the icgpt_admin CONTROLLER canister, not
+// the llama_cpp canister directly (which is locked to controllers-only). The
+// controller mirrors new_chat/run_update/health, checks the access gate + isolates
+// each user's prompt cache, then forwards to the LLM. The streaming loop below is
+// unchanged - it still paints each run_update's output as it arrives.
+//
+// Multi-turn: the LLM keeps the conversation in its prompt cache
 // (--prompt-cache-all). To continue a conversation we resend the growing
-// conversation as the prompt; the canister prefix-matches its cache and only
-// ingests the new turn. new_chat (cache reset) fires ONLY on the first message
-// of a fresh conversation. See the "multi-turn chat" plan.
+// conversation as the prompt; it prefix-matches the cache and only ingests the new
+// turn. new_chat (cache reset) fires ONLY on the first message of a fresh conversation.
+import { Actor, HttpAgent } from '@dfinity/agent'
+import { idlFactory as controllerIdlFactory } from 'DeclarationsCanisterIcgptAdmin/icgpt_admin.did.js'
 
 const IC_HOST_URL = process.env.IC_HOST_URL
+const CONTROLLER_CANISTER_ID = process.env.CANISTER_ID_ICGPT_ADMIN
+
+// Build an actor for the controller canister (which exposes new_chat/run_update/
+// health). Same idlFactory + @dfinity/agent approach as admin.js (the generated
+// index.js imports @icp-sdk/core, which this project doesn't install).
+async function makeControllerActor(authClient) {
+  const identity = await authClient.getIdentity()
+  const agent = new HttpAgent({ identity, host: IC_HOST_URL })
+  if (process.env.DFX_NETWORK !== 'ic') {
+    try {
+      await agent.fetchRootKey()
+    } catch (e) {
+      console.warn(
+        'controller: unable to fetch root key (is the replica up?)',
+        e
+      )
+    }
+  }
+  return Actor.createActor(controllerIdlFactory, {
+    agent,
+    canisterId: CONTROLLER_CANISTER_ID,
+  })
+}
 
 // The KV cache quantization the model was loaded with (`load_model`). It must be
 // passed to new_chat & run_update so the session's prompt cache matches the model.
@@ -282,10 +312,11 @@ async function fetchInference({
     )
     setStats((s) => ({ ...s, updateCalls: s.updateCalls + 1 }))
     if (!('Ok' in responseNewChat)) {
-      let ermsg = ''
-      if ('Err' in responseNewChat && 'Other' in responseNewChat.Err)
-        ermsg = responseNewChat.Err.Other
-      throw new Error('Call to new_chat failed: ' + ermsg)
+      // Err is a RunOutputRecord (its .error carries the controller's gate/quota
+      // message), so read .error - matching the run_update error handling below.
+      const ermsg =
+        'Err' in responseNewChat ? responseNewChat.Err.error || '' : ''
+      throw new Error(ermsg || 'Call to new_chat failed')
     }
   }
 
@@ -409,17 +440,12 @@ export async function doSubmitLlamacpp({
   setIsSubmitting(true)
 
   const numSteps = 1000 // safety cap on the ingest+generate loop
-  const moduleToImport = import('DeclarationsCanisterLlamacpp_Qwen25_05B_Q8')
-  const { canisterId, createActor } = await moduleToImport
 
-  // Create the actor on the first message; reuse it for continuation turns (it
-  // already has the root key, avoiding the local fetchRootKey race).
+  // Create the CONTROLLER actor on the first message; reuse it for continuation
+  // turns (it already has the root key, avoiding the local fetchRootKey race).
   let actor_ = actorRef.current
   if (chatNew || !actor_) {
-    const identity = await authClient.getIdentity()
-    actor_ = createActor(canisterId, {
-      agentOptions: { identity, host: IC_HOST_URL },
-    })
+    actor_ = await makeControllerActor(authClient)
     setActorRef(actor_)
   }
 

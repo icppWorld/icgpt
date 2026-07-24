@@ -177,34 +177,38 @@ export function Chat() {
               chats={chats}
               setChats={setChats}
             />
-            <Chats
-              authClient={authClient}
-              setAuthClient={setAuthClient}
-              actorRef={actorRef}
-              setActorRef={setActorRef}
-              chatNew={chatNew}
-              setChatNew={setChatNew}
-              chatDone={chatDone}
-              setChatDone={setChatDone}
-              widthChatInput={widthChatInput}
-              setWidthChatInput={setWidthChatInput}
-              heightChatInput={heightChatInput}
-              setHeightChatInput={setHeightChatInput}
-              inputString={inputString}
-              setInputString={setInputString}
-              inputPlaceholder={inputPlaceholder}
-              setInputPlaceholder={setInputPlaceholder}
-              isSubmitting={isSubmitting}
-              setIsSubmitting={setIsSubmitting}
-              setChatOutputText={setChatOutputText}
-              setMessages={setMessages}
-              setConversationBase={setConversationBase}
-              setStats={setStats}
-              setChatDisplay={setChatDisplay}
-              setWaitAnimationMessage={setWaitAnimationMessage}
-              chats={chats}
-              setChats={setChats}
-            />
+            {/* Chats (saved conversations) is deferred under the hard gate: it is
+                caller-scoped on the LLM, so it needs controller-owned storage. */}
+            {false && (
+              <Chats
+                authClient={authClient}
+                setAuthClient={setAuthClient}
+                actorRef={actorRef}
+                setActorRef={setActorRef}
+                chatNew={chatNew}
+                setChatNew={setChatNew}
+                chatDone={chatDone}
+                setChatDone={setChatDone}
+                widthChatInput={widthChatInput}
+                setWidthChatInput={setWidthChatInput}
+                heightChatInput={heightChatInput}
+                setHeightChatInput={setHeightChatInput}
+                inputString={inputString}
+                setInputString={setInputString}
+                inputPlaceholder={inputPlaceholder}
+                setInputPlaceholder={setInputPlaceholder}
+                isSubmitting={isSubmitting}
+                setIsSubmitting={setIsSubmitting}
+                setChatOutputText={setChatOutputText}
+                setMessages={setMessages}
+                setConversationBase={setConversationBase}
+                setStats={setStats}
+                setChatDisplay={setChatDisplay}
+                setWaitAnimationMessage={setWaitAnimationMessage}
+                chats={chats}
+                setChats={setChats}
+              />
+            )}
             <ChatInput
               authClient={authClient}
               setAuthClient={setAuthClient}

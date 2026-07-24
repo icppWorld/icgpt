@@ -166,10 +166,9 @@ dfx canister call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--m
 dfx canister call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 1 : nat64; max_tokens_update = 25 : nat64 })'  --network local
 dfx canister call llama_cpp_qwen25_05b_q8 chats_resume  --network local
 #
-# Open up access:
-# 0 = only controllers
-# 1 = all except anonymous
-dfx canister call llama_cpp_qwen25_05b_q8 set_access '(record { level = 1 : nat16 })' --network local
+# Access: 0 = only controllers, 1 = all except anonymous. For the HARD-GATE setup
+# (inference routed through the icgpt_admin controller) this is set to 0 further down,
+# after the controller is made a controller of the LLM.
 dfx canister call llama_cpp_qwen25_05b_q8 get_access --network local
 #
 # Arm the recurring timers. They are in-memory only, so this is REQUIRED
@@ -183,15 +182,28 @@ dfx canister call llama_cpp_qwen25_05b_q8 cycle_balance_start_timer --network lo
 dfx canister call llama_cpp_qwen25_05b_q8 ready  --network local
 
 # ------------------------------------------------------------------
-# icgpt_admin (Motoko): the Admin & early-access gate.
-# While early access is ON (default), only admins + whitelisted principals may use
-# the chat; everyone else sees a request-access screen. Admins manage the whitelist
-# and flip the switch to open it to all.
+# icgpt_admin (Motoko): the Admin + CONTROLLER canister.
+# (1) Early-access gate: while early access is ON (default), only admins + whitelisted
+#     principals may use the chat; others see a request-access screen.
+# (2) Hard gate: this canister is the ONLY caller allowed to reach the LLM. The frontend
+#     routes inference through it; it proxies new_chat/run_update per call (streaming
+#     preserved), enforces access + per-user cache isolation, and meters usage.
 dfx deploy icgpt_admin --network local
 # Grant yourself admin: run the frontend, sign in, copy the principal shown on the
 # access screen (it is per-origin, so it differs from a CLI identity), add it to the
 # BOOTSTRAP list in src/backend/Bootstrap.mo, then upgrade (preserves whitelist/requests):
 dfx deploy icgpt_admin --network local --yes
+
+# --- Engage the HARD gate: make the controller the sole LLM caller ---
+LLM=$(dfx canister id llama_cpp_qwen25_05b_q8 --network local)
+CTRL=$(dfx canister id icgpt_admin --network local)
+# (a) make the controller an IC controller of the LLM (run as an existing LLM controller):
+dfx canister update-settings $LLM --add-controller $CTRL --network local
+# (b) register the LLM in the controller (run as an icgpt_admin admin/controller):
+dfx canister call icgpt_admin add_llm_canister "(\"$LLM\")" --network local
+dfx canister call icgpt_admin checkAccessToLLMs --network local   # expect (variant { ok })
+# (c) lock the LLM to controllers-only, so users can only reach it via the controller:
+dfx canister call $LLM set_access '(record { level = 0 : nat16 })' --network local
 
 # Generate the bindings
 dfx generate --network local
@@ -225,11 +237,17 @@ Founding admins are hardcoded in `src/backend/Bootstrap.mo` (Internet-Identity p
 are per-origin, so the local `localhost:8081` principal, and the mainnet
 `icgpt.onicai.com` principal, differ — add both).
 
-**This is a soft gate.** It runs in the frontend against the `icgpt_admin` canister; the
-`llama_cpp_qwen25_05b_q8` canister stays at `set_access` level 1 (all-except-anonymous), so
-a technical user could bypass the UI and call it directly. That is acceptable for a
-controlled early-access rollout. A hard gate would route inference through `icgpt_admin`
-and lock llama_cpp to controllers-only (a larger change, deferred).
+**This is a HARD gate** (experimental branch `experimental/controller-hard-gate`,
+IConfucius-style controller). The `llama_cpp_qwen25_05b_q8` canister is set to
+`set_access` level 0 (controllers only) and the `icgpt_admin` canister is a controller of
+it, so it is the ONLY caller that reaches the LLM. The frontend routes all inference
+through the controller, which proxies `new_chat`/`run_update` per call — **streaming is
+preserved** (the browser keeps painting each call's output) — while enforcing the access
+gate, isolating each user's prompt cache by principal, and metering usage (see the Admin
+panel Usage section, with an optional early-access call cap). A direct user call to the
+LLM is rejected. Deferred follow-ups: controller-owned chat history (restores the Chats
+feature, hidden under the hard gate), multi-LLM round-robin, maintenance/pause flag,
+per-LLM telemetry, RBAC roles.
 
 ## Test Qwen2.5 0.5B Q8_0 backend with dfx
 

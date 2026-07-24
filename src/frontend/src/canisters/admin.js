@@ -80,3 +80,16 @@ export async function addAdmin(authClient, principalText, who) {
   const actor = await makeActor(authClient)
   return actor.addAdmin(Principal.fromText(principalText), who)
 }
+
+// ----- usage metering (controller) ----------------------------------------
+export async function listUsage(authClient) {
+  return (await makeActor(authClient)).listUsage()
+}
+
+export async function getEarlyAccessCallCap(authClient) {
+  return (await makeActor(authClient)).getEarlyAccessCallCap()
+}
+
+export async function setEarlyAccessCallCap(authClient, n) {
+  return (await makeActor(authClient)).setEarlyAccessCallCap(BigInt(n))
+}

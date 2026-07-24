@@ -12,6 +12,9 @@ import {
   removeFromWhitelist,
   addAdmin,
   removeAdmin,
+  listUsage,
+  getEarlyAccessCallCap,
+  setEarlyAccessCallCap,
 } from '../canisters/admin'
 
 function fmtDate(at) {
@@ -30,6 +33,9 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
   const [requests, setRequests] = React.useState([])
   const [whitelist, setWhitelist] = React.useState([])
   const [admins, setAdmins] = React.useState({ bootstrap: [], added: [] })
+  const [usage, setUsage] = React.useState([])
+  const [callCap, setCallCap] = React.useState(0)
+  const [capInput, setCapInput] = React.useState('')
   const [err, setErr] = React.useState(null)
   const [busy, setBusy] = React.useState(false)
 
@@ -44,14 +50,18 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
   const reload = React.useCallback(async () => {
     setErr(null)
     try {
-      const [r, w, a] = await Promise.all([
+      const [r, w, a, u, cap] = await Promise.all([
         listRequests(authClient),
         listWhitelist(authClient),
         listAdmins(authClient),
+        listUsage(authClient),
+        getEarlyAccessCallCap(authClient),
       ])
       setRequests(r)
       setWhitelist(w)
       setAdmins(a)
+      setUsage(u)
+      setCallCap(Number(cap))
     } catch (e) {
       setErr(String(e))
     }
@@ -345,6 +355,57 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
             Add admin
           </button>
         </div>
+
+        {/* Usage (per-user metering via the controller) */}
+        <div style={h}>Usage</div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span style={{ color: '#6272a4' }}>
+            Early-access call cap: {callCap === 0 ? 'unlimited' : callCap}
+          </span>
+          <input
+            style={{ ...input, width: '110px' }}
+            placeholder="0 = unlimited"
+            value={capInput}
+            onChange={(e) => setCapInput(e.target.value)}
+          />
+          <button
+            type="button"
+            style={btn('#44475a', '#f8f8f2')}
+            disabled={busy || capInput.trim() === '' || isNaN(Number(capInput))}
+            onClick={() =>
+              act(async () => {
+                await setEarlyAccessCallCap(authClient, Number(capInput))
+                setCapInput('')
+              })
+            }
+          >
+            Set cap
+          </button>
+        </div>
+        {usage.length === 0 ? (
+          <p style={{ color: '#6272a4', fontSize: '12px' }}>No usage yet.</p>
+        ) : (
+          usage.map((u) => (
+            <div key={u.principal.toText()} style={row}>
+              <div style={mono}>
+                <div>
+                  {Number(u.conversations)} chats · {Number(u.calls)} calls · ~
+                  {Number(u.tokensOut)} tok out
+                </div>
+                <div style={{ color: '#6272a4' }}>
+                  {u.principal.toText()} · {fmtDate(u.lastAt)}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   )
