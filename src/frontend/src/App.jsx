@@ -272,7 +272,7 @@ export function App() {
         }}
       />
       {/* <StagingBanner /> */}
-      <Footer />
+      <Footer fixed />
     </div>
   )
 }

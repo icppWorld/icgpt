@@ -50,7 +50,7 @@ export function Chats({
       if (DEBUG) {
         console.log('DEBUG-FLOW: entered Chats.jsx Chats.updatePosition ')
       }
-      const calculatedBottomPosition = heightChatInput + 30
+      const calculatedBottomPosition = heightChatInput + 56
       setButtonPosition(`${calculatedBottomPosition}px`)
     }
 

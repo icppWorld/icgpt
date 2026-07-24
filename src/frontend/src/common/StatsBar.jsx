@@ -34,7 +34,7 @@ export function StatsBar({
   const style = {
     position: 'fixed',
     right: '20px',
-    bottom: `${(heightChatInput || 0) + 34}px`,
+    bottom: `${(heightChatInput || 0) + 60}px`,
     zIndex: 1001,
     fontSize: '11px',
     color: '#6272a4',

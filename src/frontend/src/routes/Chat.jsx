@@ -4,7 +4,6 @@ import { Helmet } from 'react-helmet'
 import { useOutletContext } from 'react-router-dom'
 import 'dracula-ui/styles/dracula-ui.css'
 
-import { Footer } from '../common/Footer'
 import { StatsBar } from '../common/StatsBar'
 import { CardError } from '../common/CardError'
 import { ModelSelector } from '../common/ModelSelector'
@@ -22,6 +21,7 @@ const DEBUG = true
 export function Chat() {
   const { authClient, setAuthClient } = useOutletContext()
   const { access } = useOutletContext()
+  const { doLogout } = useOutletContext()
   const { actorRef, setActorRef } = useOutletContext()
   const { chatNew, setChatNew } = useOutletContext()
   const { chatDone, setChatDone } = useOutletContext()
@@ -113,33 +113,59 @@ export function Chat() {
               activeSystemPromptName={activeSystemPromptName}
               onOpenSystemPrompt={() => setShowSystemPromptModal(true)}
             />
-            {access?.isAdmin ? (
+            <div
+              style={{
+                position: 'fixed',
+                top: '8px',
+                right: '14px',
+                zIndex: 960,
+                display: 'flex',
+                gap: '8px',
+              }}
+            >
+              {access?.isAdmin ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPanel(true)}
+                  title="Admin panel"
+                  style={{
+                    backgroundColor: '#21222c',
+                    color: '#ff79c6',
+                    border: '1px solid #44475a',
+                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <i
+                    className="bi bi-shield-lock"
+                    style={{ marginRight: '5px' }}
+                  ></i>
+                  Admin
+                </button>
+              ) : null}
               <button
                 type="button"
-                onClick={() => setShowAdminPanel(true)}
-                title="Admin panel"
+                onClick={doLogout}
+                title="Log out"
+                aria-label="Log out"
                 style={{
-                  position: 'fixed',
-                  top: '8px',
-                  right: '14px',
-                  zIndex: 960,
                   backgroundColor: '#21222c',
-                  color: '#ff79c6',
+                  color: '#ff5555',
                   border: '1px solid #44475a',
                   borderRadius: '6px',
                   padding: '4px 8px',
                   fontFamily: 'monospace',
                   fontSize: '13px',
+                  lineHeight: 1,
                   cursor: 'pointer',
                 }}
               >
-                <i
-                  className="bi bi-shield-lock"
-                  style={{ marginRight: '5px' }}
-                ></i>
-                Admin
+                <i className="bi bi-box-arrow-right"></i>
               </button>
-            ) : null}
+            </div>
             {DisplayComponent}
             <StatsBar
               turns={turns}
@@ -242,7 +268,6 @@ export function Chat() {
             />
           </div>
         </div>
-        <Footer />
       </main>
       {showSystemPromptModal ? (
         <SystemPromptModal

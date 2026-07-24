@@ -6,11 +6,12 @@ import 'dracula-ui/styles/dracula-ui.css'
 import { Footer } from '../common/Footer'
 import { LogInWithInternetIdentity } from './LoginWithInternetIdentity'
 
-const FUNNAI_URL = 'https://funnai.onicai.com'
 const OPENCHAT_URL =
   'https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157'
 
 export function Login({ setAuthClient }) {
+  const [showDocsComingSoon, setShowDocsComingSoon] = React.useState(false)
+
   const linkStyle = {
     color: '#8be9fd',
     textDecoration: 'none',
@@ -35,9 +36,9 @@ export function Login({ setAuthClient }) {
         >
           <div style={{ width: 'min(640px, 92vw)', color: '#f8f8f2' }}>
             <img
-              src="loop.svg"
-              alt="ICGPT"
-              style={{ width: '64px', height: '64px', marginBottom: '10px' }}
+              src="onicai-icon-logo.svg"
+              alt="onicai"
+              style={{ height: '56px', width: 'auto', marginBottom: '14px' }}
             />
             <h1
               style={{
@@ -55,28 +56,11 @@ export function Login({ setAuthClient }) {
                 fontSize: '17px',
                 lineHeight: 1.5,
                 color: '#f8f8f2',
-                margin: '0 0 14px',
+                margin: '0 0 28px',
               }}
             >
-              Design, test &amp; refine your prompts against a real LLM —
-              running verifiably inside Internet Computer canisters.
-            </p>
-            <p
-              style={{
-                fontSize: '15px',
-                lineHeight: 1.6,
-                color: '#6272a4',
-                margin: '0 auto 26px',
-                maxWidth: '540px',
-              }}
-            >
-              It&apos;s the same on-chain LLM the{' '}
-              <strong style={{ color: '#bd93f9' }}>funnAI mAIners</strong> run —
-              so what you see here is what they&apos;ll produce. Get your
-              prompts ready for the{' '}
-              <strong style={{ color: '#bd93f9' }}>funnAI task board</strong>{' '}
-              (coming soon), where you&apos;ll post AI tasks for mAIners to
-              solve.
+              Optimize your prompts against LLMs running inside Internet
+              Computer canisters
             </p>
 
             <LogInWithInternetIdentity
@@ -84,38 +68,24 @@ export function Login({ setAuthClient }) {
               label="Request early access"
             />
 
-            <p
-              style={{
-                fontSize: '12.5px',
-                lineHeight: 1.6,
-                color: '#6272a4',
-                margin: '28px auto 0',
-                maxWidth: '540px',
-              }}
-            >
-              funnAI is live on-chain AI mining: buy a mAIner, top it up with
-              cycles, and it does AI work on-chain. The Proof-of-AI-Work
-              protocol verifiably tracks every result and an on-chain Judge LLM
-              ranks them — winners earn freshly-minted{' '}
-              <strong style={{ color: '#50fa7b' }}>FUNNAI</strong> tokens.
-            </p>
-
             <div
               style={{
                 display: 'flex',
-                gap: '20px',
+                gap: '28px',
                 justifyContent: 'center',
                 flexWrap: 'wrap',
-                marginTop: '16px',
+                marginTop: '48px',
               }}
             >
               <a
-                href={FUNNAI_URL}
-                target="_blank"
-                rel="noreferrer"
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setShowDocsComingSoon(true)
+                }}
                 style={linkStyle}
               >
-                funnAI — live on-chain AI mining →
+                Docs →
               </a>
               <a
                 href={OPENCHAT_URL}
@@ -123,13 +93,89 @@ export function Login({ setAuthClient }) {
                 rel="noreferrer"
                 style={linkStyle}
               >
-                Join the onicai community on OpenChat →
+                Join us on OpenChat →
               </a>
             </div>
           </div>
         </div>
         <Footer />
       </main>
+
+      {showDocsComingSoon ? (
+        <DocsComingSoonModal onClose={() => setShowDocsComingSoon(false)} />
+      ) : null}
+    </div>
+  )
+}
+
+// Placeholder shown until the dedicated docs page (studio + funnAI explainer)
+// is designed and built.
+function DocsComingSoonModal({ onClose }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 2000,
+        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '24px',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: 'min(420px, 92vw)',
+          backgroundColor: '#282a36',
+          border: '1px solid #44475a',
+          borderRadius: '12px',
+          padding: '28px 24px',
+          textAlign: 'center',
+          color: '#f8f8f2',
+        }}
+      >
+        <div style={{ fontSize: '28px', marginBottom: '10px' }}>📖</div>
+        <h2
+          style={{
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: '#f1fa8c',
+            margin: '0 0 10px',
+          }}
+        >
+          Docs coming soon
+        </h2>
+        <p
+          style={{
+            fontSize: '14px',
+            lineHeight: 1.6,
+            color: '#6272a4',
+            margin: '0 0 22px',
+          }}
+        >
+          A full guide to the on-chain Prompt Studio and how it feeds the funnAI
+          mAIners is on its way. In the meantime, join the community below.
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            backgroundColor: '#bd93f9',
+            color: '#21222c',
+            border: 'none',
+            borderRadius: '10px',
+            padding: '10px 22px',
+            fontSize: '15px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+          }}
+        >
+          Got it
+        </button>
+      </div>
     </div>
   )
 }

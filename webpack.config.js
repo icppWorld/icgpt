@@ -291,6 +291,15 @@ module.exports = (env = {}, args = {}) => {
             to: path.join(__dirname, 'dist', 'frontend'),
           },
           {
+            // onicai brand mark shown on the landing hero
+            from: path.join(
+              __dirname,
+              'src',
+              'frontend/assets/onicai-icon-logo.svg'
+            ),
+            to: path.join(__dirname, 'dist', 'frontend'),
+          },
+          {
             // og-image.png, referenced by the social card tags in index.html
             from: path.join(__dirname, 'src', 'frontend/assets/social'),
             to: path.join(__dirname, 'dist', 'frontend'),

@@ -91,7 +91,7 @@ export function ChatInput({
 
   const floatingStyle = {
     position: 'fixed',
-    bottom: '10px', // or however much spacing you want from the bottom
+    bottom: '36px', // clears the fixed footer pinned at the bottom
     left: '10px', // if you want some spacing from the left
     right: '10px', // if you want some spacing from the right
     zIndex: 1000,
