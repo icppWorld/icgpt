@@ -98,7 +98,13 @@ export function ChatNewChat({
           if (setMessages) setMessages([])
           if (setConversationBase) setConversationBase('')
           if (setStats)
-            setStats({ updateCalls: 0, tokensIn: 0, tokensOut: 0, genMs: 0 })
+            setStats({
+              updateCalls: 0,
+              tokensIn: 0,
+              tokensOut: 0,
+              cyclesCost: 0,
+              genNs: 0,
+            })
           setChatDisplay('ChatOutput')
           // Lazy cache reset: clear the UI here; the next first message's
           // new_chat resets the canister prompt cache.

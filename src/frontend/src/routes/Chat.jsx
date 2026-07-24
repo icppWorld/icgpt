@@ -146,7 +146,8 @@ export function Chat() {
               updateCalls={stats.updateCalls}
               tokensIn={stats.tokensIn}
               tokensOut={stats.tokensOut}
-              genMs={stats.genMs}
+              cyclesCost={stats.cyclesCost}
+              genNs={stats.genNs}
               heightChatInput={heightChatInput}
             />
             <ChatNewChat

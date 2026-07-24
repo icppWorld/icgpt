@@ -5,6 +5,7 @@ import Time "mo:base/Time";
 import Result "mo:base/Result";
 import Debug "mo:base/Debug";
 import Error "mo:base/Error";
+import Int "mo:base/Int";
 import Bootstrap "Bootstrap";
 import LlmTypes "LlmTypes";
 
@@ -219,6 +220,33 @@ persistent actor {
   func llmActor(idx : Nat) : LlmTypes.LLMCanister {
     actor (llmCanisterIds[idx]);
   };
+
+  // The IC management canister, for reading a canister's LIVE cycle balance. This
+  // canister is a controller of each LLM, so canister_status is permitted. We declare
+  // only the `cycles` field; candid record subtyping ignores the rest of the response.
+  let IC : actor {
+    canister_status : shared { canister_id : Principal } -> async {
+      cycles : Nat;
+    };
+  } = actor ("aaaaa-aa");
+
+  // The LLM's live cycle balance (0 if it can't be read - callers treat 0 as "unknown").
+  func llmBalance(idx : Nat) : async Nat {
+    try {
+      let s = await IC.canister_status({
+        canister_id = Principal.fromText(llmCanisterIds[idx]);
+      });
+      s.cycles;
+    } catch (_) { 0 };
+  };
+
+  // Attach the measured per-call cost + on-chain duration to the LLM's response.
+  func xify(r : LlmTypes.OutputRecordResult, cost : Nat, durNs : Nat) : LlmTypes.OutputRecordResultX {
+    switch (r) {
+      case (#Ok(o)) { #Ok({ o with cycles_cost = cost; duration_ns = durNs }) };
+      case (#Err(o)) { #Err({ o with cycles_cost = cost; duration_ns = durNs }) };
+    };
+  };
   func getCallerLlm(caller : Principal) : Nat {
     for ((k, v) in callerLlm.vals()) { if (k == caller) { return v } };
     0;
@@ -258,7 +286,7 @@ persistent actor {
     out;
   };
 
-  func errOut(msg : Text) : LlmTypes.OutputRecordResult {
+  func errOut(msg : Text) : LlmTypes.OutputRecordResultX {
     #Err({
       status_code = 403;
       output = "";
@@ -266,7 +294,18 @@ persistent actor {
       error = msg;
       prompt_remaining = "";
       generated_eog = true;
+      cycles_cost = 0;
+      duration_ns = 0;
     });
+  };
+
+  // Cost = the LLM's live-balance drop across the call (excludes the controller's own
+  // cost). Guard against 0 (unknown balance) and non-decreasing balance.
+  func costOf(balBefore : Nat, balAfter : Nat) : Nat {
+    if (balBefore > balAfter and balAfter != 0) { balBefore - balAfter } else { 0 };
+  };
+  func durOf(t0 : Int, t1 : Int) : Nat {
+    if (t1 > t0) { Int.abs(t1 - t0) } else { 0 };
   };
 
   // ----- usage metering -----------------------------------------------------
@@ -274,6 +313,7 @@ persistent actor {
     conversations : Nat;
     calls : Nat;
     tokensOut : Nat;
+    cyclesCost : Nat; // exact accrued LLM cycle cost across this user's calls
     lastAt : Int;
   };
   type UsageInfo = {
@@ -281,6 +321,7 @@ persistent actor {
     conversations : Nat;
     calls : Nat;
     tokensOut : Nat;
+    cyclesCost : Nat;
     lastAt : Int;
   };
   var usage : [(Principal, UsageStat)] = [];
@@ -288,7 +329,7 @@ persistent actor {
 
   func getUsage(caller : Principal) : UsageStat {
     for ((k, v) in usage.vals()) { if (k == caller) { return v } };
-    { conversations = 0; calls = 0; tokensOut = 0; lastAt = 0 };
+    { conversations = 0; calls = 0; tokensOut = 0; cyclesCost = 0; lastAt = 0 };
   };
   func setUsage(caller : Principal, s : UsageStat) {
     let without = Array.filter<(Principal, UsageStat)>(usage, func((k, _)) { k != caller });
@@ -320,6 +361,21 @@ persistent actor {
     llmCanisterIds;
   };
 
+  /// The live cycle balance of each registered LLM (via the management canister's
+  /// canister_status — this canister is a controller of each). Ops-only; also confirms
+  /// the per-call cost measurement can read balances. (On a local replica cycles are
+  /// not charged, so per-call deltas are 0 there; real on the IC.)
+  public shared ({ caller }) func get_llm_balances() : async [Nat] {
+    requireOps(caller);
+    var out : [Nat] = [];
+    var i = 0;
+    while (i < llmCanisterIds.size()) {
+      out := Array.append(out, [await llmBalance(i)]);
+      i += 1;
+    };
+    out;
+  };
+
   /// Verify the controller can reach every registered LLM (it is a controller of
   /// each, so check_access should return Ok). Admin-only.
   public shared ({ caller }) func checkAccessToLLMs() : async Result.Result<(), Text> {
@@ -344,7 +400,7 @@ persistent actor {
     };
   };
 
-  public shared ({ caller }) func new_chat(input : LlmTypes.InputRecord) : async LlmTypes.OutputRecordResult {
+  public shared ({ caller }) func new_chat(input : LlmTypes.InputRecord) : async LlmTypes.OutputRecordResultX {
     if (not isAllowed(caller)) {
       return errOut("Access denied - request early access");
     };
@@ -357,12 +413,19 @@ persistent actor {
     let idx = pickLlmForNewChat(caller);
     let u = getUsage(caller);
     setUsage(caller, { u with conversations = u.conversations + 1; lastAt = Time.now() });
-    try {
+    // Bracket the LLM call with its live cycle balance (for exact cost) and the IC
+    // system time (for exact duration) - both exclude the controller's own cost/time.
+    let balBefore = await llmBalance(idx);
+    let t0 = Time.now();
+    let raw = try {
       await llmActor(idx).new_chat({ args = rewriteCachePath(input.args, caller) });
-    } catch (e) { errOut("LLM call failed: " # Error.message(e)) };
+    } catch (e) { return errOut("LLM call failed: " # Error.message(e)) };
+    let t1 = Time.now();
+    let balAfter = await llmBalance(idx);
+    xify(raw, costOf(balBefore, balAfter), durOf(t0, t1));
   };
 
-  public shared ({ caller }) func run_update(input : LlmTypes.InputRecord) : async LlmTypes.OutputRecordResult {
+  public shared ({ caller }) func run_update(input : LlmTypes.InputRecord) : async LlmTypes.OutputRecordResultX {
     if (not isAllowed(caller)) {
       return errOut("Access denied - request early access");
     };
@@ -370,17 +433,31 @@ persistent actor {
     if (idx >= llmCanisterIds.size()) {
       return errOut("session LLM unavailable - start a new chat");
     };
-    let result = try {
+    let balBefore = await llmBalance(idx);
+    let t0 = Time.now();
+    let raw = try {
       await llmActor(idx).run_update({ args = rewriteCachePath(input.args, caller) });
     } catch (e) { return errOut("LLM call failed: " # Error.message(e)) };
-    // Meter: count the call + estimate generated tokens from the output text.
+    let t1 = Time.now();
+    let balAfter = await llmBalance(idx);
+    let cost = costOf(balBefore, balAfter);
+    let durNs = durOf(t0, t1);
+    // Meter: count the call, est. generated tokens, and accrue exact cycles.
     let u = getUsage(caller);
-    let tok = switch (result) {
+    let tok = switch (raw) {
       case (#Ok(o)) { estTokens(o.output) };
       case (#Err(_)) { 0 };
     };
-    setUsage(caller, { u with calls = u.calls + 1; tokensOut = u.tokensOut + tok; lastAt = Time.now() });
-    result;
+    setUsage(
+      caller,
+      {
+        u with calls = u.calls + 1;
+        tokensOut = u.tokensOut + tok;
+        cyclesCost = u.cyclesCost + cost;
+        lastAt = Time.now();
+      },
+    );
+    xify(raw, cost, durNs);
   };
 
   // ----- admin: usage -------------------------------------------------------
@@ -394,6 +471,7 @@ persistent actor {
           conversations = s.conversations;
           calls = s.calls;
           tokensOut = s.tokensOut;
+          cyclesCost = s.cyclesCost;
           lastAt = s.lastAt;
         };
       },

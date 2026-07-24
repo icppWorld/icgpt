@@ -131,13 +131,15 @@ export function App() {
 
   // Live conversation statistics (reset on New chat). turns is derived from
   // messages; the rest accumulate across the conversation. tokensIn = ingested
-  // (prompt) tokens, tokensOut = generated tokens, genMs = cumulative generation
-  // wall-time. tokens/sec = tokensOut / (genMs/1000).
+  // (prompt) tokens, tokensOut = generated tokens, cyclesCost = EXACT cycles the LLM
+  // spent (measured on-chain by the controller), genNs = cumulative on-chain
+  // generation time in ns. tokens/sec = tokensOut / (genNs/1e9).
   const [stats, setStats] = React.useState({
     updateCalls: 0,
     tokensIn: 0,
     tokensOut: 0,
-    genMs: 0,
+    cyclesCost: 0,
+    genNs: 0,
   })
 
   // for ChatsPopupModal

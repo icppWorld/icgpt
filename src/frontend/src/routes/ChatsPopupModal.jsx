@@ -177,7 +177,8 @@ export function ChatsPopupModal({
                   updateCalls: 0,
                   tokensIn: 0,
                   tokensOut: 0,
-                  genMs: 0,
+                  cyclesCost: 0,
+                  genNs: 0,
                 })
                 setChatNew(true)
                 setChatDone(true)

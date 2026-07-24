@@ -397,7 +397,8 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
               <div style={mono}>
                 <div>
                   {Number(u.conversations)} chats · {Number(u.calls)} calls · ~
-                  {Number(u.tokensOut)} tok out
+                  {Number(u.tokensOut)} tok out ·{' '}
+                  {(Number(u.cyclesCost) / 1e9).toFixed(2)}B cycles
                 </div>
                 <div style={{ color: '#6272a4' }}>
                   {u.principal.toText()} · {fmtDate(u.lastAt)}

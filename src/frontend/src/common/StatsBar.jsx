@@ -3,35 +3,33 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { InfoPopover } from './InfoPopover'
 
-// Rough, clearly-approximate cost model. Inference update calls are
-// instruction-heavy; this is an ORDER-OF-MAGNITUDE placeholder to be calibrated
-// with real measurement (or the upcoming get_memory_status / cost data from
-// llama_cpp_canister). Shown with a leading "~".
-const CYCLES_PER_UPDATE_CALL = 5_000_000_000 // ~5B cycles per on-chain update call
 const USD_PER_TRILLION_CYCLES = 1.33 // ~1 XDR / 1T cycles, 1 XDR ~ $1.33
 
 function formatCycles(cycles) {
-  if (cycles >= 1e12) return `${(cycles / 1e12).toFixed(2)}T`
-  if (cycles >= 1e9) return `${(cycles / 1e9).toFixed(1)}B`
-  if (cycles >= 1e6) return `${(cycles / 1e6).toFixed(0)}M`
+  if (cycles >= 1e12) return `${(cycles / 1e12).toFixed(3)}T`
+  if (cycles >= 1e9) return `${(cycles / 1e9).toFixed(2)}B`
+  if (cycles >= 1e6) return `${(cycles / 1e6).toFixed(1)}M`
+  if (cycles >= 1e3) return `${(cycles / 1e3).toFixed(0)}K`
   return `${cycles}`
 }
 
 // A subtle live stats line for the conversation, pinned just above the input,
-// with an (i) popover explaining how each number is determined.
+// with an (i) popover explaining how each number is determined. cyclesCost and
+// genNs are EXACT on-chain measurements the controller made around each LLM call.
 export function StatsBar({
   turns,
   updateCalls,
   tokensIn,
   tokensOut,
-  genMs,
+  cyclesCost,
+  genNs,
   heightChatInput,
 }) {
   if (updateCalls === 0 && turns === 0) return null
 
-  const cycles = updateCalls * CYCLES_PER_UPDATE_CALL
-  const usd = (cycles / 1e12) * USD_PER_TRILLION_CYCLES
-  const tokPerSec = genMs > 0 ? (tokensOut / (genMs / 1000)).toFixed(1) : null
+  const usd = (cyclesCost / 1e12) * USD_PER_TRILLION_CYCLES
+  // tok/s = estimated tokens out / EXACT on-chain generation time (ns -> s).
+  const tokPerSec = genNs > 0 ? (tokensOut / (genNs / 1e9)).toFixed(1) : null
 
   const style = {
     position: 'fixed',
@@ -68,12 +66,12 @@ export function StatsBar({
       ) : null}
       {sep}
       <span>
-        ~{formatCycles(cycles)} cycles (~${usd.toFixed(4)})
+        {formatCycles(cyclesCost)} cycles (~${usd.toFixed(4)})
       </span>
       <span style={{ pointerEvents: 'auto' }}>
         <InfoPopover
           ariaLabel="How these stats are determined"
-          width="340px"
+          width="360px"
           iconStyle={{
             fontSize: '14px',
             opacity: 1,
@@ -98,14 +96,17 @@ export function StatsBar({
           is reused). <strong>out</strong> = tokens generated. The canister does
           not report exact token counts.
           <br />
-          <strong>tok/s</strong> — tokens out divided by the on-chain generation
-          time (how fast the canister produced them; excludes network
-          round-trips).
+          <strong>tok/s</strong> — tokens out divided by the{' '}
+          <em>exact on-chain generation time</em>. The controller records the IC
+          system time immediately before and after each LLM call, so this is the
+          LLM&apos;s true generation speed — it excludes network round-trips and
+          the controller itself.
           <br />
-          <strong>cycles / $</strong> — a <em>rough estimate</em>: ~
-          {formatCycles(CYCLES_PER_UPDATE_CALL)} cycles per update call,
-          converted at ~1 XDR (~$1.33) per 1T cycles. To be calibrated with real
-          measurement.
+          <strong>cycles / $</strong> — the <em>exact</em> cycles the LLM spent,
+          measured on-chain: the controller (the only caller allowed to reach
+          the LLM) reads the LLM&apos;s live cycle balance right before and
+          after each call and sums the drop. Converted at ~1 XDR (~$1.33) per 1T
+          cycles.
         </InfoPopover>
       </span>
     </div>
@@ -117,6 +118,7 @@ StatsBar.propTypes = {
   updateCalls: PropTypes.number.isRequired,
   tokensIn: PropTypes.number.isRequired,
   tokensOut: PropTypes.number.isRequired,
-  genMs: PropTypes.number,
+  cyclesCost: PropTypes.number,
+  genNs: PropTypes.number,
   heightChatInput: PropTypes.number,
 }

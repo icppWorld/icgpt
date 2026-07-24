@@ -310,7 +310,13 @@ async function fetchInference({
       'new_chat',
       notifyRetry(setWaitAnimationMessage)
     )
-    setStats((s) => ({ ...s, updateCalls: s.updateCalls + 1 }))
+    const ncRec =
+      'Ok' in responseNewChat ? responseNewChat.Ok : responseNewChat.Err
+    setStats((s) => ({
+      ...s,
+      updateCalls: s.updateCalls + 1,
+      cyclesCost: s.cyclesCost + (ncRec ? Number(ncRec.cycles_cost || 0n) : 0),
+    }))
     if (!('Ok' in responseNewChat)) {
       // Err is a RunOutputRecord (its .error carries the controller's gate/quota
       // message), so read .error - matching the run_update error handling below.
@@ -354,7 +360,15 @@ async function fetchInference({
       notifyRetry(setWaitAnimationMessage)
     )
     responseUpdate = result
-    setStats((s) => ({ ...s, updateCalls: s.updateCalls + 1 }))
+    // Exact per-call cycle cost, measured on-chain by the controller (both Ok and
+    // Err arms carry it). Accrue it for every call (ingestion + generation).
+    const rec = 'Ok' in responseUpdate ? responseUpdate.Ok : responseUpdate.Err
+    const callCycles = rec ? Number(rec.cycles_cost || 0n) : 0
+    setStats((s) => ({
+      ...s,
+      updateCalls: s.updateCalls + 1,
+      cyclesCost: s.cyclesCost + callCycles,
+    }))
 
     if (!('Ok' in responseUpdate)) {
       let ermsg = ''
@@ -372,10 +386,13 @@ async function fetchInference({
       genTotalMs += durationMs
       genTotalWords += chunk.split(/\s+/).filter(Boolean).length
       const tok = estimateTokens(chunk)
+      // genNs accumulates the controller's EXACT on-chain generation time (IC system
+      // time bracketing the LLM call), used for tok/s - excludes network + controller.
+      const genNsDelta = Number(responseUpdate.Ok.duration_ns || 0n)
       setStats((s) => ({
         ...s,
         tokensOut: s.tokensOut + tok,
-        genMs: s.genMs + durationMs,
+        genNs: s.genNs + genNsDelta,
       }))
     }
 
@@ -520,7 +537,13 @@ export async function doNewChatLlamacpp({
   if (setMessages) setMessages([])
   if (setConversationBase) setConversationBase('')
   if (setStats)
-    setStats({ updateCalls: 0, tokensIn: 0, tokensOut: 0, genMs: 0 })
+    setStats({
+      updateCalls: 0,
+      tokensIn: 0,
+      tokensOut: 0,
+      cyclesCost: 0,
+      genNs: 0,
+    })
   setChatDisplay('ChatOutput')
 }
 

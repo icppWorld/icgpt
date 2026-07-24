@@ -24,6 +24,26 @@ module LlmTypes {
     #Err : RunOutputRecord;
   };
 
+  // The controller returns RunOutputRecord PLUS exact per-call metering it measured
+  // around the LLM call: cycles_cost (the LLM's live-balance drop, via canister_status)
+  // and duration_ns (IC system time bracketing ONLY the LLM call). Both exclude the
+  // controller's own cost/time. The frontend reads .Ok.output/... as before, and the
+  // two extra fields for exact conversation cost + on-chain tok/s.
+  public type RunOutputRecordX = {
+    status_code : Nat16;
+    output : Text;
+    conversation : Text;
+    error : Text;
+    prompt_remaining : Text;
+    generated_eog : Bool;
+    cycles_cost : Nat;
+    duration_ns : Nat;
+  };
+  public type OutputRecordResultX = {
+    #Ok : RunOutputRecordX;
+    #Err : RunOutputRecordX;
+  };
+
   public type ApiError = {
     #Other : Text;
     #StatusCode : Nat16;

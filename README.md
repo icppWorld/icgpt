@@ -245,7 +245,18 @@ through the controller, which proxies `new_chat`/`run_update` per call — **str
 preserved** (the browser keeps painting each call's output) — while enforcing the access
 gate, isolating each user's prompt cache by principal, and metering usage (see the Admin
 panel Usage section, with an optional early-access call cap). A direct user call to the
-LLM is rejected. Deferred follow-ups: controller-owned chat history (restores the Chats
+LLM is rejected.
+
+**Exact cost + speed (measured on-chain).** Because the controller is the sole LLM caller,
+it measures each call precisely and returns it alongside the tokens: the **exact cycle
+cost** (it reads the LLM's LIVE cycle balance via the management canister's
+`canister_status` right before and after each call and sums the drop — the conversation
+total is shown in the stats bar), and the **exact tok/s** (the IC system time bracketing
+only the LLM call, so it excludes network + the controller). NOTE: on a **local replica**
+cycles are not charged, so the per-call cost shows **0** locally (verify the mechanism with
+`dfx canister call icgpt_admin get_llm_balances`); it reports real cost on the IC.
+
+Deferred follow-ups: controller-owned chat history (restores the Chats
 feature, hidden under the hard gate), multi-LLM round-robin, maintenance/pause flag,
 per-LLM telemetry, RBAC roles.
 
