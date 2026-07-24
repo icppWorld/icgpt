@@ -122,22 +122,22 @@ unzip the release yourself. To do that, or to upgrade to a newer release, follow
 
 Download qwen2.5-0.5b-instruct-q8_0.gguf from https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF
 
-Place it in this location: 
+Place it in this location:
+
 ```
 llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
 ```
 
 Verify the sha256 (`make upload-...` checks this too):
+
 ```bash
 $ shasum -a 256 llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
 ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e
 ```
 
-
 ## Deploy ICGPT to local network
 
 Once the model gguf is in place, as described in the previous step, you can deploy everything with:
-
 
 ```bash
 #NOTE: Be aware of the environment setting `DFX_NETWORK` in your shell. It might interfere with the scripts.
@@ -182,6 +182,17 @@ dfx canister call llama_cpp_qwen25_05b_q8 cycle_balance_start_timer --network lo
 # Final check
 dfx canister call llama_cpp_qwen25_05b_q8 ready  --network local
 
+# ------------------------------------------------------------------
+# icgpt_admin (Motoko): the Admin & early-access gate.
+# While early access is ON (default), only admins + whitelisted principals may use
+# the chat; everyone else sees a request-access screen. Admins manage the whitelist
+# and flip the switch to open it to all.
+dfx deploy icgpt_admin --network local
+# Grant yourself admin: run the frontend, sign in, copy the principal shown on the
+# access screen (it is per-origin, so it differs from a CLI identity), add it to the
+# BOOTSTRAP list in src/backend/Bootstrap.mo, then upgrade (preserves whitelist/requests):
+dfx deploy icgpt_admin --network local --yes
+
 # Generate the bindings
 dfx generate --network local
 
@@ -192,7 +203,7 @@ dfx deploy canister_frontend  --network local # REQUIRED: redeploy each time bac
 
 
 # Note: you can stop the local network with
-dfx stop 
+dfx stop
 ```
 
 After the deployment steps described above, the full application is now deployed to the local network, including the front-end canister, the LLM back-end canisters, and the internet_identity canister:
@@ -201,59 +212,79 @@ However, you can not run the frontend served from the local IC network, due to C
 
 Just run it locally as described in the next section, `Front-end Development`
 
+## Admin & early-access gate (`icgpt_admin`)
+
+The `icgpt_admin` Motoko canister (`src/backend/`) holds the admin allowlist and the
+early-access whitelist. On sign-in the frontend calls `myAccess()`; while early access is
+ON, only admins and whitelisted principals reach the chat, and everyone else gets a
+request-access screen (they submit a contact email; an admin approves them). Admins get an
+**Admin** button that opens a panel to toggle early access, approve/reject requests, and
+manage the whitelist and admins.
+
+Founding admins are hardcoded in `src/backend/Bootstrap.mo` (Internet-Identity principals
+are per-origin, so the local `localhost:8081` principal, and the mainnet
+`icgpt.onicai.com` principal, differ — add both).
+
+**This is a soft gate.** It runs in the frontend against the `icgpt_admin` canister; the
+`llama_cpp_qwen25_05b_q8` canister stays at `set_access` level 1 (all-except-anonymous), so
+a technical user could bypass the UI and call it directly. That is acceptable for a
+controlled early-access rollout. A hard gate would route inference through `icgpt_admin`
+and lock llama_cpp to controllers-only (a larger change, deferred).
+
 ## Test Qwen2.5 0.5B Q8_0 backend with dfx
 
 It is handy to be able to verify the Qwen2.5 backend canister with dfx:
 
 - Chat with the LLM:
 
-    Details how to use the Qwen models with llama.cpp:
-    https://qwen.readthedocs.io/en/latest/run_locally/llama.cpp.html
+  Details how to use the Qwen models with llama.cpp:
+  https://qwen.readthedocs.io/en/latest/run_locally/llama.cpp.html
 
-    NOTE: These are the same args that the frontend sends, see
-          `src/frontend/src/canisters/llamacpp.js`. The `--cache-type-k q8_0`
-          must match the value used in `load_model`.
+  NOTE: These are the same args that the frontend sends, see
+  `src/frontend/src/canisters/llamacpp.js`. The `--cache-type-k q8_0`
+  must match the value used in `load_model`.
 
-    ```bash
-    # Start a new chat - this resets the prompt-cache for this conversation
-    dfx canister call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--cache-type-k"; "q8_0"} })'
+  ```bash
+  # Start a new chat - this resets the prompt-cache for this conversation
+  dfx canister call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--cache-type-k"; "q8_0"} })'
 
-    # Ingest the prompt.
-    # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT
-    # Use "-n"; "1", so the LLM does not yet generate new tokens
+  # Ingest the prompt.
+  # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT
+  # Use "-n"; "1", so the LLM does not yet generate new tokens
 
-    # Example of a longer prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })' 
+  # Example of a longer prompt
+  dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
 
-    # Example of a very short prompt
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })' 
+  # Example of a very short prompt
+  dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
 
-     ...
-    # Generate new tokens.
-    # Once prompt_remaining is empty, repeat this call, with an empty prompt, until `generated_eog=true`.
-    # Now use "-n"; "512", so it generates until end-of-generation.
-    # The canister returns up to max_tokens_update (25) tokens per call.
-    dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; ""; "-n"; "512" } })'
+   ...
+  # Generate new tokens.
+  # Once prompt_remaining is empty, repeat this call, with an empty prompt, until `generated_eog=true`.
+  # Now use "-n"; "512", so it generates until end-of-generation.
+  # The canister returns up to max_tokens_update (25) tokens per call.
+  dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; ""; "-n"; "512" } })'
 
-    ...
+  ...
 
-    # Once generated_eog = true, the LLM is done generating
+  # Once generated_eog = true, the LLM is done generating
 
-    # this is the output after several update calls and it has reached eog:
-    (
-      variant {
-        Ok = record {
-          output = " level of complexity than the original text.<|im_end|>";
-          conversation = "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\nLLMs are large language models, or generative models, that can generate text based on a given input. These models are trained on a large corpus of text and are able to generate text that is similar to the input. They can be used for a wide range of applications, such as language translation, question answering, and text generation for various tasks. LLMs are often referred to as \"artificial general intelligence\" because they can generate text that is not only similar to the input but also has a higher level of complexity than the original text.<|im_end|>";
-          error = "";
-          status_code = 200 : nat16;
-          prompt_remaining = "";
-          generated_eog = true;
-        }
-      },
-    )
+  # this is the output after several update calls and it has reached eog:
+  (
+    variant {
+      Ok = record {
+        output = " level of complexity than the original text.<|im_end|>";
+        conversation = "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\nLLMs are large language models, or generative models, that can generate text based on a given input. These models are trained on a large corpus of text and are able to generate text that is similar to the input. They can be used for a wide range of applications, such as language translation, question answering, and text generation for various tasks. LLMs are often referred to as \"artificial general intelligence\" because they can generate text that is not only similar to the input but also has a higher level of complexity than the original text.<|im_end|>";
+        error = "";
+        status_code = 200 : nat16;
+        prompt_remaining = "";
+        generated_eog = true;
+      }
+    },
+  )
 
-    For more details & options, see llama_cpp_canister repo.
+  For more details & options, see llama_cpp_canister repo.
+  ```
 
 ## Front-end Development
 
@@ -275,7 +306,7 @@ The front-end is a react application with a webpack based build pipeline. Webpac
   npm run start:local
   # run against ic deployment of backend
   npm run start:ic         (NOTE: not tested...)
-  
+
   ```
 
 - When you login, just create a new II, and once login completed, you will see the start screen shown at the top of this README.
@@ -335,9 +366,9 @@ Step 1: Deploy the backend canister
   # Leaving in the instructions to avoid time-outs during uploads, just in case:
   # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
   # dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (costs a rental fee)
-  # dfx canister status --ic llama_cpp_qwen25_05b_q8 
-  
-  # After `dfx deploy -m reinstall`: 
+  # dfx canister status --ic llama_cpp_qwen25_05b_q8
+
+  # After `dfx deploy -m reinstall`:
   make upload-llama-cpp-qwen25-05b-q8-ic  # Not needed after an upgrade, only after initial or reinstall
   #
   # After `dfx deploy -m upgrade`:

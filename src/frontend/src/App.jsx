@@ -5,6 +5,8 @@ import { Footer } from './common/Footer'
 import { StagingBanner } from './common/StagingBanner'
 import { Outlet } from 'react-router-dom'
 import { Login } from './routes/Login'
+import { EarlyAccessLockScreen } from './routes/EarlyAccessLockScreen'
+import { getMyAccess } from './canisters/admin'
 import { DEFAULT_MODEL_ID } from './common/models'
 import {
   loadCustomPrompts,
@@ -27,6 +29,47 @@ export function App() {
 
   // Authentication with internet identity
   const [authClient, setAuthClient] = React.useState()
+
+  // Early-access gate (icgpt_admin canister). access === null while we query the
+  // caller's status after login. access.allowed drives the chat-vs-lock-screen branch;
+  // access.isAdmin drives the Admin panel button.
+  const [access, setAccess] = React.useState(null)
+
+  const recheckAccess = React.useCallback(async () => {
+    if (!authClient) return
+    try {
+      setAccess(await getMyAccess(authClient))
+    } catch (e) {
+      console.error('icgpt_admin myAccess failed', e)
+      // Fail closed (show the lock screen with a Retry) rather than silently opening.
+      setAccess({
+        allowed: false,
+        isAdmin: false,
+        earlyAccess: true,
+        whitelisted: false,
+        requested: false,
+        error: true,
+      })
+    }
+  }, [authClient])
+
+  React.useEffect(() => {
+    if (!authClient) {
+      setAccess(null)
+      return
+    }
+    recheckAccess()
+  }, [authClient, recheckAccess])
+
+  const doLogout = React.useCallback(async () => {
+    try {
+      if (authClient) await authClient.logout()
+    } catch (e) {
+      /* ignore */
+    }
+    setAuthClient(undefined)
+    setAccess(null)
+  }, [authClient])
 
   // actor for the selected LLM canister
   // -> see js bindings stored in src/declarations/canister (See README)
@@ -140,6 +183,43 @@ export function App() {
     )
   }
 
+  // Signed in, but still checking early-access status.
+  if (access === null) {
+    return (
+      <div>
+        <Head />
+        <div
+          style={{
+            minHeight: '60vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#6272a4',
+            fontFamily: 'monospace',
+          }}
+        >
+          Checking access…
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
+  // Signed in but not allowed during early access → request-access lock screen.
+  if (!access.allowed) {
+    return (
+      <div>
+        <Head />
+        <EarlyAccessLockScreen
+          authClient={authClient}
+          access={access}
+          onLogout={doLogout}
+          onRetry={recheckAccess}
+        />
+      </div>
+    )
+  }
+
   return (
     <div>
       <Head />
@@ -147,6 +227,9 @@ export function App() {
         context={{
           authClient,
           setAuthClient,
+          access,
+          recheckAccess,
+          doLogout,
           actorRef,
           setActorRef,
           chatNew,

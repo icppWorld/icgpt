@@ -15,11 +15,13 @@ import { ChatNewChat } from './ChatNewChat'
 import { Chats } from './Chats'
 import { ChatInput } from './ChatInput'
 import { SystemPromptModal } from './SystemPromptModal'
+import { AdminPanel } from './AdminPanel'
 
 const DEBUG = true
 
 export function Chat() {
   const { authClient, setAuthClient } = useOutletContext()
+  const { access } = useOutletContext()
   const { actorRef, setActorRef } = useOutletContext()
   const { chatNew, setChatNew } = useOutletContext()
   const { chatDone, setChatDone } = useOutletContext()
@@ -59,6 +61,7 @@ export function Chat() {
 
   const [showSystemPromptModal, setShowSystemPromptModal] =
     React.useState(false)
+  const [showAdminPanel, setShowAdminPanel] = React.useState(false)
 
   let DisplayComponent
 
@@ -110,6 +113,33 @@ export function Chat() {
               activeSystemPromptName={activeSystemPromptName}
               onOpenSystemPrompt={() => setShowSystemPromptModal(true)}
             />
+            {access?.isAdmin ? (
+              <button
+                type="button"
+                onClick={() => setShowAdminPanel(true)}
+                title="Admin panel"
+                style={{
+                  position: 'fixed',
+                  top: '8px',
+                  right: '14px',
+                  zIndex: 960,
+                  backgroundColor: '#21222c',
+                  color: '#ff79c6',
+                  border: '1px solid #44475a',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  fontFamily: 'monospace',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                }}
+              >
+                <i
+                  className="bi bi-shield-lock"
+                  style={{ marginRight: '5px' }}
+                ></i>
+                Admin
+              </button>
+            ) : null}
             {DisplayComponent}
             <StatsBar
               turns={turns}
@@ -225,6 +255,13 @@ export function Chat() {
           setConversationBase={setConversationBase}
           setStats={setStats}
           setChatDisplay={setChatDisplay}
+        />
+      ) : null}
+      {showAdminPanel ? (
+        <AdminPanel
+          authClient={authClient}
+          initialEarlyAccess={access?.earlyAccess}
+          onClose={() => setShowAdminPanel(false)}
         />
       ) : null}
     </div>

@@ -75,6 +75,7 @@ console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
 const DFX_VERSION = process.env.DFX_VERSION || 'local'
 const DFX_NETWORK = process.env.DFX_NETWORK || 'local'
 const CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 = `${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
+const CANISTER_ID_ICGPT_ADMIN = `${process.env.CANISTER_ID_ICGPT_ADMIN}`
 const CANISTER_ID_INTERNET_IDENTITY = `${process.env.CANISTER_ID_INTERNET_IDENTITY}`
 const CANISTER_ID_CANISTER_FRONTEND = `${process.env.CANISTER_ID_CANISTER_FRONTEND}`
 console.warn(`DFX_VERSION: ${DFX_VERSION}`)
@@ -82,6 +83,7 @@ console.warn(`DFX_NETWORK: ${DFX_NETWORK}`)
 console.warn(
   `CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8: ${CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
 )
+console.warn(`CANISTER_ID_ICGPT_ADMIN: ${CANISTER_ID_ICGPT_ADMIN}`)
 console.warn(`CANISTER_ID_INTERNET_IDENTITY: ${CANISTER_ID_INTERNET_IDENTITY}`)
 console.warn(`CANISTER_ID_CANISTER_FRONTEND: ${CANISTER_ID_CANISTER_FRONTEND}`)
 
@@ -180,6 +182,11 @@ module.exports = (env = {}, args = {}) => {
           'src/declarations',
           'llama_cpp_qwen25_05b_q8'
         ),
+        DeclarationsCanisterIcgptAdmin: path.resolve(
+          __dirname,
+          'src/declarations',
+          'icgpt_admin'
+        ),
         DeclarationsCanisterFrontend: path.resolve(
           __dirname,
           'src/declarations',
@@ -250,6 +257,7 @@ module.exports = (env = {}, args = {}) => {
         DFX_VERSION,
         DFX_NETWORK,
         CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8,
+        CANISTER_ID_ICGPT_ADMIN,
         CANISTER_ID_INTERNET_IDENTITY,
         CANISTER_ID_CANISTER_FRONTEND,
         //
