@@ -5,10 +5,13 @@ import { Helmet } from 'react-helmet'
 import { requestAccess } from '../canisters/admin'
 import { Footer } from '../common/Footer'
 
+const OPENCHAT_URL =
+  'https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157'
+
 // Shown to a signed-in user who is NOT allowed during the early-access period
-// (not an admin, not whitelisted). They submit a contact email to request access;
-// an admin approves them onto the whitelist. Their principal is shown (copyable) so
-// an admin can whitelist it directly.
+// (not an admin, not whitelisted). They describe their use case to request access,
+// then join our OpenChat channel to discuss it with the team; an admin approves them
+// onto the whitelist. Their principal is shown (copyable) to reference in the chat.
 export function EarlyAccessLockScreen({
   authClient,
   access,
@@ -17,7 +20,7 @@ export function EarlyAccessLockScreen({
 }) {
   const principalText = authClient.getIdentity().getPrincipal().toText()
 
-  const [email, setEmail] = React.useState('')
+  const [useCase, setUseCase] = React.useState('')
   const [submitted, setSubmitted] = React.useState(access?.requested === true)
   const [busy, setBusy] = React.useState(false)
   const [err, setErr] = React.useState(null)
@@ -25,13 +28,13 @@ export function EarlyAccessLockScreen({
 
   async function submit() {
     setErr(null)
-    if (!email.trim()) {
-      setErr('Enter your email')
+    if (!useCase.trim()) {
+      setErr('Please describe your use case')
       return
     }
     setBusy(true)
     try {
-      const res = await requestAccess(authClient, email.trim())
+      const res = await requestAccess(authClient, useCase.trim())
       if ('ok' in res) {
         setSubmitted(true)
       } else {
@@ -93,6 +96,14 @@ export function EarlyAccessLockScreen({
     fontSize: '13px',
     cursor: 'pointer',
   })
+  const openChatBtn = {
+    display: 'inline-block',
+    marginTop: '10px',
+    color: '#8be9fd',
+    textDecoration: 'none',
+    fontSize: '13px',
+    fontWeight: 'bold',
+  }
 
   return (
     <div>
@@ -129,10 +140,22 @@ export function EarlyAccessLockScreen({
               </button>
             </div>
           ) : submitted ? (
-            <p style={{ fontSize: '13px', marginTop: '18px', lineHeight: 1.5 }}>
-              Request received — an admin will review it and enable your access.
-              You can close this page and come back later.
-            </p>
+            <div style={{ marginTop: '18px', textAlign: 'left' }}>
+              <p style={{ fontSize: '13px', lineHeight: 1.5 }}>
+                Request received. To move forward, join our OpenChat channel and
+                open a discussion — mention your principal id (below) so we can
+                review your use case together and, once approved, enable your
+                access.
+              </p>
+              <a
+                href={OPENCHAT_URL}
+                target="_blank"
+                rel="noreferrer"
+                style={openChatBtn}
+              >
+                Open a discussion on OpenChat →
+              </a>
+            </div>
           ) : (
             <div style={{ marginTop: '18px', textAlign: 'left' }}>
               <p
@@ -143,22 +166,23 @@ export function EarlyAccessLockScreen({
                   marginBottom: '10px',
                 }}
               >
-                ICGPT is in early access. Submit your email to request access.
+                ICGPT is in early access. Tell us how you&apos;d like to use it.
               </p>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') submit()
-                  }}
-                  placeholder="you@example.com"
-                  spellCheck={false}
-                  autoCapitalize="off"
-                  autoCorrect="off"
-                  style={input}
-                />
+              <textarea
+                value={useCase}
+                onChange={(e) => setUseCase(e.target.value)}
+                placeholder="Describe your use case — what would you like to build or explore with on-chain LLMs?"
+                rows={4}
+                maxLength={1000}
+                style={{ ...input, width: '100%', resize: 'vertical' }}
+              />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  marginTop: '10px',
+                }}
+              >
                 <button
                   type="button"
                   onClick={submit}
@@ -168,7 +192,7 @@ export function EarlyAccessLockScreen({
                     opacity: busy ? 0.6 : 1,
                   }}
                 >
-                  Request
+                  {busy ? 'Submitting…' : 'Request access'}
                 </button>
               </div>
               {err ? (
@@ -183,6 +207,31 @@ export function EarlyAccessLockScreen({
                   {err}
                 </p>
               ) : null}
+
+              <div
+                style={{
+                  marginTop: '14px',
+                  backgroundColor: '#282a36',
+                  border: '1px solid #44475a',
+                  borderRadius: '8px',
+                  padding: '12px',
+                }}
+              >
+                <p style={{ fontSize: '12px', lineHeight: 1.5, margin: 0 }}>
+                  Access is granted after a chat with the team. Join our
+                  OpenChat channel and open a discussion — reference your
+                  principal id (below). We&apos;ll review your use case there
+                  and enable your access if approved.
+                </p>
+                <a
+                  href={OPENCHAT_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={openChatBtn}
+                >
+                  Join us on OpenChat →
+                </a>
+              </div>
             </div>
           )}
 

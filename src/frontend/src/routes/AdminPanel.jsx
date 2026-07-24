@@ -206,7 +206,7 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
           requests.map((r) => (
             <div key={r.principal.toText()} style={row}>
               <div style={mono}>
-                <div>{r.email || '(no email)'}</div>
+                <div>{r.note || '(no use case)'}</div>
                 <div style={{ color: '#6272a4' }}>
                   {r.principal.toText()} · {fmtDate(r.at)}
                 </div>
@@ -241,8 +241,8 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
           <div key={w.principal.toText()} style={row}>
             <div style={mono}>
               <div>
-                {w.email || '(no email)'}
-                {w.note ? ` — ${w.note}` : ''}
+                {w.note || w.email || '(no details)'}
+                {w.note && w.email ? ` · ${w.email}` : ''}
               </div>
               <div style={{ color: '#6272a4' }}>{w.principal.toText()}</div>
             </div>

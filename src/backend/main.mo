@@ -111,18 +111,21 @@ persistent actor {
 
   public query func getEarlyAccess() : async Bool { earlyAccess };
 
-  /// A signed-in, not-yet-allowed caller requests access with a contact email. An
-  /// admin later approves it onto the whitelist. Bounded to protect stable memory.
-  public shared ({ caller }) func requestAccess(email : Text) : async Result.Result<(), Text> {
+  /// A signed-in, not-yet-allowed caller requests access, describing their use case.
+  /// An admin later approves it onto the whitelist (approval is discussed on OpenChat).
+  /// The use case is stored in the `note` field. Bounded to protect stable memory.
+  public shared ({ caller }) func requestAccess(useCase : Text) : async Result.Result<(), Text> {
     if (Principal.isAnonymous(caller)) { return #err("sign in first") };
     if (isAdmin(caller) or hasKey(whitelist, caller)) {
       return #err("you already have access");
     };
-    if (Text.size(email) > 200) { return #err("email too long (max 200 chars)") };
+    if (Text.size(useCase) > 1000) {
+      return #err("use case too long (max 1000 chars)");
+    };
     if (not hasKey(requests, caller) and requests.size() >= 5000) {
       return #err("the request list is full - please contact the team directly");
     };
-    requests := upsertEntry(requests, caller, { email; note = ""; at = Time.now() });
+    requests := upsertEntry(requests, caller, { email = ""; note = useCase; at = Time.now() });
     #ok;
   };
 

@@ -32,8 +32,8 @@ export async function getMyAccess(authClient) {
   return (await makeActor(authClient)).myAccess()
 }
 
-export async function requestAccess(authClient, email) {
-  return (await makeActor(authClient)).requestAccess(email)
+export async function requestAccess(authClient, useCase) {
+  return (await makeActor(authClient)).requestAccess(useCase)
 }
 
 // ----- admin --------------------------------------------------------------
