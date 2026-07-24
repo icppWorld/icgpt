@@ -15,6 +15,7 @@ import { Chats } from './Chats'
 import { ChatInput } from './ChatInput'
 import { SystemPromptModal } from './SystemPromptModal'
 import { AdminPanel } from './AdminPanel'
+import { doNewChatLlamacpp } from '../canisters/llamacpp'
 
 const DEBUG = true
 
@@ -58,6 +59,24 @@ export function Chat() {
     customPrompts,
     activeSystemPromptId
   ).name
+
+  // Switching models starts a fresh conversation: a chat is pinned to one LLM's
+  // prompt cache (on that model's canister), so it cannot continue on another model.
+  function handleModelChange(newModelId) {
+    if (newModelId === selectedModelId) return
+    setSelectedModelId(newModelId)
+    doNewChatLlamacpp({
+      setChatNew,
+      setChatDone,
+      setInputString,
+      setInputPlaceholder,
+      setChatOutputText,
+      setMessages,
+      setConversationBase,
+      setStats,
+      setChatDisplay,
+    })
+  }
 
   const [showSystemPromptModal, setShowSystemPromptModal] =
     React.useState(false)
@@ -109,7 +128,7 @@ export function Chat() {
           <div style={{ position: 'relative' }}>
             <ModelSelector
               selectedModelId={selectedModelId}
-              setSelectedModelId={setSelectedModelId}
+              setSelectedModelId={handleModelChange}
               activeSystemPromptName={activeSystemPromptName}
               onOpenSystemPrompt={() => setShowSystemPromptModal(true)}
             />
@@ -263,6 +282,7 @@ export function Chat() {
               setChatDisplay={setChatDisplay}
               setWaitAnimationMessage={setWaitAnimationMessage}
               systemPromptText={activeSystemPromptText}
+              selectedModel={selectedModel}
               chats={chats}
               setChats={setChats}
             />

@@ -430,3 +430,28 @@ download-log-llama-cpp-qwen25-05b-q8-ic:
 	@echo "---"
 	@echo "download-log-llama-cpp-qwen25-05b-q8-ic"
 	python -m llms.llama_cpp_canister.scripts.download --network ic --canister llama_cpp_qwen25_05b_q8 --local-filename main-llama-cpp-qwen25-05b-q8.log main.log
+
+# The sha256 of Qwen3-0.6B-Q8_0.gguf, as published on HuggingFace.
+QWEN3_06B_Q8_SHA256 ?= 9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031
+
+# NOTE: pass an ABSOLUTE path for the model (resolved by the upload script against
+#       its own repo root, not our working directory).
+QWEN3_06B_Q8_GGUF ?= $(CURDIR)/llms/models/Qwen/Qwen3-0.6B-GGUF/Qwen3-0.6B-Q8_0.gguf
+
+.PHONY: upload-llama-cpp-qwen3-06b-q8-local
+upload-llama-cpp-qwen3-06b-q8-local:
+	@echo "---"
+	@echo "upload-llama-cpp-qwen3-06b-q8-local"
+	python -m llms.llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen3_06b_q8 --canister-filename model.gguf --filetype gguf --hf-sha256 "$(QWEN3_06B_Q8_SHA256)" $(QWEN3_06B_Q8_GGUF)
+
+.PHONY: upload-llama-cpp-qwen3-06b-q8-ic
+upload-llama-cpp-qwen3-06b-q8-ic:
+	@echo "---"
+	@echo "upload-llama-cpp-qwen3-06b-q8-ic"
+	python -m llms.llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen3_06b_q8 --canister-filename model.gguf --filetype gguf --hf-sha256 "$(QWEN3_06B_Q8_SHA256)" $(QWEN3_06B_Q8_GGUF)
+
+.PHONY: download-log-llama-cpp-qwen3-06b-q8-ic
+download-log-llama-cpp-qwen3-06b-q8-ic:
+	@echo "---"
+	@echo "download-log-llama-cpp-qwen3-06b-q8-ic"
+	python -m llms.llama_cpp_canister.scripts.download --network ic --canister llama_cpp_qwen3_06b_q8 --local-filename main-llama-cpp-qwen3-06b-q8.log main.log

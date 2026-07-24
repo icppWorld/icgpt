@@ -15,7 +15,7 @@ function formatCycles(cycles) {
 
 // A subtle live stats line for the conversation, pinned just above the input,
 // with an (i) popover explaining how each number is determined. cyclesCost and
-// genNs are EXACT on-chain measurements the controller made around each LLM call.
+// genNs are EXACT in-canister measurements the controller made around each LLM call.
 export function StatsBar({
   turns,
   updateCalls,
@@ -28,7 +28,7 @@ export function StatsBar({
   if (updateCalls === 0 && turns === 0) return null
 
   const usd = (cyclesCost / 1e12) * USD_PER_TRILLION_CYCLES
-  // tok/s = estimated tokens out / EXACT on-chain generation time (ns -> s).
+  // tok/s = estimated tokens out / EXACT in-canister generation time (ns -> s).
   const tokPerSec = genNs > 0 ? (tokensOut / (genNs / 1e9)).toFixed(1) : null
 
   const style = {
@@ -52,7 +52,7 @@ export function StatsBar({
         {turns} {turns === 1 ? 'turn' : 'turns'}
       </span>
       {sep}
-      <span>{updateCalls} on-chain calls</span>
+      <span>{updateCalls} in-canister calls</span>
       {sep}
       <span>
         ~{tokensIn.toLocaleString()} in / ~{tokensOut.toLocaleString()} out
@@ -80,12 +80,14 @@ export function StatsBar({
             paddingLeft: '6px',
           }}
         >
-          These numbers describe the current conversation with the on-chain LLM:
+          These numbers describe the current conversation with the on-chain LLM
+          — it runs <em>in-canister</em>, literally inside an Internet Computer
+          canister:
           <br />
           <br />
           <strong>turns</strong> — messages you have sent.
           <br />
-          <strong>on-chain calls</strong> — update calls made to the canister
+          <strong>in-canister calls</strong> — update calls made to the canister
           (one <code>new_chat</code> per conversation, then repeated{' '}
           <code>run_update</code> calls that ingest your prompt and generate the
           reply in batches).
@@ -97,13 +99,13 @@ export function StatsBar({
           not report exact token counts.
           <br />
           <strong>tok/s</strong> — tokens out divided by the{' '}
-          <em>exact on-chain generation time</em>. The controller records the IC
-          system time immediately before and after each LLM call, so this is the
-          LLM&apos;s true generation speed — it excludes network round-trips and
-          the controller itself.
+          <em>exact in-canister generation time</em>. The controller records the
+          IC system time immediately before and after each LLM call, so this is
+          the LLM&apos;s true generation speed — it excludes network round-trips
+          and the controller itself.
           <br />
           <strong>cycles / $</strong> — the <em>exact</em> cycles the LLM spent,
-          measured on-chain: the controller (the only caller allowed to reach
+          measured in-canister: the controller (the only caller allowed to reach
           the LLM) reads the LLM&apos;s live cycle balance right before and
           after each call and sums the drop. Converted at ~1 XDR (~$1.33) per 1T
           cycles.

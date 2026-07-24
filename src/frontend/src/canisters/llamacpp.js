@@ -38,14 +38,6 @@ async function makeControllerActor(authClient) {
   })
 }
 
-// The KV cache quantization the model was loaded with (`load_model`). It must be
-// passed to new_chat & run_update so the session's prompt cache matches the model.
-const CACHE_TYPE_K = 'q8_0'
-
-// Sampling settings recommended on the Qwen2.5 model card
-const TEMP = '0.6'
-const REPEAT_PENALTY = '1.1'
-
 // The Qwen chat template pieces. The system prompt TEXT is user-configurable
 // (the system-prompt test bed); we wrap the chosen text in the template here.
 const DEFAULT_SYSTEM_PROMPT_TEXT = 'You are a helpful assistant.'
@@ -74,52 +66,58 @@ function sleep(ms) {
 // -----------------------------------------------------------------------------
 // Prompt building
 
-function buildNewChatInput() {
+// The KV-cache quantization args must match how the canister loaded the model, so
+// they come from the selected model's config (both q8_0 for the 16K-context setup).
+function cacheTypeArgs(model) {
+  const inf = model.inference
+  const args = ['--cache-type-k', inf.cacheTypeK]
+  if (inf.cacheTypeV) args.push('--cache-type-v', inf.cacheTypeV)
+  return args
+}
+
+function buildNewChatInput(model) {
   return {
-    args: [
-      '--prompt-cache',
-      'my_cache/prompt.cache',
-      '--cache-type-k',
-      CACHE_TYPE_K,
-    ],
+    args: ['--prompt-cache', 'my_cache/prompt.cache', ...cacheTypeArgs(model)],
   }
 }
 
 // The full prompt for ONE turn. First turn: system + user. Later turns: the
 // canister's previous `conversation` (which already holds system + all prior
 // turns) + the new user turn. Ends with the assistant tag so the LLM continues
-// as the assistant. The system prompt only appears on the first turn (empty
-// conversationBase), so switching it requires a New chat to take effect.
+// as the assistant. For Qwen3 (nonThinking) the assistant turn opens with an empty
+// <think>\n\n</think>\n\n block, which puts it in non-thinking mode (clean, direct
+// answers, no <think> tokens). The system prompt only appears on the first turn
+// (empty conversationBase), so switching it requires a New chat to take effect.
 function buildInstructTurnPrompt(
   conversationBase,
   userMessage,
-  systemPromptText
+  systemPromptText,
+  model
 ) {
   const base = conversationBase || wrapSystemPrompt(systemPromptText)
+  const assistantOpen = model.inference.nonThinking
+    ? '<|im_start|>assistant\n<think>\n\n</think>\n\n'
+    : '<|im_start|>assistant\n'
   return (
-    base +
-    '<|im_start|>user\n' +
-    userMessage +
-    '<|im_end|>\n' +
-    '<|im_start|>assistant\n'
+    base + '<|im_start|>user\n' + userMessage + '<|im_end|>\n' + assistantOpen
   )
 }
 
 // run_update args. Ingestion (generating=false): resend the turn prompt, -n 1 so
 // no new tokens are generated yet. Generation (generating=true): empty prompt,
 // -n 512 so it generates until EOG. The canister caps -n at max_tokens_update.
-function runUpdateArgs(turnPrompt, generating) {
+function runUpdateArgs(turnPrompt, generating, model) {
+  const inf = model.inference
   return {
     args: [
       '--prompt-cache',
       'my_cache/prompt.cache',
       '--prompt-cache-all',
-      '--cache-type-k',
-      CACHE_TYPE_K,
+      ...cacheTypeArgs(model),
       '--temp',
-      TEMP,
+      inf.temp,
       '--repeat-penalty',
-      REPEAT_PENALTY,
+      inf.repeatPenalty,
       '-sp',
       '-p',
       generating ? '' : turnPrompt,
@@ -174,7 +172,7 @@ async function withRetry(fn, label, onRetry) {
 
 const notifyRetry = (setWaitAnimationMessage) => (attempt) =>
   setWaitAnimationMessage(
-    `The on-chain LLM is busy, retrying (attempt ${attempt})...`
+    `The in-canister LLM is busy, retrying (attempt ${attempt})...`
   )
 
 // -----------------------------------------------------------------------------
@@ -289,6 +287,7 @@ async function fetchInference({
   userMessage,
   numSteps,
   systemPromptText,
+  selectedModel,
 }) {
   if (DEBUG) console.log('DEBUG-FLOW: fetchInference for message:', userMessage)
 
@@ -304,9 +303,10 @@ async function fetchInference({
 
   // Reset the canister prompt cache ONLY on the first message of a conversation.
   if (chatNew) {
-    setWaitAnimationMessage('Starting a new on-chain conversation')
+    setWaitAnimationMessage('Starting a new in-canister conversation')
     const { result: responseNewChat } = await withRetry(
-      () => actor.new_chat(buildNewChatInput()),
+      () =>
+        actor.new_chat(selectedModel.gguf, buildNewChatInput(selectedModel)),
       'new_chat',
       notifyRetry(setWaitAnimationMessage)
     )
@@ -331,7 +331,8 @@ async function fetchInference({
   const turnPrompt = buildInstructTurnPrompt(
     conversationBaseRef.current,
     userMessage,
-    systemPromptText
+    systemPromptText,
+    selectedModel
   )
 
   // tokens IN = what is NEWLY ingested this turn = the turn prompt minus the
@@ -350,12 +351,13 @@ async function fetchInference({
 
     setWaitAnimationMessage(
       generating
-        ? 'On-chain token generation in progress'
-        : 'On-chain token ingestion in progress'
+        ? 'In-canister token generation in progress'
+        : 'In-canister token ingestion in progress'
     )
 
     const { result, durationMs } = await withRetry(
-      () => actor.run_update(runUpdateArgs(turnPrompt, generating)),
+      () =>
+        actor.run_update(runUpdateArgs(turnPrompt, generating, selectedModel)),
       'run_update',
       notifyRetry(setWaitAnimationMessage)
     )
@@ -446,6 +448,7 @@ export async function doSubmitLlamacpp({
   setChatDisplay,
   setWaitAnimationMessage,
   systemPromptText,
+  selectedModel,
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: doSubmitLlamacpp', { chatNew })
@@ -472,7 +475,7 @@ export async function doSubmitLlamacpp({
 
   try {
     setChatDisplay('WaitAnimation')
-    setWaitAnimationMessage('On-chain token ingestion in progress')
+    setWaitAnimationMessage('In-canister token ingestion in progress')
     const { result: responseHealth } = await withRetry(
       () => actor_.health(),
       'health',
@@ -483,7 +486,7 @@ export async function doSubmitLlamacpp({
       let ermsg = ''
       if ('Err' in responseHealth && 'Other' in responseHealth.Err)
         ermsg = responseHealth.Err.Other
-      throw new Error('The on-chain LLM is not healthy: ' + ermsg)
+      throw new Error('The in-canister LLM is not healthy: ' + ermsg)
     }
 
     await fetchInference({
@@ -502,13 +505,14 @@ export async function doSubmitLlamacpp({
       userMessage,
       numSteps,
       systemPromptText,
+      selectedModel,
     })
   } catch (error) {
     console.error(error)
     setChatDone(true)
     setChatDisplay('CanisterError')
   } finally {
-    setWaitAnimationMessage('Calling the on-chain LLM')
+    setWaitAnimationMessage('Calling the in-canister LLM')
     setIsSubmitting(false)
   }
 }
@@ -587,17 +591,28 @@ export async function getChatsLlamacpp({
 }) {
   if (DEBUG) console.log('DEBUG-FLOW: getChatsLlamacpp ')
 
-  const { canisterId, createActor } = await import(
-    'DeclarationsCanisterLlamacpp_Qwen25_05B_Q8'
+  // Import the did.js idlFactory directly (not the generated index.js, which imports
+  // @icp-sdk/core - not installed). Same approach as makeControllerActor above.
+  // NOTE: Chats is disabled under the hard gate (the LLM is controllers-only), so this
+  // path is dormant; it is kept compiling for when saved-chats returns via the controller.
+  const { idlFactory: llmIdlFactory } = await import(
+    'DeclarationsCanisterLlamacpp_Qwen25_05B_Q8/llama_cpp_qwen25_05b_q8.did.js'
   )
+  const canisterId = process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8
   const identity = await authClient.getIdentity()
-  const actor_ = createActor(canisterId, {
-    agentOptions: { identity, host: IC_HOST_URL },
-  })
+  const agent = new HttpAgent({ identity, host: IC_HOST_URL })
+  if (process.env.DFX_NETWORK !== 'ic') {
+    try {
+      await agent.fetchRootKey()
+    } catch (e) {
+      console.warn('getChats: unable to fetch root key', e)
+    }
+  }
+  const actor_ = Actor.createActor(llmIdlFactory, { agent, canisterId })
   setActorRef(actor_)
 
   try {
-    setWaitAnimationMessage('Retrieving your chats from on-chain storage')
+    setWaitAnimationMessage('Retrieving your chats from in-canister storage')
     setChatDisplay('WaitAnimation')
     const { result: responseHealth } = await withRetry(
       () => actor_.health(),
@@ -609,7 +624,7 @@ export async function getChatsLlamacpp({
       let ermsg = ''
       if ('Err' in responseHealth && 'Other' in responseHealth.Err)
         ermsg = responseHealth.Err.Other
-      throw new Error('The on-chain LLM is not healthy: ' + ermsg)
+      throw new Error('The in-canister LLM is not healthy: ' + ermsg)
     }
 
     const { result: responseGetChats } = await withRetry(
@@ -629,7 +644,7 @@ export async function getChatsLlamacpp({
     console.error(error)
     setChatDisplay('CanisterError')
   } finally {
-    setWaitAnimationMessage('Calling the on-chain LLM')
+    setWaitAnimationMessage('Calling the in-canister LLM')
     setChatDisplay('ChatOutput')
   }
 }

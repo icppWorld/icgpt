@@ -13,6 +13,11 @@
       "type": "custom",
       "wasm": "llms/llama_cpp_canister/build/llama_cpp.wasm"
     },
+    "llama_cpp_qwen3_06b_q8": {
+      "candid": "llms/llama_cpp_canister/build/llama_cpp.did",
+      "type": "custom",
+      "wasm": "llms/llama_cpp_canister/build/llama_cpp.wasm"
+    },
     "icgpt_admin": {
       "type": "motoko",
       "main": "src/backend/main.mo"

@@ -212,16 +212,25 @@ persistent actor {
   // Controller role: proxy inference to the LLM canister(s).
   // =========================================================================
 
-  // Registered LLM canister ids (stable). Actor refs are created on demand -
-  // cheap, and avoids a transient Buffer + upgrade hooks.
-  var llmCanisterIds : [Text] = [];
-  var roundRobinIndex : Nat = 0;
+  // Registered LLMs as (modelKey, canisterId) pairs (stable). modelKey is the gguf
+  // filename the canister serves (matches the frontend MODELS[].gguf); new_chat routes
+  // by it. Actor refs are created on demand - cheap, avoids a transient Buffer.
+  var llmCanisters : [(Text, Text)] = [];
   // A conversation must stay on ONE LLM (its prompt cache lives there), so pin each
-  // caller to the LLM chosen at new_chat; run_update reuses it. (1 LLM => always 0.)
+  // caller to the LLM chosen at new_chat; run_update reuses it.
   var callerLlm : [(Principal, Nat)] = [];
 
   func llmActor(idx : Nat) : LlmTypes.LLMCanister {
-    actor (llmCanisterIds[idx]);
+    actor (llmCanisters[idx].1);
+  };
+  // Index of the LLM serving `model` (the gguf key), or null if not registered.
+  func findLlmByModel(model : Text) : ?Nat {
+    var i = 0;
+    while (i < llmCanisters.size()) {
+      if (llmCanisters[i].0 == model) { return ?i };
+      i += 1;
+    };
+    null;
   };
 
   // The IC management canister, for reading a canister's LIVE cycle balance. This
@@ -237,7 +246,7 @@ persistent actor {
   func llmBalance(idx : Nat) : async Nat {
     try {
       let s = await IC.canister_status({
-        canister_id = Principal.fromText(llmCanisterIds[idx]);
+        canister_id = Principal.fromText(llmCanisters[idx].1);
       });
       s.cycles;
     } catch (_) { 0 };
@@ -257,13 +266,6 @@ persistent actor {
   func setCallerLlm(caller : Principal, idx : Nat) {
     let without = Array.filter<(Principal, Nat)>(callerLlm, func((k, _)) { k != caller });
     callerLlm := Array.append(without, [(caller, idx)]);
-  };
-  func pickLlmForNewChat(caller : Principal) : Nat {
-    let n = llmCanisterIds.size();
-    let idx = if (n == 0) { 0 } else { roundRobinIndex % n };
-    roundRobinIndex += 1;
-    setCallerLlm(caller, idx);
-    idx;
   };
 
   // Force the --prompt-cache path to a per-caller location, so users can't share
@@ -345,23 +347,25 @@ persistent actor {
   };
 
   // ----- admin: LLM registry ------------------------------------------------
-  public shared ({ caller }) func add_llm_canister(canisterId : Text) : async Result.Result<(), Text> {
+  public shared ({ caller }) func add_llm_canister(modelKey : Text, canisterId : Text) : async Result.Result<(), Text> {
     requireOps(caller);
-    if (Array.find<Text>(llmCanisterIds, func(id) { id == canisterId }) != null) {
-      return #err("already registered");
+    // One canister per model key, and one registration per canister.
+    for ((k, id) in llmCanisters.vals()) {
+      if (k == modelKey) { return #err("model already registered") };
+      if (id == canisterId) { return #err("canister already registered") };
     };
-    llmCanisterIds := Array.append(llmCanisterIds, [canisterId]);
+    llmCanisters := Array.append(llmCanisters, [(modelKey, canisterId)]);
     #ok;
   };
   public shared ({ caller }) func remove_llm_canister(canisterId : Text) : async () {
     requireOps(caller);
-    llmCanisterIds := Array.filter<Text>(llmCanisterIds, func(id) { id != canisterId });
+    llmCanisters := Array.filter<(Text, Text)>(llmCanisters, func((_, id)) { id != canisterId });
   };
-  public query ({ caller }) func get_llm_canisters() : async [Text] {
+  public query ({ caller }) func get_llm_canisters() : async [(Text, Text)] {
     if (Principal.isAnonymous(caller) or not (isAdmin(caller) or Principal.isController(caller))) {
       return [];
     };
-    llmCanisterIds;
+    llmCanisters;
   };
 
   /// The live cycle balance of each registered LLM (via the management canister's
@@ -372,7 +376,7 @@ persistent actor {
     requireOps(caller);
     var out : [Nat] = [];
     var i = 0;
-    while (i < llmCanisterIds.size()) {
+    while (i < llmCanisters.size()) {
       out := Array.append(out, [await llmBalance(i)]);
       i += 1;
     };
@@ -384,13 +388,13 @@ persistent actor {
   public shared ({ caller }) func checkAccessToLLMs() : async Result.Result<(), Text> {
     requireOps(caller);
     var i = 0;
-    while (i < llmCanisterIds.size()) {
+    while (i < llmCanisters.size()) {
       try {
         switch (await llmActor(i).check_access()) {
           case (#Ok(_)) {};
-          case (#Err(_)) { return #err("no access to " # llmCanisterIds[i]) };
+          case (#Err(_)) { return #err("no access to " # llmCanisters[i].1) };
         };
-      } catch (_) { return #err("call failed to " # llmCanisterIds[i]) };
+      } catch (_) { return #err("call failed to " # llmCanisters[i].1) };
       i += 1;
     };
     #ok;
@@ -398,22 +402,28 @@ persistent actor {
 
   // ----- inference proxy (streaming preserved: one proxy call per LLM call) --
   public query func health() : async LlmTypes.StatusCodeRecordResult {
-    if (llmCanisterIds.size() > 0) { #Ok({ status_code = 200 }) } else {
+    if (llmCanisters.size() > 0) { #Ok({ status_code = 200 }) } else {
       #Err(#Other("no LLM configured"));
     };
   };
 
-  public shared ({ caller }) func new_chat(input : LlmTypes.InputRecord) : async LlmTypes.OutputRecordResultX {
+  public shared ({ caller }) func new_chat(model : Text, input : LlmTypes.InputRecord) : async LlmTypes.OutputRecordResultX {
     if (not isAllowed(caller)) {
       return errOut("Access denied - request early access");
     };
-    if (llmCanisterIds.size() == 0) { return errOut("no LLM configured") };
+    if (llmCanisters.size() == 0) { return errOut("no LLM configured") };
     // Quota: block STARTING a new conversation once over the call budget (a reply
     // in progress is never cut off, since run_update is not quota-checked).
     if (earlyAccess and not isAdmin(caller) and earlyAccessCallCap > 0 and getUsage(caller).calls >= earlyAccessCallCap) {
       return errOut("You have reached your early-access usage limit.");
     };
-    let idx = pickLlmForNewChat(caller);
+    // Route to the canister serving the requested model, and pin the caller to it for
+    // the rest of the conversation (run_update reuses the pin).
+    let idx = switch (findLlmByModel(model)) {
+      case (?i) { i };
+      case null { return errOut("unknown model: " # model) };
+    };
+    setCallerLlm(caller, idx);
     let u = getUsage(caller);
     setUsage(caller, { u with conversations = u.conversations + 1; lastAt = Time.now() });
     // Bracket the LLM call with its live cycle balance (for exact cost) and the IC
@@ -433,7 +443,7 @@ persistent actor {
       return errOut("Access denied - request early access");
     };
     let idx = getCallerLlm(caller);
-    if (idx >= llmCanisterIds.size()) {
+    if (idx >= llmCanisters.size()) {
       return errOut("session LLM unavailable - start a new chat");
     };
     let balBefore = await llmBalance(idx);

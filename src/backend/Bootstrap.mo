@@ -14,7 +14,7 @@ module {
   // non-static expression, so it must NOT run at module/actor init time.
   let BOOTSTRAP : [(Text, Text)] = [
     // Local dev: anchor 10000 on the localhost:8081 frontend origin.
-    ("w2swp-bl5fj-ay66d-joixu-igewj-vyll3-wquab-sardq-v4j73-tucsm-7qe", "icpp local anchor 10000 (localhost:8081)"),
+    ("yz73o-ujvnd-jgycx-jpz7z-jdxib-iuptm-ndxs5-lr2c6-65ypz-ga4u4-pae", "icpp local anchor 10000 (localhost:8081)"),
     // Mainnet: add the icgpt.onicai.com II principal here at deploy time.
   ];
 

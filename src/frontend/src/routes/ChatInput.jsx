@@ -36,6 +36,7 @@ export function ChatInput({
   setChatDisplay,
   setWaitAnimationMessage,
   systemPromptText,
+  selectedModel,
   chats,
   setChats,
 }) {
@@ -86,6 +87,7 @@ export function ChatInput({
       setChatDisplay,
       setWaitAnimationMessage,
       systemPromptText,
+      selectedModel,
     })
   }
 
