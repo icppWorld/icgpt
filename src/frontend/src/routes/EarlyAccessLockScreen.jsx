@@ -97,11 +97,13 @@ export function EarlyAccessLockScreen({
   return (
     <div>
       <Helmet>
-        <title>ICGPT - early access</title>
+        <title>ICGPT — On-chain Prompt Studio · early access</title>
       </Helmet>
       <div style={wrap}>
         <div style={card}>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>ICGPT</div>
+          <div style={{ fontSize: '18px', fontWeight: 'bold' }}>
+            ICGPT — On-chain Prompt Studio
+          </div>
           <div
             style={{
               fontSize: '18px',

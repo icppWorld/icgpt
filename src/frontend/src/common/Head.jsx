@@ -16,7 +16,7 @@ import 'dracula-ui/styles/dracula-ui.css'
 export function Head() {
   return (
     <Helmet>
-      <title>ICGPT - the OG of on-chain LLMs</title>
+      <title>ICGPT — On-chain Prompt Studio</title>
     </Helmet>
   )
 }

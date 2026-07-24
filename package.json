@@ -1,17 +1,18 @@
 {
   "name": "icgpt",
   "version": "0.1.0",
-  "description": "ICGPT - the OG of on-chain LLMs. Released in September 2023 as the very first app to run LLM inference on-chain, and serving on-chain LLMs on the Internet Computer ever since.",
+  "description": "ICGPT On-chain Prompt Studio - design, test & refine prompts against a real LLM running verifiably inside Internet Computer canisters: the same on-chain LLM the funnAI mAIners run. Built for the funnAI task board (coming soon).",
   "keywords": [
-    "Internet Computer",
+    "prompt design",
     "on-chain LLM",
-    "on-chain AI",
+    "funnAI",
+    "Proof of AI Work",
+    "mAIner",
+    "Internet Computer",
+    "ICP",
+    "onicai",
     "AI",
-    "LLM",
-    "C++",
-    "icpp-pro",
-    "llama2.c",
-    "llama.cpp"
+    "LLM"
   ],
   "scripts": {
     "format:write": "prettier --ignore-path .eslintignore --write .",

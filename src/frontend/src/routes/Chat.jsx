@@ -100,7 +100,7 @@ export function Chat() {
   return (
     <div>
       <Helmet>
-        <title>ICGPT - the OG of on-chain LLMs</title>
+        <title>ICGPT — On-chain Prompt Studio</title>
       </Helmet>
       <main>
         <div className="container-fluid text-center">

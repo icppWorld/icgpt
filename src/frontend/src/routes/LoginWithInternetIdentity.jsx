@@ -3,48 +3,55 @@ import React from 'react'
 import PropTypes from 'prop-types'
 
 import 'dracula-ui/styles/dracula-ui.css'
-import { Box, Card, Button, Divider, Text } from 'dracula-ui'
 
 import { AuthClient } from '@dfinity/auth-client'
 
-import { writeAuthClientDetailsToConsole } from './LoginWithInternetIdentityDebug'
-
 const II_URL = process.env.II_URL
-const IC_HOST_URL = process.env.IC_HOST_URL
 
 let authClient
 
-export function LogInWithInternetIdentity({ setAuthClient }) {
+// The primary call-to-action: signs in with Internet Identity. The label is
+// caller-supplied (the landing frames it as "Request early access"), and the same
+// button serves approved users, who the access gate then routes straight into the app.
+export function LogInWithInternetIdentity({ setAuthClient, label }) {
   async function doLogIn() {
     authClient = await AuthClient.create()
-
-    const handleSucess = () => {
-      // Save the authClient for use in rest of application
-      setAuthClient(authClient)
-      //   writeAuthClientDetailsToConsole(authClient)
-    }
-
     authClient.login({
       identityProvider: II_URL,
-      onSuccess: handleSucess,
+      onSuccess: () => setAuthClient(authClient),
     })
   }
 
   return (
-    <Card variant="subtle" color="black" p="none" m="none">
-      <Divider></Divider>
-      <Button variant="ghost" color="black" size="lg" p="2xl" onClick={doLogIn}>
-        <img src="loop.svg" />
-      </Button>
-
-      <Divider></Divider>
-      <Text color="white" size="xs">
-        Login with your Internet Identity.
-      </Text>
-    </Card>
+    <div style={{ textAlign: 'center' }}>
+      <button
+        type="button"
+        onClick={doLogIn}
+        style={{
+          backgroundColor: '#bd93f9',
+          color: '#21222c',
+          border: 'none',
+          borderRadius: '10px',
+          padding: '12px 26px',
+          fontSize: '16px',
+          fontWeight: 'bold',
+          cursor: 'pointer',
+        }}
+      >
+        {label}
+      </button>
+      <div style={{ marginTop: '10px', fontSize: '12px', color: '#6272a4' }}>
+        Sign in with Internet Identity — approved users go straight in.
+      </div>
+    </div>
   )
 }
 
 LogInWithInternetIdentity.propTypes = {
   setAuthClient: PropTypes.func.isRequired,
+  label: PropTypes.string,
+}
+
+LogInWithInternetIdentity.defaultProps = {
+  label: 'Sign in with Internet Identity',
 }
