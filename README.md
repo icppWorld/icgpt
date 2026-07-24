@@ -259,6 +259,11 @@ only the LLM call, so it excludes network + the controller). NOTE: on a **local 
 cycles are not charged, so the per-call cost shows **0** locally (verify the mechanism with
 `dfx canister call icgpt_admin get_llm_balances`); it reports real cost on the IC.
 
+**Multiple concurrent users.** How the controller isolates each user's prompt cache,
+how a single LLM canister serves many conversations (time-sharing one KV buffer by
+swapping prompt caches), where the throughput ceiling is, and which stats stay exact
+vs. get noisy under load — see [README-concurrency.md](README-concurrency.md).
+
 Deferred follow-ups: controller-owned chat history (restores the Chats
 feature, hidden under the hard gate), multi-LLM round-robin, maintenance/pause flag,
 per-LLM telemetry, RBAC roles.
