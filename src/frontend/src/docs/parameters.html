@@ -1,0 +1,161 @@
+<section>
+  <h1>Parameters</h1>
+  <p class="lead">
+    Turn ICGPT into a real experimentation studio: tune exactly how the model
+    samples each reply, then compare the results side by side.
+  </p>
+
+  <p>
+    Alongside the <a href="/docs/how-it-works">system prompt</a>, the
+    <strong>Parameters</strong> panel exposes the model's sampling and inference
+    settings — temperature, sampling cut-offs, penalties, response length, a
+    thinking toggle and a seed. Every setting is applied to your very next
+    generation, so you can change one knob and immediately see the effect.
+  </p>
+
+  <h2>Opening the panel</h2>
+  <p>
+    Click <strong>⚙ Params</strong> in the toolbar at the top of the studio
+    (next to <strong>⚙ System</strong>).
+  </p>
+  <p>
+    <img
+      src="/docs-img/params-button.png"
+      alt="The studio toolbar with the model dropdown, the System button, and the Params button"
+    />
+  </p>
+
+  <div class="callout">
+    Changes are <strong>live</strong>. Sampling settings apply to the next
+    generation with no need to start a new chat — so you can edit a value and
+    re-send the same prompt to compare. Your settings are remembered per browser
+    and apply to every conversation until you change or reset them.
+  </div>
+
+  <h2>Settings</h2>
+  <p>
+    <img
+      src="/docs-img/params-tier1.png"
+      alt="The Parameters panel showing Temperature, Max response length, Thinking mode and Seed"
+    />
+  </p>
+
+  <h3>Temperature</h3>
+  <p>
+    Creativity vs. obedience. Lower values (0.4–0.6) keep the model focused and
+    reliable for instructions; higher values make it more varied and surprising.
+  </p>
+
+  <h3>Max response length</h3>
+  <p>
+    A cap on how many tokens the reply may use. Because the reply is generated
+    across a sequence of on-chain update calls, a larger cap means more calls —
+    and therefore more time and cycles. The cap is approximate: the canister
+    does not report an exact token count, so ICGPT estimates it and stops the
+    reply once the estimate is reached.
+  </p>
+
+  <h3>Thinking mode <span class="tag">Qwen3 only</span></h3>
+  <p>
+    <a href="/docs/models">Qwen3-0.6B</a> is a hybrid thinking model. With
+    thinking <strong>off</strong> (the default) it answers directly. Turn it
+    <strong>on</strong> and the model reasons through the problem first, then
+    answers — more thorough, but slower and more tokens. Qwen2.5-0.5B has no
+    thinking mode, so the toggle is disabled when it is selected.
+  </p>
+
+  <h3>Seed</h3>
+  <p>
+    Leave the seed on <strong>🎲 Random</strong> for fresh variety each run, or
+    lock it to a number to make a run more repeatable while you tweak the
+    prompt. Because a reply is produced across many update calls over a shared
+    prompt cache, treat a locked seed as best-effort reproducibility, not a hard
+    guarantee.
+  </p>
+
+  <h2>Sampling</h2>
+  <p>
+    The collapsible <strong>Sampling</strong> section holds the finer knobs that
+    shape the token distribution the model draws from.
+  </p>
+  <p>
+    <img
+      src="/docs-img/params-all-tiers.png"
+      alt="The Parameters panel fully expanded, showing the Sampling and Advanced sections"
+    />
+  </p>
+  <ul>
+    <li>
+      <strong>min_p</strong> — drops tokens below a minimum probability
+      (relative to the top token). 0 disables it.
+    </li>
+    <li>
+      <strong>top_p</strong> — nucleus sampling: consider only the most likely
+      tokens whose probabilities sum to this value.
+    </li>
+    <li>
+      <strong>top_k</strong> — consider only the k most likely tokens. 0 turns
+      it off.
+    </li>
+    <li>
+      <strong>repeat_penalty</strong> — penalizes tokens that have already
+      appeared, to curb repetition. 1.0 is no penalty.
+    </li>
+    <li>
+      <strong>repeat_last_n</strong> — how many recent tokens the repeat penalty
+      looks back over.
+    </li>
+    <li>
+      <strong>Stop sequences</strong> — one per line. Generation halts as soon
+      as the output produces any of them.
+    </li>
+  </ul>
+
+  <h2>Advanced</h2>
+  <ul>
+    <li>
+      <strong>presence_penalty</strong> — a flat penalty for reusing any token
+      that has appeared, encouraging new topics. 0 disables it.
+    </li>
+    <li>
+      <strong>frequency_penalty</strong> — scales the penalty by how often a
+      token has appeared, curbing over-used words. 0 disables it.
+    </li>
+  </ul>
+
+  <h2>Reset to recommended</h2>
+  <p>
+    <strong>Reset to recommended</strong> restores every setting to the defaults
+    below — a balanced starting point tuned for Qwen3 in non-thinking mode.
+  </p>
+  <table>
+    <thead>
+      <tr>
+        <th>Setting</th>
+        <th>Recommended</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Temperature</td><td>0.7</td></tr>
+      <tr><td>Max response length</td><td>512</td></tr>
+      <tr><td>Thinking mode</td><td>Off</td></tr>
+      <tr><td>Seed</td><td>Random</td></tr>
+      <tr><td>min_p</td><td>0.0</td></tr>
+      <tr><td>top_p</td><td>0.8</td></tr>
+      <tr><td>top_k</td><td>20</td></tr>
+      <tr><td>repeat_penalty</td><td>1.1</td></tr>
+      <tr><td>repeat_last_n</td><td>64</td></tr>
+      <tr><td>Stop sequences</td><td>none</td></tr>
+      <tr><td>presence_penalty</td><td>0.0</td></tr>
+      <tr><td>frequency_penalty</td><td>0.0</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout">
+    Model <em>loading</em> settings — context size, batch size and KV-cache type
+    — are fixed per canister by the operator and are not part of this panel. See
+    <a href="/docs/models">Models</a> for how each model is tuned.
+  </div>
+
+  <p><a href="/">Request early access →</a></p>
+</section>

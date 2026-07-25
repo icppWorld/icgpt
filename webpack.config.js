@@ -323,6 +323,12 @@ module.exports = (env = {}, args = {}) => {
             to: path.join(__dirname, 'dist', 'frontend'),
           },
           {
+            // screenshots embedded in the public /docs pages (served at /docs-img/)
+            from: path.join(__dirname, 'src', 'frontend/assets/docs-img'),
+            to: path.join(__dirname, 'dist', 'frontend/docs-img'),
+            noErrorOnMissing: true,
+          },
+          {
             from: path.join(__dirname, 'src', 'frontend/domain-info'),
             to: path.join(__dirname, 'dist', 'frontend'),
           },

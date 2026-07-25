@@ -12,6 +12,7 @@
 import overview from './overview.html'
 import howItWorks from './how-it-works.html'
 import models from './models.html'
+import parameters from './parameters.html'
 import earlyAccess from './early-access.html'
 
 export const DOCS = [
@@ -35,6 +36,13 @@ export const DOCS = [
     description:
       'The on-chain models ICGPT serves — Qwen3-0.6B (default) and Qwen2.5-0.5B, each in its own Internet Computer canister.',
     html: models,
+  },
+  {
+    slug: 'parameters',
+    title: 'Parameters',
+    description:
+      'Tune how ICGPT samples each reply — temperature, sampling cut-offs, penalties, response length, a thinking toggle and a seed.',
+    html: parameters,
   },
   {
     slug: 'early-access',
