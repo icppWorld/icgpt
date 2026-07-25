@@ -2,7 +2,13 @@
   "canister_frontend": {
     "ic": "4v3v2-lyaaa-aaaag-abzna-cai"
   },
+  "icgpt_admin": {
+    "ic": "4jtrg-qqaaa-aaaag-ay5iq-cai"
+  },
   "llama_cpp_qwen25_05b_q8": {
     "ic": "6uwoh-vaaaa-aaaag-amema-cai"
+  },
+  "llama_cpp_qwen3_06b_q8": {
+    "ic": "4osxs-5iaaa-aaaag-ay5ia-cai"
   }
 }

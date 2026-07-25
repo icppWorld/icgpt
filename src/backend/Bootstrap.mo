@@ -14,8 +14,11 @@ module {
   // non-static expression, so it must NOT run at module/actor init time.
   let BOOTSTRAP : [(Text, Text)] = [
     // Local dev: anchor 10000 on the localhost:8081 frontend origin.
-    ("yz73o-ujvnd-jgycx-jpz7z-jdxib-iuptm-ndxs5-lr2c6-65ypz-ga4u4-pae", "icpp local anchor 10000 (localhost:8081)"),
-    // Mainnet: add the icgpt.onicai.com II principal here at deploy time.
+    ("pqhdj-j6vfh-j3y75-ds2vp-z6oxz-kgqck-iulkj-boy4m-rwj4a-anfku-cae", "icpp local anchor 10000 (localhost:8081)"),
+    // Mainnet: the icpp-llm deployer identity (also a controller), so the canisters
+    // can be provisioned via dfx. Add the icgpt.onicai.com II principal here too when
+    // UI admin is needed.
+    ("chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae", "icpp-llm deployer (mainnet ops)"),
   ];
 
   // A hardcoded entry that is not yet a real principal (placeholder). We skip it in
