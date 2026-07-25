@@ -61,6 +61,21 @@ function stripSpecialTokens(s) {
   return s.replace(SPECIAL_TOKEN_RE, '')
 }
 
+// The assistant's reply for the CURRENT turn, extracted from the canister's canonical
+// `conversation` text: everything after the last assistant-turn opener, with special
+// tokens stripped and the leading think-block / whitespace trimmed. Streaming the delta
+// of this across run_update calls (see fetchInference) avoids the per-call boundary
+// repeat and works uniformly for every model. For a non-thinking Qwen3 turn the opener
+// is followed by an empty <think>\n\n</think>\n\n block (stripped here); for a thinking
+// turn the model's <think>…</think> reasoning is shown before the answer.
+const ASSISTANT_TURN_MARKER = '<|im_start|>assistant\n'
+function extractReply(conversation) {
+  const idx = conversation.lastIndexOf(ASSISTANT_TURN_MARKER)
+  const raw =
+    idx >= 0 ? conversation.slice(idx + ASSISTANT_TURN_MARKER.length) : ''
+  return stripSpecialTokens(raw).replace(/^\s+/, '')
+}
+
 const DEBUG = true
 
 function sleep(ms) {
@@ -435,13 +450,31 @@ async function fetchInference({
       throw new Error('Call to run_update failed: ' + ermsg)
     }
 
-    // Only a generating call's output is real new text to display. The last
-    // ingestion call (-n 1) emits 1 token that the first generation call
-    // re-emits, so displaying it here would double-print the first word.
+    // Track the canister's canonical `conversation` (the exact cache text, each token
+    // stored once): it is both the cache-matching prefix for the next turn AND the
+    // source of the text we display (below).
+    if (responseUpdate.Ok.conversation) {
+      conversationText = responseUpdate.Ok.conversation
+    }
+
+    // Derive the newly-shown text from `conversation`, NOT the per-call `output`. Each
+    // generation run_update re-emits the PREVIOUS call's last token as its own first
+    // token - a fresh sampler per call can't see the prior token, so it is a mechanical
+    // call-boundary artifact (--repeat-penalty can't fix it). At the 0.6B's ~20 tokens/
+    // call it is nearly invisible; at the 1.7B's 4 tokens/call it is a visible "word
+    // word" stutter. `conversation` has no such duplication, so we stream its delta -
+    // correct for every model, and it also subsumes the old ingestion->first-generation
+    // boundary special-case.
     if (generating) {
-      const chunk = stripSpecialTokens(responseUpdate.Ok.output)
+      const replyClean = extractReply(conversationText)
+      // conversation is append-only, so the reply-so-far starts with what we already
+      // showed; paint only the new suffix. (Guard against any divergence: keep
+      // fullReply canonical and just skip painting that one call.)
+      const chunk = replyClean.startsWith(fullReply)
+        ? replyClean.slice(fullReply.length)
+        : ''
+      fullReply = replyClean
       pendingText += chunk
-      fullReply += chunk
       genTotalMs += durationMs
       genTotalWords += chunk.split(/\s+/).filter(Boolean).length
       const tok = estimateTokens(chunk)
@@ -453,10 +486,6 @@ async function fetchInference({
         tokensOut: s.tokensOut + tok,
         genNs: s.genNs + genNsDelta,
       }))
-    }
-
-    if (responseUpdate.Ok.conversation) {
-      conversationText = responseUpdate.Ok.conversation
     }
 
     // User halt conditions (only meaningful after a generating call produced text):

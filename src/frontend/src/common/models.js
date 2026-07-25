@@ -34,6 +34,20 @@ export const MODELS = [
     },
   },
   {
+    id: 'qwen3-17b-q4',
+    gguf: 'Qwen3-1.7B-Q4_K_M.gguf',
+    hfUrl: 'https://huggingface.co/unsloth/Qwen3-1.7B-GGUF',
+    hfDownloadUrl:
+      'https://huggingface.co/unsloth/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q4_K_M.gguf',
+    finetuneType: 'Instruct',
+    available: true,
+    inference: {
+      cacheTypeK: 'q8_0',
+      cacheTypeV: 'q8_0',
+      supportsThinking: true,
+    },
+  },
+  {
     id: 'qwen25-05b-instruct-q8',
     gguf: 'qwen2.5-0.5b-instruct-q8_0.gguf',
     hfUrl: 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF',

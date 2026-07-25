@@ -455,3 +455,30 @@ download-log-llama-cpp-qwen3-06b-q8-ic:
 	@echo "---"
 	@echo "download-log-llama-cpp-qwen3-06b-q8-ic"
 	python -m llms.llama_cpp_canister.scripts.download --network ic --canister llama_cpp_qwen3_06b_q8 --local-filename main-llama-cpp-qwen3-06b-q8.log main.log
+
+# The sha256 of Qwen3-1.7B-Q4_K_M.gguf, as published on HuggingFace (unsloth).
+QWEN3_17B_Q4_SHA256 ?= b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897
+
+# NOTE: pass an ABSOLUTE path for the model (resolved by the upload script against
+#       its own repo root, not our working directory).
+QWEN3_17B_Q4_GGUF ?= $(CURDIR)/llms/models/unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-Q4_K_M.gguf
+
+# NOTE: the 1.7B is uploaded as "models/model.gguf" (per README-qwen3-1.7B.md),
+#       unlike the smaller models which use "model.gguf". load_model must match.
+.PHONY: upload-llama-cpp-qwen3-17b-q4-local
+upload-llama-cpp-qwen3-17b-q4-local:
+	@echo "---"
+	@echo "upload-llama-cpp-qwen3-17b-q4-local"
+	python -m llms.llama_cpp_canister.scripts.upload --network local --canister llama_cpp_qwen3_17b_q4 --canister-filename models/model.gguf --filetype gguf --hf-sha256 "$(QWEN3_17B_Q4_SHA256)" $(QWEN3_17B_Q4_GGUF)
+
+.PHONY: upload-llama-cpp-qwen3-17b-q4-ic
+upload-llama-cpp-qwen3-17b-q4-ic:
+	@echo "---"
+	@echo "upload-llama-cpp-qwen3-17b-q4-ic"
+	python -m llms.llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen3_17b_q4 --canister-filename models/model.gguf --filetype gguf --hf-sha256 "$(QWEN3_17B_Q4_SHA256)" $(QWEN3_17B_Q4_GGUF)
+
+.PHONY: download-log-llama-cpp-qwen3-17b-q4-ic
+download-log-llama-cpp-qwen3-17b-q4-ic:
+	@echo "---"
+	@echo "download-log-llama-cpp-qwen3-17b-q4-ic"
+	python -m llms.llama_cpp_canister.scripts.download --network ic --canister llama_cpp_qwen3_17b_q4 --local-filename main-llama-cpp-qwen3-17b-q4.log main.log

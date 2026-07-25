@@ -10,5 +10,8 @@
   },
   "llama_cpp_qwen3_06b_q8": {
     "ic": "4osxs-5iaaa-aaaag-ay5ia-cai"
+  },
+  "llama_cpp_qwen3_17b_q4": {
+    "ic": "44ual-ryaaa-aaaag-ay5la-cai"
   }
 }
