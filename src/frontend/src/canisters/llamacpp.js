@@ -51,8 +51,12 @@ function wrapSystemPrompt(text) {
 
 // Special tokens llama.cpp emits with `-sp`. We strip them from what the user
 // SEES, but keep them in the conversation base (from the canister's `conversation`
-// field) so the next turn's cache prefix still matches exactly.
-const SPECIAL_TOKEN_RE = /<\|im_start\|>|<\|im_end\|>|<\|endoftext\|>/g
+// field) so the next turn's cache prefix still matches exactly. In thinking mode
+// (Qwen3) the model emits <think>…</think> around its reasoning; we strip the tags
+// so the reasoning shows as plain text before the answer (a distinct, collapsible
+// reasoning block is a future refinement).
+const SPECIAL_TOKEN_RE =
+  /<\|im_start\|>|<\|im_end\|>|<\|endoftext\|>|<think>|<\/think>/g
 function stripSpecialTokens(s) {
   return s.replace(SPECIAL_TOKEN_RE, '')
 }
@@ -84,18 +88,25 @@ function buildNewChatInput(model) {
 // The full prompt for ONE turn. First turn: system + user. Later turns: the
 // canister's previous `conversation` (which already holds system + all prior
 // turns) + the new user turn. Ends with the assistant tag so the LLM continues
-// as the assistant. For Qwen3 (nonThinking) the assistant turn opens with an empty
-// <think>\n\n</think>\n\n block, which puts it in non-thinking mode (clean, direct
-// answers, no <think> tokens). The system prompt only appears on the first turn
-// (empty conversationBase), so switching it requires a New chat to take effect.
+// as the assistant.
+//
+// Thinking toggle (Qwen3 is a hybrid thinking model): with thinking OFF (default)
+// we end the assistant turn with an empty <think>\n\n</think>\n\n block, which puts
+// it in non-thinking mode (clean, direct answers). With thinking ON, we use the
+// plain assistant open so the model opens its own <think> and reasons first. A
+// non-hybrid model (Qwen2.5) always uses the plain open. The system prompt only
+// appears on the first turn (empty conversationBase), so switching it requires a
+// New chat to take effect.
 function buildInstructTurnPrompt(
   conversationBase,
   userMessage,
   systemPromptText,
-  model
+  model,
+  params
 ) {
   const base = conversationBase || wrapSystemPrompt(systemPromptText)
-  const assistantOpen = model.inference.nonThinking
+  const nonThinking = model.inference.supportsThinking && !params.thinking
+  const assistantOpen = nonThinking
     ? '<|im_start|>assistant\n<think>\n\n</think>\n\n'
     : '<|im_start|>assistant\n'
   return (
@@ -103,21 +114,52 @@ function buildInstructTurnPrompt(
   )
 }
 
+// Map the user's Parameters-panel values to llama.cpp run_update flags. All values
+// are stringified (the canister takes a vec of text). NOTE: any flag the deployed
+// llama.cpp build does not accept must be dropped here (verify before shipping).
+function samplingArgs(params) {
+  const args = [
+    '--temp',
+    String(params.temp),
+    '--top-p',
+    String(params.topP),
+    '--top-k',
+    String(params.topK),
+    '--min-p',
+    String(params.minP),
+    '--repeat-penalty',
+    String(params.repeatPenalty),
+    '--repeat-last-n',
+    String(params.repeatLastN),
+  ]
+  // Seed: pass only when locked to a number; random => let the model pick.
+  if (params.seed !== null && params.seed !== undefined && params.seed !== '') {
+    args.push('--seed', String(params.seed))
+  }
+  // Advanced penalties: emit only when non-zero (0 = the disabled default), so the
+  // common path never sends them (and a build that rejects them only affects users
+  // who set them).
+  if (Number(params.presencePenalty)) {
+    args.push('--presence-penalty', String(params.presencePenalty))
+  }
+  if (Number(params.frequencyPenalty)) {
+    args.push('--frequency-penalty', String(params.frequencyPenalty))
+  }
+  return args
+}
+
 // run_update args. Ingestion (generating=false): resend the turn prompt, -n 1 so
 // no new tokens are generated yet. Generation (generating=true): empty prompt,
-// -n 512 so it generates until EOG. The canister caps -n at max_tokens_update.
-function runUpdateArgs(turnPrompt, generating, model) {
-  const inf = model.inference
+// -n 512 so it generates in batches. The canister caps -n per call at
+// max_tokens_update; the app loop enforces the user's total max-length.
+function runUpdateArgs(turnPrompt, generating, model, params) {
   return {
     args: [
       '--prompt-cache',
       'my_cache/prompt.cache',
       '--prompt-cache-all',
       ...cacheTypeArgs(model),
-      '--temp',
-      inf.temp,
-      '--repeat-penalty',
-      inf.repeatPenalty,
+      ...samplingArgs(params),
       '-sp',
       '-p',
       generating ? '' : turnPrompt,
@@ -125,6 +167,17 @@ function runUpdateArgs(turnPrompt, generating, model) {
       generating ? '512' : '1',
     ],
   }
+}
+
+// Index of the earliest stop-sequence hit in `text`, or -1. Empty stops ignored.
+function firstStopIndex(text, stops) {
+  let best = -1
+  for (const s of stops || []) {
+    if (!s) continue
+    const i = text.indexOf(s)
+    if (i >= 0 && (best < 0 || i < best)) best = i
+  }
+  return best
 }
 
 // -----------------------------------------------------------------------------
@@ -288,6 +341,7 @@ async function fetchInference({
   numSteps,
   systemPromptText,
   selectedModel,
+  params,
 }) {
   if (DEBUG) console.log('DEBUG-FLOW: fetchInference for message:', userMessage)
 
@@ -332,7 +386,8 @@ async function fetchInference({
     conversationBaseRef.current,
     userMessage,
     systemPromptText,
-    selectedModel
+    selectedModel,
+    params
   )
 
   // tokens IN = what is NEWLY ingested this turn = the turn prompt minus the
@@ -357,7 +412,9 @@ async function fetchInference({
 
     const { result, durationMs } = await withRetry(
       () =>
-        actor.run_update(runUpdateArgs(turnPrompt, generating, selectedModel)),
+        actor.run_update(
+          runUpdateArgs(turnPrompt, generating, selectedModel, params)
+        ),
       'run_update',
       notifyRetry(setWaitAnimationMessage)
     )
@@ -400,6 +457,29 @@ async function fetchInference({
 
     if (responseUpdate.Ok.conversation) {
       conversationText = responseUpdate.Ok.conversation
+    }
+
+    // User halt conditions (only meaningful after a generating call produced text):
+    if (generating) {
+      // Stop sequence: truncate the reply at the first hit and halt. The hit is in
+      // the freshly-generated tail, so trim the same overflow off the unpainted
+      // buffer so the painter does not stream past it.
+      const stopIdx = firstStopIndex(fullReply, params.stopSequences)
+      if (stopIdx >= 0) {
+        const overflow = fullReply.length - stopIdx
+        fullReply = fullReply.slice(0, stopIdx)
+        pendingText =
+          pendingText.length >= overflow
+            ? pendingText.slice(0, pendingText.length - overflow)
+            : ''
+        if (DEBUG) console.log('DEBUG-FLOW: stop sequence hit')
+        break
+      }
+      // Max response length (approximate: no exact token count from the canister).
+      if (estimateTokens(fullReply) >= params.maxTokens) {
+        if (DEBUG) console.log('DEBUG-FLOW: max response length reached')
+        break
+      }
     }
 
     if (responseUpdate.Ok.generated_eog) {
@@ -449,6 +529,7 @@ export async function doSubmitLlamacpp({
   setWaitAnimationMessage,
   systemPromptText,
   selectedModel,
+  params,
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: doSubmitLlamacpp', { chatNew })
@@ -506,6 +587,7 @@ export async function doSubmitLlamacpp({
       numSteps,
       systemPromptText,
       selectedModel,
+      params,
     })
   } catch (error) {
     console.error(error)

@@ -15,6 +15,7 @@ export function ModelSelector({
   setSelectedModelId,
   activeSystemPromptName,
   onOpenSystemPrompt,
+  onOpenParams,
 }) {
   const selected = getModelById(selectedModelId)
 
@@ -111,6 +112,16 @@ export function ModelSelector({
         <i className="bi bi-gear" style={{ marginRight: '5px' }}></i>
         System: {activeSystemPromptName}
       </button>
+      <button
+        type="button"
+        aria-label="Edit inference parameters"
+        title="Tune temperature, sampling, thinking mode, …"
+        onClick={onOpenParams}
+        style={{ ...promptButtonStyle, maxWidth: 'none' }}
+      >
+        <i className="bi bi-sliders" style={{ marginRight: '5px' }}></i>
+        Params
+      </button>
     </div>
   )
 }
@@ -120,4 +131,5 @@ ModelSelector.propTypes = {
   setSelectedModelId: PropTypes.func.isRequired,
   activeSystemPromptName: PropTypes.string.isRequired,
   onOpenSystemPrompt: PropTypes.func.isRequired,
+  onOpenParams: PropTypes.func.isRequired,
 }

@@ -14,6 +14,7 @@ import { ChatNewChat } from './ChatNewChat'
 import { Chats } from './Chats'
 import { ChatInput } from './ChatInput'
 import { SystemPromptModal } from './SystemPromptModal'
+import { ParametersModal } from './ParametersModal'
 import { AdminPanel } from './AdminPanel'
 import { doNewChatLlamacpp } from '../canisters/llamacpp'
 
@@ -30,6 +31,7 @@ export function Chat() {
   const { customPrompts, setCustomPrompts } = useOutletContext()
   const { activeSystemPromptId, setActiveSystemPromptId } = useOutletContext()
   const { activeSystemPromptText } = useOutletContext()
+  const { params, setParams } = useOutletContext()
   const { widthChatInput, setWidthChatInput } = useOutletContext()
   const { heightChatInput, setHeightChatInput } = useOutletContext()
   const { inputString, setInputString } = useOutletContext()
@@ -80,6 +82,7 @@ export function Chat() {
 
   const [showSystemPromptModal, setShowSystemPromptModal] =
     React.useState(false)
+  const [showParametersModal, setShowParametersModal] = React.useState(false)
   const [showAdminPanel, setShowAdminPanel] = React.useState(false)
 
   let DisplayComponent
@@ -131,6 +134,7 @@ export function Chat() {
               setSelectedModelId={handleModelChange}
               activeSystemPromptName={activeSystemPromptName}
               onOpenSystemPrompt={() => setShowSystemPromptModal(true)}
+              onOpenParams={() => setShowParametersModal(true)}
             />
             <div
               style={{
@@ -283,6 +287,7 @@ export function Chat() {
               setWaitAnimationMessage={setWaitAnimationMessage}
               systemPromptText={activeSystemPromptText}
               selectedModel={selectedModel}
+              params={params}
               chats={chats}
               setChats={setChats}
             />
@@ -305,6 +310,14 @@ export function Chat() {
           setConversationBase={setConversationBase}
           setStats={setStats}
           setChatDisplay={setChatDisplay}
+        />
+      ) : null}
+      {showParametersModal ? (
+        <ParametersModal
+          params={params}
+          setParams={setParams}
+          selectedModel={selectedModel}
+          onClose={() => setShowParametersModal(false)}
         />
       ) : null}
       {showAdminPanel ? (

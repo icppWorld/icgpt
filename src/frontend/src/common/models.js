@@ -9,12 +9,14 @@
 //   hfDownloadUrl - optional direct .gguf download link
 //   finetuneType  - 'Instruct' (chat template style) — metadata for future models
 //   available     - false => shown as a disabled "coming soon" placeholder
-//   inference     - per-model llama.cpp knobs used to build new_chat/run_update args
-//                   and the prompt template (must match how the canister loaded the model):
-//     cacheTypeK / cacheTypeV - KV-cache quantization (both q8_0 for the 16K-context config)
-//     temp / repeatPenalty    - sampling settings (Qwen model cards)
-//     nonThinking             - true => Qwen3 non-thinking mode: end the assistant turn
-//                               with an empty <think>\n\n</think>\n\n block (no thinking tokens)
+//   inference     - per-model config used to build new_chat/run_update args and the
+//                   prompt template. Sampling knobs (temp, top_p, penalties, …) are NOT
+//                   here — they are user-tunable in the Parameters panel (see params.js).
+//     cacheTypeK / cacheTypeV - KV-cache quantization; MUST match how the canister
+//                               loaded the model (both q8_0 for the 16K-context config)
+//     supportsThinking        - true => hybrid thinking model (Qwen3): the Parameters
+//                               panel's Thinking toggle chooses the assistant-turn opener.
+//                               false (Qwen2.5) => always the plain assistant open.
 
 export const MODELS = [
   {
@@ -28,9 +30,7 @@ export const MODELS = [
     inference: {
       cacheTypeK: 'q8_0',
       cacheTypeV: 'q8_0',
-      temp: '0.6',
-      repeatPenalty: '1.1',
-      nonThinking: true,
+      supportsThinking: true,
     },
   },
   {
@@ -42,9 +42,7 @@ export const MODELS = [
     inference: {
       cacheTypeK: 'q8_0',
       cacheTypeV: 'q8_0',
-      temp: '0.6',
-      repeatPenalty: '1.1',
-      nonThinking: false,
+      supportsThinking: false,
     },
   },
 ]

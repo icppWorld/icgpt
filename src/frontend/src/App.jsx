@@ -15,6 +15,7 @@ import {
   saveActiveId,
   getPromptById,
 } from './common/systemPrompts'
+import { loadParams, saveParams } from './common/params'
 
 import 'bootstrap-icons/font/bootstrap-icons.css'
 
@@ -106,6 +107,11 @@ export function App() {
     customPrompts,
     activeSystemPromptId
   ).text
+
+  // Inference parameters (sampling knobs) tuned in the Parameters panel. A global
+  // workbench: persisted per browser, applied to every generation until reset.
+  const [params, setParams] = React.useState(loadParams())
+  React.useEffect(() => saveParams(params), [params])
 
   // ChatInput
   const [widthChatInput, setWidthChatInput] = React.useState('100%')
@@ -245,6 +251,8 @@ export function App() {
           activeSystemPromptId,
           setActiveSystemPromptId,
           activeSystemPromptText,
+          params,
+          setParams,
           widthChatInput,
           setWidthChatInput,
           heightChatInput,
