@@ -2,6 +2,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { MODELS, getModelById } from './models'
+import { useIsMobile } from './useIsMobile'
 
 // A slim bar pinned to the top of the chat page: the two experiment knobs of
 // the test bed side by side - the model dropdown (option text = full gguf
@@ -18,10 +19,14 @@ export function ModelSelector({
   onOpenParams,
 }) {
   const selected = getModelById(selectedModelId)
+  const isMobile = useIsMobile()
 
+  // Mobile: drop the bar below the top-right Admin/Log-out cluster (which stays at
+  // top:8) and let the controls wrap onto multiple rows instead of overflowing off
+  // the right edge. Desktop: a single centered row pinned to the very top.
   const barStyle = {
     position: 'fixed',
-    top: '6px',
+    top: isMobile ? '46px' : '6px',
     left: 0,
     right: 0,
     zIndex: 950, // above the conversation view (900)
@@ -29,6 +34,8 @@ export function ModelSelector({
     justifyContent: 'center',
     alignItems: 'center',
     gap: '8px',
+    flexWrap: isMobile ? 'wrap' : 'nowrap',
+    padding: isMobile ? '0 10px' : 0,
     pointerEvents: 'none', // only the controls below are interactive
   }
 
@@ -42,7 +49,7 @@ export function ModelSelector({
     fontFamily: 'monospace',
     fontSize: '13px',
     cursor: 'pointer',
-    maxWidth: '80vw',
+    maxWidth: isMobile ? '68vw' : '80vw',
   }
 
   const linkStyle = {
@@ -101,7 +108,7 @@ export function ModelSelector({
         {/* https://icons.getbootstrap.com/ */}
         <i className="bi bi-box-arrow-up-right"></i>
       </a>
-      <span style={dividerStyle} />
+      {isMobile ? null : <span style={dividerStyle} />}
       <button
         type="button"
         aria-label="Edit system prompt"

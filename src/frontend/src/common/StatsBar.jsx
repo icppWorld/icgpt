@@ -2,6 +2,7 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 import { InfoPopover } from './InfoPopover'
+import { useIsMobile } from './useIsMobile'
 
 const USD_PER_TRILLION_CYCLES = 1.33 // ~1 XDR / 1T cycles, 1 XDR ~ $1.33
 
@@ -25,6 +26,8 @@ export function StatsBar({
   genNs,
   heightChatInput,
 }) {
+  const isMobile = useIsMobile()
+
   if (updateCalls === 0 && turns === 0) return null
 
   const usd = (cyclesCost / 1e12) * USD_PER_TRILLION_CYCLES
@@ -33,7 +36,10 @@ export function StatsBar({
 
   const style = {
     position: 'fixed',
-    right: '20px',
+    // Mobile: span the width and left-bound it so the line wraps instead of
+    // running off the left edge. Desktop: a short right-aligned line.
+    right: isMobile ? '12px' : '20px',
+    left: isMobile ? '12px' : 'auto',
     bottom: `${(heightChatInput || 0) + 60}px`,
     zIndex: 1001,
     fontSize: '11px',

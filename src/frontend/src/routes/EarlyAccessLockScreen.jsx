@@ -48,12 +48,39 @@ export function EarlyAccessLockScreen({
   }
 
   async function copyPrincipal() {
+    let ok = false
+    // Preferred path: the async Clipboard API (secure contexts). It can still be
+    // blocked by the app's Permissions-Policy, so we fall back below.
     try {
-      await navigator.clipboard.writeText(principalText)
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(principalText)
+        ok = true
+      }
+    } catch (e) {
+      /* fall through to the execCommand fallback */
+    }
+    // Fallback: a hidden textarea + execCommand('copy'). This works from a click
+    // gesture even when the async Clipboard API is unavailable or policy-blocked.
+    if (!ok) {
+      try {
+        const ta = document.createElement('textarea')
+        ta.value = principalText
+        ta.setAttribute('readonly', '')
+        ta.style.position = 'fixed'
+        ta.style.top = '-1000px'
+        ta.style.opacity = '0'
+        document.body.appendChild(ta)
+        ta.select()
+        ta.setSelectionRange(0, principalText.length)
+        ok = document.execCommand('copy')
+        document.body.removeChild(ta)
+      } catch (e) {
+        ok = false
+      }
+    }
+    if (ok) {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
-    } catch (e) {
-      /* clipboard unavailable — the principal is selectable on screen */
     }
   }
 
