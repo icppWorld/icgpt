@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://github.com/dfinity/icp-cli/raw/refs/tags/v1.2.0/docs/schemas/icp-yaml-schema.json
+#
+# icp-cli project config for ICGPT (successor to dfx.json — dfx is deprecated).
+#
+# Canisters:
+#   - icgpt_admin            : Motoko controller / early-access gate (mops build).
+#   - llama_cpp_qwen*_*      : the three LLM canisters, all installing the SAME prebuilt
+#                              llama_cpp_canister v0.13.0 wasm (models differ by the gguf
+#                              uploaded + load_model args, not the wasm).
+#   - canister_frontend      : the React studio, served by the official IC assets canister
+#                              (honors src/frontend/src/.ic-assets.json5 — CSP + SPA fallback).
+#
+# Environments: `local` (local replica) and `production` (IC mainnet). The three LLM
+# canisters are wired declaratively per environment: 3.75 GiB wasm-memory limit and
+# controllers = [deployer, icgpt_admin] (the hard gate — only icgpt_admin, the controller
+# canister, may reach the LLMs; the deployer principal is kept so we retain management).
+#
+# NOTE: existing canister IDs (local + the live mainnet IDs) are imported into icp's ID
+# store with `icp canister link <name> <principal> -e <env>` — see the Makefile / README.
+# The gguf upload still runs through `make upload-*` (dfx-coupled helper), so dfx stays
+# installed alongside icp during the transition.
+
+canisters:
+  - name: icgpt_admin
+    recipe:
+      type: "@dfinity/motoko@v5.0.0"
+      configuration:
+        shrink: true
+
+  - name: llama_cpp_qwen25_05b_q8
+    recipe:
+      type: "@dfinity/prebuilt@v2.0.0"
+      configuration:
+        path: llms/llama_cpp_canister/build/llama_cpp.wasm
+        sha256: 374885384a1ac69e269a69a7098fda6a4b8e21c7d07d061c895026c1e5cd074f
+
+  - name: llama_cpp_qwen3_06b_q8
+    recipe:
+      type: "@dfinity/prebuilt@v2.0.0"
+      configuration:
+        path: llms/llama_cpp_canister/build/llama_cpp.wasm
+        sha256: 374885384a1ac69e269a69a7098fda6a4b8e21c7d07d061c895026c1e5cd074f
+
+  - name: llama_cpp_qwen3_17b_q4
+    recipe:
+      type: "@dfinity/prebuilt@v2.0.0"
+      configuration:
+        path: llms/llama_cpp_canister/build/llama_cpp.wasm
+        sha256: 374885384a1ac69e269a69a7098fda6a4b8e21c7d07d061c895026c1e5cd074f
+
+  - name: canister_frontend
+    recipe:
+      type: "@dfinity/asset-canister@v2.2.1"
+      configuration:
+        # The webpack build (make icp-env-write + npm run build) produces this dir with the
+        # right canister IDs baked in and .ic-assets.json5 at its root. No recipe-level build.
+        dir: dist/frontend
+
+networks:
+  # Transitional local setup: icp connects to the SAME local replica that dfx runs on
+  # :8080 (dfx.json binds local there). During the migration we keep dfx for the
+  # gguf uploader (llms/.../scripts, dfx-coupled) — so one replica, started with
+  # `dfx start`, is shared by both tools. Post-transition this can become a managed
+  # `icp network start`. The IC (`ic`) network is built in.
+  - name: local
+    mode: connected
+    api-url: http://127.0.0.1:8080
+    http-gateway-url: http://localhost:8080
+    root-key: fetch
+
+environments:
+  - name: local
+    network: local
+    settings: &llm_settings
+      llama_cpp_qwen25_05b_q8:
+        wasm_memory_limit: 3.75gib
+        controllers:
+          - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
+          - icgpt_admin
+      llama_cpp_qwen3_06b_q8:
+        wasm_memory_limit: 3.75gib
+        controllers:
+          - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
+          - icgpt_admin
+      llama_cpp_qwen3_17b_q4:
+        wasm_memory_limit: 3.75gib
+        controllers:
+          - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
+          - icgpt_admin
+
+  - name: production
+    network: ic
+    settings: *llm_settings

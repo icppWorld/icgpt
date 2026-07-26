@@ -145,3 +145,11 @@ deps
 
 
 
+
+# mops build cache (icp-cli @dfinity/motoko recipe)
+.mops/
+
+# icp-cli state: commit the stable mainnet ID mappings (.icp/data/mappings/production.ids.json),
+# ignore the build cache + per-replica local IDs.
+.icp/cache/
+.icp/data/mappings/local.ids.json

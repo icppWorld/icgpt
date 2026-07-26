@@ -1,0 +1,8 @@
+[toolchain]
+moc = "1.4.1"
+
+[canisters]
+icgpt_admin = "src/backend/main.mo"
+
+[dependencies]
+base = "0.16.0"

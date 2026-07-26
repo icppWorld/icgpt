@@ -243,6 +243,67 @@ dfx-identity-whoami:
 dfx-identity-get-principal:
 	@echo -n $(shell dfx identity get-principal)
 
+###########################################################################
+# icp-cli targets (icp.yaml) — the PRIMARY deploy/test path. dfx is deprecated;
+# the dfx-* targets above are kept only as legacy/fallback and for the gguf
+# uploader (make upload-*, which is still dfx-coupled).
+#
+# ENV selects the icp environment:
+#   local      -> the local replica (dfx start binds it on :8080; icp connects via
+#                 the `connected` network in icp.yaml). Shared with the dfx uploader.
+#   production -> IC mainnet.
+# MODE is the install mode for deploys: auto | install | reinstall | upgrade.
+#
+# Existing canister IDs are recorded in the icp ID store with `icp canister link`
+# (see icp-link-ids-*). Update calls are made non-interactive by piping `y`.
+ENV ?= local
+MODE ?= upgrade
+QUERY ?=
+
+.PHONY: icp-project
+icp-project:                 # show the effective icp.yaml config + environments
+	@icp project show
+	@echo "--- environments ---"
+	@icp environment list
+
+.PHONY: icp-status
+icp-status:                  # make icp-status CANISTER_NAME=icgpt_admin ENV=production
+	@icp canister status $(CANISTER_NAME) -e $(ENV)
+
+.PHONY: icp-call
+icp-call:                    # make icp-call CANISTER_NAME=.. CANISTER_METHOD=.. CANISTER_ARGUMENT='(..)' [QUERY=--query] ENV=..
+	@echo y | icp canister call $(CANISTER_NAME) $(CANISTER_METHOD) '$(CANISTER_ARGUMENT)' -e $(ENV) $(QUERY)
+
+.PHONY: icp-deploy
+icp-deploy:                  # deploy ALL canisters to ENV (respects MODE)
+	@icp deploy -e $(ENV) -m $(MODE) -y
+
+.PHONY: icp-deploy-canister
+icp-deploy-canister:         # make icp-deploy-canister CANISTER_NAME=icgpt_admin ENV=.. MODE=..
+	@icp deploy $(CANISTER_NAME) -e $(ENV) -m $(MODE) -y
+
+# Regenerate .env (DFX_NETWORK + app CANISTER_ID_*) from the icp ID store for ENV,
+# so the webpack build embeds the right IDs for the target network.
+.PHONY: icp-env-write
+icp-env-write:
+	@python3 scripts/icp_env_write.py $(ENV)
+
+# Build the frontend for ENV and deploy the assets canister (asset-canister recipe).
+# NODE_ENV=production for mainnet flips webpack to the IC II/host URLs.
+.PHONY: icp-deploy-frontend
+icp-deploy-frontend:
+	@make --no-print-directory icp-env-write ENV=$(ENV)
+	@if [ "$(ENV)" = "production" ]; then NODE_ENV=production npm run build; else npm run build:dev; fi
+	@icp deploy canister_frontend -e $(ENV) -y
+
+# Link an already-deployed canister ID into the icp store (idempotent create the dir first).
+# make icp-link CANISTER_NAME=icgpt_admin PRINCIPAL=4jtrg-... ENV=production
+.PHONY: icp-link
+icp-link:
+	@mkdir -p .icp/data/mappings
+	@[ -f .icp/data/mappings/$(ENV).ids.json ] || echo '{}' > .icp/data/mappings/$(ENV).ids.json
+	@icp canister link $(CANISTER_NAME) $(PRINCIPAL) -e $(ENV) --force
+
 .PHONY: dfx-ping
 dfx-ping:
 	@dfx ping $(NETWORK)
