@@ -70,25 +70,19 @@
   <p>
     All of the behaviour lives in the system prompt — no app code, just words.
     It states the rule and gives one worked example, so the model learns the
-    shape of a good hint:
+    shape of a good hint. It is saved once in the <strong>⚙ System</strong>
+    panel:
   </p>
-  <pre><code>You support a word-guessing game. When asked for a hint about a
-word, give ONE short clue that describes what the thing IS or DOES,
-using other words, without writing the word itself.
-
-Example:
-  Request: Provide a hint about CAT. Do not mention CAT.
-  Hint: A small furry pet that purrs and loves to chase mice.</code></pre>
-  <p>
-    This prompt is saved once in the <strong>⚙ System</strong> panel. Each turn
-    of the game is then just a short request:
-  </p>
-  <pre><code>Provide a hint about HOUSE. Do not mention HOUSE.</code></pre>
   <p>
     <img
       src="/docs-img/wordgame-system-prompt.png"
       alt="The System prompt panel holding the word-guessing-game prompt"
     />
+  </p>
+  <p>
+    Each turn of the game is then just a short request. Below, the same request
+    — a hint about the secret word <em>HOUSE</em> — is answered by two different
+    on-chain models.
   </p>
 
   <h3>Qwen3-1.7B — keeps the secret</h3>
@@ -119,6 +113,24 @@ Example:
       turn.
     </li>
   </ul>
+
+  <h3>Amortizing the system prompt</h3>
+  <p>
+    The numbers above include a one-time cost: those ~95 input tokens are almost
+    entirely the <em>system prompt</em>, ingested on the first message of the
+    conversation. In a real word-game app you pay that ingestion
+    <strong>only once</strong> — it is cached in the model canister — and every
+    following hint request is just a few tokens in and a few tokens out. So the
+    steady-state cost per hint is <strong>much lower</strong> than this first
+    turn suggests.
+  </p>
+  <div class="callout warn">
+    ICGPT's stats today report the cost of a whole turn. We are extending the
+    metrics collection to break out
+    <strong>one-time prompt ingestion</strong> from the
+    <strong>recurring per-request cost</strong>, so you can investigate the true
+    steady-state cycles cost of a repeating task like this one.
+  </div>
 
   <h3>Qwen3-0.6B — leaks the secret, but is cheaper</h3>
   <p>
@@ -166,24 +178,6 @@ Example:
     <a href="/docs/parameters">parameters</a> so a smaller, cheaper model can
     succeed where it otherwise would not.
   </p>
-
-  <h3>Amortizing the system prompt</h3>
-  <p>
-    The numbers above include a one-time cost: those ~95 input tokens are almost
-    entirely the <em>system prompt</em>, ingested on the first message of the
-    conversation. In a real word-game app you pay that ingestion
-    <strong>only once</strong> — it is cached in the model canister — and every
-    following hint request is just a few tokens in and a few tokens out. So the
-    steady-state cost per hint is <strong>much lower</strong> than this first
-    turn suggests.
-  </p>
-  <div class="callout warn">
-    ICGPT's stats today report the cost of a whole turn. We are extending the
-    metrics collection to break out
-    <strong>one-time prompt ingestion</strong> from the
-    <strong>recurring per-request cost</strong>, so you can investigate the true
-    steady-state cycles cost of a repeating task like this one.
-  </div>
 
   <h2>Isolation &amp; concurrency</h2>
   <p>

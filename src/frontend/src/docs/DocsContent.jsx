@@ -21,11 +21,21 @@ export function DocsContent({ html }) {
   React.useEffect(() => {
     if (!location.hash) return undefined
     const id = decodeURIComponent(location.hash.slice(1))
-    const t = setTimeout(() => {
+    // Instant (not smooth) jump, run twice: on a fresh deep-link the page is
+    // still laying out (images below load in), and a smooth animation gets
+    // disturbed mid-flight and overshoots the heading. An instant jump after
+    // first paint lands exactly on it (respecting scroll-margin-top); the 350ms
+    // re-scroll snaps it back if late-loading assets shifted the layout.
+    const scroll = () => {
       const el = document.getElementById(id)
-      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }, 0)
-    return () => clearTimeout(t)
+      if (el) el.scrollIntoView({ block: 'start' })
+    }
+    const raf = requestAnimationFrame(scroll)
+    const t = setTimeout(scroll, 350)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(t)
+    }
   }, [html, location.hash])
 
   function handleClick(e) {
