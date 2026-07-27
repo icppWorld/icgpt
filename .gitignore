@@ -153,3 +153,7 @@ deps
 # ignore the build cache + per-replica local IDs.
 .icp/cache/
 .icp/data/mappings/local.ids.json
+
+# Scratch / task-todo notes for AI agents & humans. Deliberately local-only:
+# they capture in-flight plans and findings, not repo state.
+TMP-*

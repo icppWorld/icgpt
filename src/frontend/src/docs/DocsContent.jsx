@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-use-before-define
 import React from 'react'
 import PropTypes from 'prop-types'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 
 // Renders an author-written HTML fragment (from the docs registry) into a
 // dracula-styled `.docs-prose` container. Safe because the content is
@@ -12,6 +12,21 @@ import { useNavigate } from 'react-router-dom'
 // target="_blank" link behave normally.
 export function DocsContent({ html }) {
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Deep-link support: when the page loads (or the hash changes) with a
+  // `#section` fragment, scroll to that element. The docs HTML is injected via
+  // dangerouslySetInnerHTML, so the target only exists AFTER this component
+  // renders — the browser's native hash-scroll fires too early and misses it.
+  React.useEffect(() => {
+    if (!location.hash) return undefined
+    const id = decodeURIComponent(location.hash.slice(1))
+    const t = setTimeout(() => {
+      const el = document.getElementById(id)
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 0)
+    return () => clearTimeout(t)
+  }, [html, location.hash])
 
   function handleClick(e) {
     const a = e.target.closest('a')

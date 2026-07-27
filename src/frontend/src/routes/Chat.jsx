@@ -146,6 +146,29 @@ export function Chat() {
                 gap: '8px',
               }}
             >
+              <a
+                href="/docs"
+                target="_blank"
+                rel="noreferrer"
+                title="Open the ICGPT docs in a new tab"
+                style={{
+                  backgroundColor: '#21222c',
+                  color: '#8be9fd',
+                  border: '1px solid #44475a',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  fontFamily: 'monospace',
+                  fontSize: '13px',
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+              >
+                <i className="bi bi-book" style={{ marginRight: '5px' }}></i>
+                Docs
+              </a>
               {access?.isAdmin ? (
                 <button
                   type="button"

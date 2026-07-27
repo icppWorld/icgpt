@@ -49,6 +49,142 @@
     excluding network round-trips and the controller itself.
   </p>
 
+  <h2 id="worked-example">
+    A worked example: the word-guessing game<a
+      href="#worked-example"
+      class="anchor"
+      aria-label="Link to this section"
+      >#</a
+    >
+  </h2>
+  <p>
+    Here is a concrete on-chain AI task, and how ICGPT helps you optimize it. We
+    want the model to run a <strong>word-guessing game</strong>: given a secret
+    word, it must return <strong>one short hint</strong> that describes the
+    thing — <em>without ever writing the word itself</em>. Keeping the secret is
+    the whole game, so the model has to reliably obey a negation (&ldquo;do not
+    mention the word&rdquo;).
+  </p>
+
+  <h3>The prompt design</h3>
+  <p>
+    All of the behaviour lives in the system prompt — no app code, just words.
+    It states the rule and gives one worked example, so the model learns the
+    shape of a good hint:
+  </p>
+  <pre><code>You support a word-guessing game. When asked for a hint about a
+word, give ONE short clue that describes what the thing IS or DOES,
+using other words, without writing the word itself.
+
+Example:
+  Request: Provide a hint about CAT. Do not mention CAT.
+  Hint: A small furry pet that purrs and loves to chase mice.</code></pre>
+  <p>
+    This prompt is saved once in the <strong>⚙ System</strong> panel. Each turn
+    of the game is then just a short request:
+  </p>
+  <pre><code>Provide a hint about HOUSE. Do not mention HOUSE.</code></pre>
+  <p>
+    <img
+      src="/docs-img/wordgame-system-prompt.png"
+      alt="The System prompt panel holding the word-guessing-game prompt"
+    />
+  </p>
+
+  <h3>Qwen3-1.7B — keeps the secret</h3>
+  <p>
+    With the 1.7B model the hint is clean: it describes a house without ever
+    saying the word.
+  </p>
+  <p>
+    <img
+      src="/docs-img/wordgame-qwen3-17b.png"
+      alt="Qwen3-1.7B giving a hint about HOUSE without leaking the word"
+    />
+  </p>
+  <p>ICGPT measured this exact turn, fully on-chain:</p>
+  <ul>
+    <li><strong>1 turn</strong> — one request/response exchange.</li>
+    <li>
+      <strong>30 in-canister calls</strong> — the update calls needed to ingest
+      the prompt and generate the hint.
+    </li>
+    <li>
+      <strong>~95 in / ~15 out tokens</strong> — approximate prompt tokens
+      ingested and hint tokens generated.
+    </li>
+    <li><strong>~0.7 tok/s</strong> — measured generation speed.</li>
+    <li>
+      <strong>640.93B cycles (~$0.8524)</strong> — the exact cycle cost of this
+      turn.
+    </li>
+  </ul>
+
+  <h3>Qwen3-0.6B — leaks the secret, but is cheaper</h3>
+  <p>
+    The smaller 0.6B model gives the game away: its hint literally contains the
+    word <em>house</em>.
+  </p>
+  <p>
+    <img
+      src="/docs-img/wordgame-qwen3-06b.png"
+      alt="Qwen3-0.6B giving a hint about HOUSE but leaking the word house"
+    />
+  </p>
+  <ul>
+    <li><strong>1 turn</strong></li>
+    <li><strong>8 in-canister calls</strong></li>
+    <li><strong>~95 in / ~14 out tokens</strong></li>
+    <li><strong>~2.9 tok/s</strong></li>
+    <li><strong>154.99B cycles (~$0.2061)</strong></li>
+  </ul>
+  <p>
+    So the 0.6B is roughly
+    <strong>4&times; faster and ~4&times; cheaper</strong>
+    — but it fails the task. Small models are weaker at
+    <strong>following negations</strong> and <strong>keeping a secret</strong>:
+    told &ldquo;do not mention HOUSE,&rdquo; the 0.6B reaches for the most
+    obvious word anyway, while the 1.7B has enough capacity to hold the
+    constraint and describe around it.
+  </p>
+
+  <div class="callout">
+    <strong>Why is the better model the more expensive one?</strong> It comes
+    down to how many tokens each canister may generate per update call. The 1.7B
+    model is capped at <strong>4 tokens per update call</strong>, while the 0.6B
+    can do <strong>20 tokens per update call</strong> — both limits chosen to
+    stay under the Internet Computer's per-message instruction limit. Producing
+    the ~15-token hint therefore takes the 1.7B many more calls (hence 30 vs 8
+    in-canister calls, and the higher cost). Bigger model → fewer tokens per
+    call → more calls → more cycles.
+  </div>
+
+  <p>
+    This is exactly why <strong>prompt optimization matters</strong>. The goal
+    is to get the quality you need at the lowest on-chain cost — by choosing the
+    right model, sharpening the system prompt, and tuning the
+    <a href="/docs/parameters">parameters</a> so a smaller, cheaper model can
+    succeed where it otherwise would not.
+  </p>
+
+  <h3>Amortizing the system prompt</h3>
+  <p>
+    The numbers above include a one-time cost: those ~95 input tokens are almost
+    entirely the <em>system prompt</em>, ingested on the first message of the
+    conversation. In a real word-game app you pay that ingestion
+    <strong>only once</strong> — it is cached in the model canister — and every
+    following hint request is just a few tokens in and a few tokens out. So the
+    steady-state cost per hint is <strong>much lower</strong> than this first
+    turn suggests.
+  </p>
+  <div class="callout warn">
+    ICGPT's stats today report the cost of a whole turn. We are extending the
+    metrics collection to break out
+    <strong>one-time prompt ingestion</strong> from the
+    <strong>recurring per-request cost</strong>, so you can investigate the true
+    steady-state cycles cost of a repeating task like this one.
+  </div>
+
   <h2>Isolation &amp; concurrency</h2>
   <p>
     Every user's conversation lives in its own prompt-cache file inside the

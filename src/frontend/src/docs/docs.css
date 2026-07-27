@@ -31,6 +31,7 @@
   margin: 40px 0 12px;
   padding-top: 8px;
   border-top: 1px solid #44475a;
+  scroll-margin-top: 70px; /* clear the sticky docs header on #anchor jumps */
 }
 
 .docs-prose h3 {
@@ -38,6 +39,19 @@
   font-weight: 700;
   color: #bd93f9;
   margin: 26px 0 8px;
+  scroll-margin-top: 70px;
+}
+
+/* Self-linking section anchor: a subtle "#" after a heading — click to grab a
+   deep link to that section. */
+.docs-prose .anchor {
+  margin-left: 8px;
+  color: #44556a;
+  font-weight: 400;
+  text-decoration: none;
+}
+.docs-prose .anchor:hover {
+  color: #8be9fd;
 }
 
 .docs-prose p {
