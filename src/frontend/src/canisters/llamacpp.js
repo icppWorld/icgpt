@@ -10,32 +10,16 @@
 // (--prompt-cache-all). To continue a conversation we resend the growing
 // conversation as the prompt; it prefix-matches the cache and only ingests the new
 // turn. new_chat (cache reset) fires ONLY on the first message of a fresh conversation.
-import { Actor, HttpAgent } from '@dfinity/agent'
-import { idlFactory as controllerIdlFactory } from 'DeclarationsCanisterIcgptAdmin/icgpt_admin.did.js'
+import { idlFactory as controllerIdlFactory } from './idl/icgpt_admin.idl.js'
+import { canisterIdFor, makeActor } from './agent'
 
-const IC_HOST_URL = process.env.IC_HOST_URL
-const CONTROLLER_CANISTER_ID = process.env.CANISTER_ID_ICGPT_ADMIN
+const CONTROLLER_CANISTER_ID = canisterIdFor('icgpt_admin')
 
 // Build an actor for the controller canister (which exposes new_chat/run_update/
-// health). Same idlFactory + @dfinity/agent approach as admin.js (the generated
-// index.js imports @icp-sdk/core, which this project doesn't install).
-async function makeControllerActor(authClient) {
-  const identity = await authClient.getIdentity()
-  const agent = new HttpAgent({ identity, host: IC_HOST_URL })
-  if (process.env.DFX_NETWORK !== 'ic') {
-    try {
-      await agent.fetchRootKey()
-    } catch (e) {
-      console.warn(
-        'controller: unable to fetch root key (is the replica up?)',
-        e
-      )
-    }
-  }
-  return Actor.createActor(controllerIdlFactory, {
-    agent,
-    canisterId: CONTROLLER_CANISTER_ID,
-  })
+// health). Built from the committed idlFactory + @icp-sdk/core (see ./agent.js);
+// the canister id + root key come from the ic_env cookie.
+function makeControllerActor(authClient) {
+  return makeActor(controllerIdlFactory, CONTROLLER_CANISTER_ID, authClient)
 }
 
 // The Qwen chat template pieces. The system prompt TEXT is user-configurable
@@ -702,24 +686,13 @@ export async function getChatsLlamacpp({
 }) {
   if (DEBUG) console.log('DEBUG-FLOW: getChatsLlamacpp ')
 
-  // Import the did.js idlFactory directly (not the generated index.js, which imports
-  // @icp-sdk/core - not installed). Same approach as makeControllerActor above.
+  // Import the committed did.js idlFactory directly (see ./idl/). Same @icp-sdk/core
+  // actor approach as makeControllerActor above.
   // NOTE: Chats is disabled under the hard gate (the LLM is controllers-only), so this
   // path is dormant; it is kept compiling for when saved-chats returns via the controller.
-  const { idlFactory: llmIdlFactory } = await import(
-    'DeclarationsCanisterLlamacpp_Qwen25_05B_Q8/llama_cpp_qwen25_05b_q8.did.js'
-  )
-  const canisterId = process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8
-  const identity = await authClient.getIdentity()
-  const agent = new HttpAgent({ identity, host: IC_HOST_URL })
-  if (process.env.DFX_NETWORK !== 'ic') {
-    try {
-      await agent.fetchRootKey()
-    } catch (e) {
-      console.warn('getChats: unable to fetch root key', e)
-    }
-  }
-  const actor_ = Actor.createActor(llmIdlFactory, { agent, canisterId })
+  const { idlFactory: llmIdlFactory } = await import('./idl/llama_cpp.idl.js')
+  const canisterId = canisterIdFor('llama_cpp_qwen25_05b_q8')
+  const actor_ = await makeActor(llmIdlFactory, canisterId, authClient)
   setActorRef(actor_)
 
   try {

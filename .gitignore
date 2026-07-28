@@ -104,15 +104,10 @@ ENV/
 .DS_Store
 **/.DS_Store
 
-# dfx temporary files
-#
-# Note on src/declarations, which is commited to source control:
-# From https://smartcontracts.org/docs/developers-guide/tutorials/explore-templates.html
-#   src/declarations is created during `dfx build` & include copies of the folders from .dfx/local, except for the wasm. 
-#   They do not contain any secrets, and we recommend committing these files along with the rest of your source code.
-#
-.dfx/
-src/declarations
+# dfx's generated src/declarations/ is retired. The frontend now uses committed,
+# didc-generated candid idlFactory bindings in src/frontend/src/canisters/idl/ (which
+# ARE committed). This defensive ignore keeps any future @icp-sdk/bindgen output out of git.
+**/src/bindings/
 
 # frontend code
 node_modules/

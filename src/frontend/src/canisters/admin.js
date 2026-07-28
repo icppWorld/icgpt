@@ -1,95 +1,81 @@
 // Client for the icgpt_admin canister (early-access gate + admin management).
 //
-// We build the actor from the generated candid idlFactory + @dfinity/agent
-// directly (the app's SDK), instead of the generated index.js, because dfx 0.32
-// generates that index against @icp-sdk/core, which this project doesn't install.
-import { Actor, HttpAgent } from '@dfinity/agent'
-import { Principal } from '@dfinity/principal'
-import { idlFactory } from 'DeclarationsCanisterIcgptAdmin/icgpt_admin.did.js'
+// Actors are built from the committed candid idlFactory (didc-generated, see
+// ./idl/icgpt_admin.idl.js) + @icp-sdk/core. The canister id + root key come from
+// the ic_env cookie at runtime (see ./agent.js).
+import { Principal } from '@icp-sdk/core/principal'
+import { idlFactory } from './idl/icgpt_admin.idl.js'
+import { canisterIdFor, makeActor } from './agent'
 
-const IC_HOST_URL = process.env.IC_HOST_URL
-const CANISTER_ID = process.env.CANISTER_ID_ICGPT_ADMIN
+const CANISTER_ID = canisterIdFor('icgpt_admin')
 
-async function makeActor(authClient) {
-  const identity = await authClient.getIdentity()
-  const agent = new HttpAgent({ identity, host: IC_HOST_URL })
-  // Local replica: fetch the root key so the agent can verify certificates.
-  if (process.env.DFX_NETWORK !== 'ic') {
-    try {
-      await agent.fetchRootKey()
-    } catch (e) {
-      console.warn(
-        'icgpt_admin: unable to fetch root key (is the replica up?)',
-        e
-      )
-    }
-  }
-  return Actor.createActor(idlFactory, { agent, canisterId: CANISTER_ID })
+function adminActor(authClient) {
+  return makeActor(idlFactory, CANISTER_ID, authClient)
 }
 
 // ----- access (any signed-in caller) --------------------------------------
 export async function getMyAccess(authClient) {
-  return (await makeActor(authClient)).myAccess()
+  return (await adminActor(authClient)).myAccess()
 }
 
 export async function requestAccess(authClient, useCase) {
-  return (await makeActor(authClient)).requestAccess(useCase)
+  return (await adminActor(authClient)).requestAccess(useCase)
 }
 
 // ----- admin --------------------------------------------------------------
 export async function listRequests(authClient) {
-  return (await makeActor(authClient)).listRequests()
+  return (await adminActor(authClient)).listRequests()
 }
 
 export async function listWhitelist(authClient) {
-  return (await makeActor(authClient)).listWhitelist()
+  return (await adminActor(authClient)).listWhitelist()
 }
 
 export async function listAdmins(authClient) {
-  return (await makeActor(authClient)).listAdmins()
+  return (await adminActor(authClient)).listAdmins()
 }
 
 export async function setEarlyAccess(authClient, enabled) {
-  return (await makeActor(authClient)).setEarlyAccess(enabled)
+  return (await adminActor(authClient)).setEarlyAccess(enabled)
 }
 
 // principal args from the lists are already Principal objects; pass them through.
 export async function approveRequest(authClient, principal) {
-  return (await makeActor(authClient)).approve(principal)
+  return (await adminActor(authClient)).approve(principal)
 }
 
 export async function rejectRequest(authClient, principal) {
-  return (await makeActor(authClient)).reject(principal)
+  return (await adminActor(authClient)).reject(principal)
 }
 
 export async function removeFromWhitelist(authClient, principal) {
-  return (await makeActor(authClient)).removeFromWhitelist(principal)
+  return (await adminActor(authClient)).removeFromWhitelist(principal)
 }
 
 export async function removeAdmin(authClient, principal) {
-  return (await makeActor(authClient)).removeAdmin(principal)
+  return (await adminActor(authClient)).removeAdmin(principal)
 }
 
 // text-entered principals (admin typed them) -> Principal.
 export async function addToWhitelist(authClient, principalText, email, note) {
-  const actor = await makeActor(authClient)
+  const actor = await adminActor(authClient)
   return actor.addToWhitelist(Principal.fromText(principalText), email, note)
 }
 
 export async function addAdmin(authClient, principalText, who) {
-  const actor = await makeActor(authClient)
+  const actor = await adminActor(authClient)
   return actor.addAdmin(Principal.fromText(principalText), who)
 }
 
 // ----- usage metering (controller) ----------------------------------------
 export async function listUsage(authClient) {
-  return (await makeActor(authClient)).listUsage()
+  return (await adminActor(authClient)).listUsage()
 }
 
 export async function getEarlyAccessCallCap(authClient) {
-  return (await makeActor(authClient)).getEarlyAccessCallCap()
+  return (await adminActor(authClient)).getEarlyAccessCallCap()
 }
 
 export async function setEarlyAccessCallCap(authClient, n) {
-  return (await makeActor(authClient)).setEarlyAccessCallCap(BigInt(n))
+  return (await adminActor(authClient)).setEarlyAccessCallCap(BigInt(n))
 }

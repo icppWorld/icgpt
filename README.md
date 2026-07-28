@@ -86,7 +86,8 @@ chmod +x .git/hooks/pre-commit
 
 ICGPT deploys with **icp-cli** (`icp`), the successor to the now-deprecated `dfx`.
 The project is described by `icp.yaml` (canisters, recipes, environments). `dfx` is
-still installed, but only for the local replica and the gguf uploader (see below).
+**fully retired** — the local network, the gguf uploader and the frontend all run on
+icp-cli.
 
 Install the toolchain:
 
@@ -94,12 +95,12 @@ Install the toolchain:
 conda activate icgpt
 npm install
 
-# icp-cli (the primary tool) + its Motoko build deps (mops, ic-wasm)
+# icp-cli (the deploy/test tool) + its Motoko build deps (mops, ic-wasm)
 npm install -g @icp-sdk/icp-cli   # provides `icp`; also installs ic-wasm
 # mops (Motoko package manager, used by the @dfinity/motoko recipe):
 #   see https://mops.one/docs/install
 
-make install-all-ubuntu  # for Ubuntu.  (installs dfx too — kept for the replica + uploader)
+make install-all-ubuntu  # for Ubuntu.
 make install-all-mac     # for Mac.
                          # see Makefile to replicate for other systems
 
@@ -109,7 +110,6 @@ source ~/.profile
 # Verify the tools are available
 icp --version    # >= 1.2.0
 mops --version
-dfx --version    # legacy: local replica + gguf uploader only
 
 # Inspect the icp project (effective config + environments)
 make icp-project
@@ -130,12 +130,19 @@ make all-static-check
   3.75 GiB `wasm_memory_limit` and `controllers: [deployer, icgpt_admin]` (the hard gate)
   — so `icp deploy` wires the controller relationship declaratively (no manual
   `update-settings`).
-- **Canister IDs** live in an icp ID store (`.icp/data/mappings/<env>.ids.json`), imported
-  with `icp canister link`. The mainnet mappings (`production.ids.json`) are committed; the
-  per-replica `local.ids.json` is git-ignored.
-- **Transition note**: the local `network` in `icp.yaml` is `mode: connected` to the dfx
-  replica on `:8080`. During the transition the local replica is started with `dfx start`
-  (the gguf uploader is still dfx-coupled), and icp connects to it — one replica, both tools.
+- **Canister IDs** live in an icp ID store. The **mainnet** mappings
+  (`.icp/data/mappings/production.ids.json`) are committed. The `local` network is
+  `mode: managed`, so its ids live in the disposable `.icp/cache/mappings/local.ids.json`
+  (git-ignored, recreated on each `icp deploy`).
+- **Local network**: the `local` network in `icp.yaml` is `mode: managed` with
+  `gateway.port: 0` — `icp network start` runs a project-local replica on a random
+  ephemeral port (so parallel projects/worktrees never collide). The port changes on
+  every start; read it back with `icp network status -e local --json` — never hardcode it.
+- **Runtime canister IDs**: there is no build-time `.env`. `icp deploy` injects
+  `PUBLIC_CANISTER_ID:<name>` into every canister; the asset canister serves those + the
+  replica root key as the `ic_env` cookie, which the frontend reads at runtime via
+  `safeGetCanisterEnv()` (`@icp-sdk/core`). Locally the webpack dev server sets the same
+  cookie (see `webpack.config.js`).
 
 # Development
 
@@ -147,7 +154,8 @@ ICGPT's LLM backend runs on [llama_cpp_canister](https://github.com/onicai/llama
 
 The `llms/llama_cpp_canister` folder contains an unzipped official release of
 [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister), currently
-**v0.12.0** (see `llms/llama_cpp_canister/version.txt`).
+**v0.14.0** (see `llms/llama_cpp_canister/version.txt`). v0.14.0 is dfx-free: it ships
+its own `icp.yaml` and an icp-native gguf uploader (`scripts/`).
 
 The wasm & did are not committed (see .gitignore), so after a fresh clone you must
 unzip the release yourself. To do that, or to upgrade to a newer release, follow
@@ -168,53 +176,69 @@ $ shasum -a 256 llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruc
 ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e
 ```
 
+### LLM model configuration (load_model + set_max_tokens) — SINGLE SOURCE OF TRUTH
+
+Each LLM canister is (re)configured after **every** install/upgrade with its `load_model`
+args and `set_max_tokens`. These live in the canister's **main** memory, which an upgrade
+resets — so they MUST be re-run after every install/upgrade (the gguf itself is preserved
+in stable memory across an upgrade, so it does NOT need re-uploading; only after a
+`reinstall` must you re-upload the gguf first). The exact settings for the three production
+models are:
+
+| canister                        | model (in canister) | `load_model` args                                                                                     | `set_max_tokens` query / update |
+| ------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `llama_cpp_qwen3_06b_q8`  (Qwen3-0.6B)      | `model.gguf`        | `--model model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 64 --ubatch-size 64 --ctx-size 16384` | 1 / 20                          |
+| `llama_cpp_qwen25_05b_q8` (Qwen2.5-0.5B)    | `model.gguf`        | identical to Qwen3-0.6B (line above)                                                                    | 1 / 20                          |
+| `llama_cpp_qwen3_17b_q4`  (Qwen3-1.7B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --batch-size 8 --ubatch-size 8 --ctx-size 16384`                            | 1 / 4                           |
+
+Notes:
+
+- The `--model` path must match where the gguf was uploaded: `model.gguf` for the 0.5B/0.6B,
+  `models/model.gguf` for the 1.7B (see the `make upload-*` targets).
+- The 1.7B is capped at `max_tokens_update = 4` (vs 20 for the small models) to stay under
+  the IC per-message instruction limit — a bigger model does less work per update call, so
+  it needs more update calls per reply.
+- After **every** install/upgrade also re-arm the in-memory timers
+  (`cache_cleanup_start_timer`, `cycle_balance_start_timer`) and, under the hard gate, keep
+  `set_access` at level 0 (controllers only). See the walkthrough below for the full call
+  sequence, and "Production provisioning reference" for the mainnet variant.
+
 ## Deploy ICGPT to local network
 
 Once the model gguf is in place, as described in the previous step, you can deploy everything with:
 
 ```bash
-# ICGPT serves THREE models, each in its own canister (same llama_cpp v0.13.0 wasm):
+# ICGPT serves THREE models, each in its own canister (same llama_cpp v0.14.0 wasm):
 #   llama_cpp_qwen3_06b_q8  (Qwen3-0.6B, the default)   16K ctx, max_tokens_update 20
 #   llama_cpp_qwen25_05b_q8 (Qwen2.5-0.5B)              16K ctx, max_tokens_update 20
 #   llama_cpp_qwen3_17b_q4  (Qwen3-1.7B, Q4_K_M)         16K ctx, max_tokens_update 4,
 #                                                        loaded from models/model.gguf, batch 8
 #
-# TRANSITIONAL local setup: the local replica is run by dfx (the gguf uploader is still
-# dfx-coupled), and icp connects to it via the `mode: connected` local network in icp.yaml.
-# So: dfx starts the replica + CREATES the canisters + uploads ggufs; icp builds + installs
-# + calls. One replica on :8080, shared by both tools.
+# Everything runs on icp-cli against a project-local MANAGED network (ephemeral port).
 
-#NOTE: Be aware of the environment setting `DFX_NETWORK` in your shell. It might interfere.
-unset DFX_NETWORK
+# Start the local network. icp seeds every local identity (incl. icpp-llm) with cycles.
+make icp-network-start        # = icp network start -d ; prints gateway_url / api_url
 
-# Start the local replica (dfx) + local Internet Identity
-dfx start --clean
-dfx nns install
+# 1) Build + deploy all canisters. Deploy AS a controller identity — icpp-llm is the
+#    deployer principal listed in icp.yaml's controllers=[deployer, icgpt_admin], so
+#    deploying as it avoids locking yourself out. This mops-builds icgpt_admin, installs
+#    the prebuilt llama wasm into the 3 LLM canisters (with their 3.75 GiB wasm-memory
+#    limit + controllers), and deploys the frontend assets canister. icp also injects
+#    PUBLIC_CANISTER_ID:* into every canister → the asset canister's ic_env cookie.
+icp deploy -e local --identity icpp-llm -y
 
-# 1) Create the canisters with dfx (icp's create path needs its own network infra, so on
-#    the connected dfx replica we let dfx create), then LINK the IDs into icp's store.
-dfx canister create icgpt_admin llama_cpp_qwen25_05b_q8 llama_cpp_qwen3_06b_q8 \
-                    llama_cpp_qwen3_17b_q4 canister_frontend --network local
-for c in icgpt_admin llama_cpp_qwen25_05b_q8 llama_cpp_qwen3_06b_q8 llama_cpp_qwen3_17b_q4 canister_frontend; do
-  make icp-link CANISTER_NAME=$c PRINCIPAL=$(dfx canister id $c --network local) ENV=local
-done
-
-# 2) Build + install everything with icp. This mops-builds icgpt_admin, installs the prebuilt
-#    llama wasm into the 3 LLM canisters, and — from icp.yaml settings — sets each LLM's
-#    3.75 GiB wasm-memory-limit and controllers=[deployer, icgpt_admin] (part (a) of the hard
-#    gate, now declarative). MODE=install for the first deploy; upgrade preserves state after.
-make icp-deploy ENV=local MODE=install
-
-# 3) Upload the gguf for each model (dfx-coupled uploader — needs the model files in place):
+# 2) Upload the gguf for each model (icp-native uploader — needs the model files in place
+#    and the network running):
 make upload-llama-cpp-qwen25-05b-q8-local
 make upload-llama-cpp-qwen3-06b-q8-local
 make upload-llama-cpp-qwen3-17b-q4-local
+# If a big-model upload traps with IC0207 (out of cycles), top up the canister first, e.g.:
+#   make icp-topup CANISTER_NAME=llama_cpp_qwen3_17b_q4 AMOUNT=20000000000000 ENV=local
 
-# 4) Provision each LLM canister (load the model, cap tokens, arm the in-memory timers).
-#    Below is Qwen3-0.6B (the default); repeat for the others with their settings:
-#      - qwen25_05b_q8 : --model model.gguf  ... --ctx-size 16384 ; max_tokens_update 20
-#      - qwen3_06b_q8  : --model model.gguf  ... --ctx-size 16384 ; max_tokens_update 20
-#      - qwen3_17b_q4  : --model models/model.gguf --batch-size 8 --ubatch-size 8 -c 16384 ; max_tokens_update 4
+# 3) Provision each LLM canister (load the model, cap tokens, arm the in-memory timers).
+#    Below is Qwen3-0.6B (the default); repeat for the others using the exact args in the
+#    "LLM model configuration" table above (05b = 06b; 17b uses models/model.gguf, batch 8,
+#    max_tokens_update 4).
 C=llama_cpp_qwen3_06b_q8
 make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=load_model \
   CANISTER_ARGUMENT='(record { args = vec {"--model"; "model.gguf"; "--cache-type-k"; "q8_0"; "--cache-type-v"; "q8_0"; "--batch-size"; "64"; "--ubatch-size"; "64"; "--ctx-size"; "16384"} })'
@@ -224,25 +248,24 @@ make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=cache_cleanup_start_tim
 make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=cycle_balance_start_timer CANISTER_ARGUMENT='()'
 make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=ready CANISTER_ARGUMENT='()' QUERY=--query   # expect status_code = 200
 
-# 5) Wire the rest of the hard gate in icgpt_admin. Part (a) — controllers — was set by the
-#    deploy (step 2). Part (b): register each LLM (keyed by its gguf filename). Part (c): lock
+# 4) Wire the rest of the hard gate in icgpt_admin. Part (a) — controllers — was set by the
+#    deploy (step 1). Part (b): register each LLM (keyed by its gguf filename). Part (c): lock
 #    each LLM to controllers-only. Grant yourself admin by adding your per-origin frontend
 #    principal to src/backend/Bootstrap.mo, then `make icp-deploy-canister CANISTER_NAME=icgpt_admin MODE=upgrade`.
 make icp-call ENV=local CANISTER_NAME=icgpt_admin CANISTER_METHOD=add_llm_canister \
-  CANISTER_ARGUMENT='("Qwen3-0.6B-Q8_0.gguf", "'$(dfx canister id llama_cpp_qwen3_06b_q8 --network local)'")'
+  CANISTER_ARGUMENT='("Qwen3-0.6B-Q8_0.gguf", "'$(icp canister status llama_cpp_qwen3_06b_q8 -e local --id-only)'")'
 # ... repeat add_llm_canister for the qwen2.5 + qwen3-1.7B gguf names ...
 make icp-call ENV=local CANISTER_NAME=icgpt_admin CANISTER_METHOD=checkAccessToLLMs CANISTER_ARGUMENT='()'  # (variant { ok })
 make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=set_access CANISTER_ARGUMENT='(record { level = 0 : nat16 })'
 
-# 6) Build + deploy the frontend assets canister (regenerates .env from the icp ID store,
-#    runs webpack, syncs to the official assets canister — honors .ic-assets.json5):
+# The frontend assets canister was already deployed in step 1. To rebuild + redeploy just
+# the frontend after a code change:
 make icp-deploy-frontend ENV=local
 
 # Inspect anything with:  make icp-status CANISTER_NAME=<name> ENV=local
 #                         make icp-project
-
-# Note: stop the local replica with
-dfx stop
+# Stop the local network with:   make icp-network-stop
+# Clean restart (no --clean flag): make icp-network-clean
 ```
 
 After the deployment steps described above, the full application is now deployed to the local network, including the front-end canister, the LLM back-end canisters, and the internet_identity canister:
@@ -281,7 +304,8 @@ cost** (it reads the LLM's LIVE cycle balance via the management canister's
 total is shown in the stats bar), and the **exact tok/s** (the IC system time bracketing
 only the LLM call, so it excludes network + the controller). NOTE: on a **local replica**
 cycles are not charged, so the per-call cost shows **0** locally (verify the mechanism with
-`dfx canister call icgpt_admin get_llm_balances`); it reports real cost on the IC.
+`make icp-call ENV=local CANISTER_NAME=icgpt_admin CANISTER_METHOD=get_llm_balances CANISTER_ARGUMENT='()'`);
+it reports real cost on the IC.
 
 **Multiple concurrent users.** How the controller isolates each user's prompt cache,
 how a single LLM canister serves many conversations (time-sharing one KV buffer by
@@ -295,8 +319,9 @@ per-LLM telemetry, RBAC roles.
 ## Test an LLM backend from the CLI
 
 It is handy to verify an LLM canister directly from the CLI. With **icp-cli** use
-`make icp-call` (or `icp canister call <name> <method> '<args>' -e <env> [--query]`);
-update calls need a `y` confirmation, which `make icp-call` pipes in for you. For example:
+`make icp-call` (or `icp canister call <name> <method> '<args>' -e <env> [--query]`).
+`icp canister call` does not prompt on update calls, and a canister called **by name**
+requires `-e <env>`. For example:
 
 ```bash
 # query the registry / readiness (local or production)
@@ -304,10 +329,9 @@ make icp-call ENV=local CANISTER_NAME=icgpt_admin CANISTER_METHOD=get_llm_canist
 make icp-call ENV=local CANISTER_NAME=llama_cpp_qwen3_06b_q8 CANISTER_METHOD=ready CANISTER_ARGUMENT='()' QUERY=--query
 ```
 
-The raw `dfx` calls below still work (dfx is retained) and show the full new_chat →
-ingest → generate loop; the same args are what the frontend sends (see
-`src/frontend/src/canisters/llamacpp.js`). To run them via icp, wrap the `'(record …)'`
-argument in `make icp-call … CANISTER_ARGUMENT='(record …)'`.
+The raw `icp` calls below show the full new_chat → ingest → generate loop; the same args
+are what the frontend sends (see `src/frontend/src/canisters/llamacpp.js`). You can also
+run them via `make icp-call … CANISTER_ARGUMENT='(record …)'`.
 
 - Chat with the LLM:
 
@@ -320,24 +344,24 @@ argument in `make icp-call … CANISTER_ARGUMENT='(record …)'`.
 
   ```bash
   # Start a new chat - this resets the prompt-cache for this conversation
-  dfx canister call llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--cache-type-k"; "q8_0"} })'
+  icp canister call -e local llama_cpp_qwen25_05b_q8 new_chat '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--cache-type-k"; "q8_0"} })'
 
   # Ingest the prompt.
   # Repeat this call until the prompt_remaining is empty. KEEP SENDING THE ORIGINAL PROMPT
   # Use "-n"; "1", so the LLM does not yet generate new tokens
 
   # Example of a longer prompt
-  dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
+  icp canister call -e local llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
 
   # Example of a very short prompt
-  dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
+  icp canister call -e local llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nhi<|im_end|>\n<|im_start|>assistant\n"; "-n"; "1" } })'
 
    ...
   # Generate new tokens.
   # Once prompt_remaining is empty, repeat this call, with an empty prompt, until `generated_eog=true`.
   # Now use "-n"; "512", so it generates until end-of-generation.
-  # The canister returns up to max_tokens_update (25) tokens per call.
-  dfx canister call llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; ""; "-n"; "512" } })'
+  # The canister returns up to max_tokens_update tokens per call.
+  icp canister call -e local llama_cpp_qwen25_05b_q8 run_update '(record { args = vec {"--prompt-cache"; "my_cache/prompt.cache"; "--prompt-cache-all"; "--cache-type-k"; "q8_0"; "--temp"; "0.6"; "--repeat-penalty"; "1.1"; "-sp"; "-p"; ""; "-n"; "512" } })'
 
   ...
 
@@ -364,37 +388,34 @@ argument in `make icp-call … CANISTER_ARGUMENT='(record …)'`.
 
 The front-end is a react application with a webpack based build pipeline. Webpack builds with sourcemaps, so you can use the following front-end development workflow:
 
-- Deploy the full application to the local network, as described in previous step
-- Do not open the front-end deployed to the local network, but instead run the front-end with the npm development server:
+- Deploy the backend canisters to the local network first (previous step) — the dev server
+  needs the local network running and the backends deployed, because it reads their IDs +
+  the root key from `icp network status` / `icp canister status` to build the `ic_env`
+  cookie. You do NOT need to deploy the frontend canister; webpack serves it.
+- Run the front-end with the webpack dev server (pinned to `http://localhost:8081`):
 
   ```bash
   # from root directory
-
   conda activate icgpt
 
-  # build a dev version, so you can add breakpoints etc.
-  npm run build:dev
-
-  # start the npm development server, with hot reloading
-  # run against local deployment of backend
+  # start the dev server (hot reload). It injects the ic_env cookie + proxies /api to the
+  # managed local replica, both resolved from icp-cli at runtime — no .env, no hardcoded port.
   npm run start:local
-  # run against ic deployment of backend
-  npm run start:ic         (NOTE: not tested...)
-
   ```
 
-- When you login, just create a new II, and once login completed, you will see the start screen shown at the top of this README.
+- When you login, sign in with Internet Identity (mainnet II at id.ai is used even locally);
+  once login completes, you will see the start screen shown at the top of this README.
 
 - Open the browser devtools for debugging
 
 - Make changes to the front-end code in your favorite editor, and when you save it, everything will auto-rebuild and auto-reload
 
-### Update to latest Internet Identity
+### Updating the IC frontend packages
 
-We use `latest` for all `@dfinity/...` packages in package.json, so to update to the latest version just run:
+The frontend uses `@icp-sdk/core` and `@icp-sdk/auth`. To update:
 
 ```
-npm update
+npm update @icp-sdk/core @icp-sdk/auth
 ```
 
 ### Styling with Dracula UI
@@ -431,133 +452,96 @@ make icp-deploy-canister CANISTER_NAME=llama_cpp_qwen3_06b_q8 ENV=production MOD
 #   The 3.75 GiB wasm-memory-limit + controllers=[deployer, icgpt_admin] are applied
 #   automatically from icp.yaml on deploy (no manual update-settings).
 
-# 3) Frontend (regenerates .env from the production IDs, webpack production build, syncs
-#    to the assets canister — honors .ic-assets.json5):
+# 3) Frontend: webpack production build + sync to the assets canister (honors
+#    .ic-assets.json5). Canister IDs + root key resolve at RUNTIME from the ic_env cookie,
+#    so no .env is generated. NOTE: sign-in uses Internet Identity at id.ai; after this
+#    deploy, confirm login still works (the frontend moved from @dfinity/* to @icp-sdk/*).
 make icp-deploy-frontend ENV=production
 ```
 
-> NOTE: the gguf uploads (`make upload-*-ic`) still run through dfx (the uploader is
-> dfx-coupled). Everything else is icp. The detailed **dfx** steps below are kept as a
-> legacy reference (dfx still works); prefer the icp flow above.
+> The gguf upload (`make upload-*-ic`, now `--network production`) and everything else run
+> on icp-cli — **dfx is fully retired**.
 
-## Legacy dfx deployment reference (pre-icp-cli)
+## Production provisioning reference (icp-cli)
 
-Step 0: When deploying for the first time:
+After a **reinstall** of an LLM canister you must re-upload its gguf and reload the model;
+after an **upgrade** the gguf is preserved in stable memory and you only reload the model.
+The 3.75 GiB `wasm_memory_limit` + `controllers=[deployer, icgpt_admin]` are applied from
+`icp.yaml` on every deploy (no manual `update-settings`). Deploy/provision AS a controller
+identity: `--identity icpp-llm`.
 
-- Delete **canister_ids.json**, because when you forked or cloned the github repo [icgpt](https://github.com/icppWorld/icgpt), it contained the canisters used by our deployment at https://icgpt.onicai.com/
+```bash
+C=llama_cpp_qwen25_05b_q8
 
-Step 1: Deploy the backend canister
+# After a REINSTALL only: re-upload the gguf (an upgrade preserves it in stable memory)
+make upload-llama-cpp-qwen25-05b-q8-ic
 
-- Note that **dfx.json** points to the vendored `llms/llama_cpp_canister` wasm.
+# Reload the model (REQUIRED after every install/upgrade)
+make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=load_model \
+  CANISTER_ARGUMENT='(record { args = vec {"--model"; "model.gguf"; "--cache-type-k"; "q8_0"; } })'
 
-  ```bash
-  # qwen2.5 0.5b q8 (676 Mb)
-  dfx deploy --ic llama_cpp_qwen25_05b_q8 -m [upgrade/reinstall] # upgrade preserves model in stable memory
-  # 3.75 GiB heap: more KV/prompt-cache budget for long multi-turn conversations
-  dfx canister --ic update-settings llama_cpp_qwen25_05b_q8 --wasm-memory-limit 3840MiB
-  dfx canister --ic status llama_cpp_qwen25_05b_q8
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_max_tokens '(record { max_tokens_query = 1 : nat64; max_tokens_update = 25 : nat64 })'
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 chats_resume
-  #
-  # Open up access to all except anonymous (An upgrade resets it to 0 !):
-  # 0 = only controllers
-  # 1 = all except anonymous
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_access '(record { level = 1 : nat16 })'
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 get_access
-  #
-  # Arm the recurring timers. They are in-memory only, so this is REQUIRED
-  # after EVERY install/upgrade (see llama_cpp_canister README):
-  # - cache cleanup : deletes prompt caches older than 6 hours
-  # - cycle balance : refreshes the cached cycle balance every hour
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 cache_cleanup_start_timer
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 cycle_balance_start_timer
+# Cap tokens
+make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=set_max_tokens \
+  CANISTER_ARGUMENT='(record { max_tokens_query = 1 : nat64; max_tokens_update = 20 : nat64 })'
 
-  # This is not longer needed, after updates to the Internet Computer.
-  # Leaving in the instructions to avoid time-outs during uploads, just in case:
-  # [compute allocation](https://internetcomputer.org/docs/current/developer-docs/smart-contracts/maintain/settings#compute-allocation)
-  # dfx canister update-settings --ic llama_cpp_qwen25_05b_q8 --compute-allocation 1 # (costs a rental fee)
-  # dfx canister status --ic llama_cpp_qwen25_05b_q8
+# Arm the in-memory timers (REQUIRED after every install/upgrade):
+#   cache cleanup deletes prompt caches older than 6h; cycle balance refreshes hourly.
+make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=cache_cleanup_start_timer CANISTER_ARGUMENT='()'
+make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=cycle_balance_start_timer CANISTER_ARGUMENT='()'
 
-  # After `dfx deploy -m reinstall`:
-  make upload-llama-cpp-qwen25-05b-q8-ic  # Not needed after an upgrade, only after initial or reinstall
-  #
-  # After `dfx deploy -m upgrade`:
-  dfx canister --ic  call llama_cpp_qwen25_05b_q8 load_model '(record { args = vec {"--model"; "model.gguf"; "--cache-type-k"; "q8_0"; } })'
+# Access level: the HARD GATE keeps each LLM at level 0 (controllers only) — the
+# icgpt_admin controller is the sole caller (0 = controllers only, 1 = all except anonymous).
+make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=set_access CANISTER_ARGUMENT='(record { level = 0 : nat16 })'
 
-  #--------------------------------------------------------------------------
-  # ONE TIME, after upgrading to llama_cpp_canister v0.12.0:
-  #
-  # The prompt cache files written by the previous build are not compatible
-  # with the llama.cpp b10076 build, nor with `--cache-type-k q8_0`.
-  # Purge them all by dropping the cleanup TTL to 0, sweeping, then restoring
-  # the defaults:
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_cache_cleanup_config '(record { period_seconds = null; ttl_seconds = opt (0 : nat64); max_files_per_run = opt (10_000 : nat64) })'
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 cache_cleanup_now
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 set_cache_cleanup_config '(record { period_seconds = null; ttl_seconds = opt (21_600 : nat64); max_files_per_run = opt (256 : nat64) })'
-  dfx canister --ic call llama_cpp_qwen25_05b_q8 get_cache_cleanup_stats
-  # ------------------------------------------------------------------------
-
-  ```
-
-Note: Downloading the log file
-
-You can download the `main.log` file from the canister with the command:
-
-```
-# For example, this is for the qwen2.5 q8_0 canister running on the IC in ICGPT
+# Download a canister's main.log:
 make download-log-llama-cpp-qwen25-05b-q8-ic
 ```
 
-Step 3: deploy the frontend
+The frontend is deployed with `make icp-deploy-frontend ENV=production` (see above).
 
-- Now that the backend is in place, the frontend can be deployed
-
-  ```bash
-  # from root directory
-  conda activate icgpt
-
-  dfx identity use <identity-of-controller>
-
-  # This deploys just the frontend!
-  dfx deploy --ic canister_frontend
-  ```
-
-## Verify
+## Verify readiness
 
 ```bash
-scripts/ready.sh --network [local/ic]
+make icp-call ENV=local CANISTER_NAME=llama_cpp_qwen3_06b_q8 CANISTER_METHOD=ready CANISTER_ARGUMENT='()' QUERY=--query   # expect status_code = 200
 ```
 
 ## Check cycle balance
 
 ```bash
-scripts/balance.sh --network [local/ic]
+make icp-status CANISTER_NAME=llama_cpp_qwen3_06b_q8 ENV=production   # shows cycles + module hash
+icp cycles balance -e production                                      # the active identity's balance
 ```
 
 ## Top up cycles
 
 ```bash
-# Edit the value of TOPPED_OFF_BALANCE_T in the script.
-scripts/top-off.sh --network [local/ic]
+# From the active identity's balance (AMOUNT in cycles):
+make icp-topup CANISTER_NAME=llama_cpp_qwen3_06b_q8 AMOUNT=20000000000000 ENV=production
 ```
+
+> NOTE: `scripts/ready.sh`, `scripts/balance.sh` and `scripts/top-off.sh` are legacy,
+> dfx-coupled helpers; prefer the icp-cli commands above.
 
 # Appendix A - NOTES
 
-## process.env.CANISTER*ID*<NAME>
+## Runtime canister IDs — the `ic_env` cookie
 
-The generated declarations and in our own front-end code the canister Ids are defined with `process.env.CANISTER_ID_<NAME>`.
+The frontend resolves canister IDs and the replica root key at **runtime** from the
+`ic_env` cookie, via `safeGetCanisterEnv()` (`@icp-sdk/core`) — see
+`src/frontend/src/canisters/agent.js`. There is no build-time `.env` and no
+`process.env.CANISTER_ID_*`:
 
-The way that these environment variables are created is:
-
-- The command `dfx deploy` maintains a section in the file `.env` where it stores the canister id for every deployed canister.
-- The commands `npm build/run` use `webpack.config.js`, where the `webpack.EnvironmentPlugin` is used to define the values.
+- `icp deploy` injects `PUBLIC_CANISTER_ID:<name>` (per-environment) into every canister.
+- The asset canister (wasm >= 0.30.2) serves those + `ic_root_key` as the `ic_env` cookie
+  on every HTML response.
+- Locally, the webpack dev server sets the same cookie from `icp network status` +
+  `icp canister status -i` (see `getDevServerConfig()` in `webpack.config.js`), so it
+  requires the local network running and the backend canisters deployed.
 
 ## Internet Identity
 
-icgpt is using internet identity for authentication.
-
-When deploying locally, the internet_identity canister will be installed automatically during the `make dfx-deploy-local` or `dfx deploy --network local` command. It uses the instructions provided in `dfx.json`.
-
-When deploying to IC, it will NOT be deployed.
-
-For details, see this [forum post](https://forum.dfinity.org/t/problem-insalling-internet-identity-in-local-setup/20417/18).
+icgpt uses Internet Identity for authentication, via `@icp-sdk/auth` (7.x). The provider
+is mainnet II at `https://id.ai/authorize` — used from local dev too (pocket-ic trusts
+mainnet subnet signatures), so no local II canister is deployed. The user's principal is
+derived from the app's origin (so the local `localhost:8081` principal and the mainnet
+`icgpt.onicai.com` principal differ — founding admins add both in `src/backend/Bootstrap.mo`).

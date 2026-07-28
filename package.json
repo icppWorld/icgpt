@@ -18,17 +18,10 @@
     "lint:fix": "eslint --fix .",
     "lint:check": "eslint --cache .",
     "build": "webpack",
-    "build:dev": "DFX_NETWORK=local webpack --progress --mode development --env development",
-    "prebuild": "echo skipping dfx generate",
-    "start:local": "DFX_NETWORK=local webpack serve --mode development --env development",
-    "start:ic": "DFX_NETWORK=ic webpack serve --mode development --env development",
-    "deploy:local": "DFX_NETWORK=local dfx deploy --network=local",
-    "deploy:ic": "DFX_NETWORK=ic dfx deploy --network=ic"
+    "build:dev": "webpack --progress --mode development --env development",
+    "start:local": "webpack serve --mode development --env development"
   },
   "devDependencies": {
-    "@dfinity/agent": "latest",
-    "@dfinity/candid": "latest",
-    "@dfinity/principal": "latest",
     "@typescript-eslint/eslint-plugin": "^5.6.0",
     "@typescript-eslint/parser": "^5.6.0",
     "assert": "2.0.0",
@@ -36,7 +29,6 @@
     "copy-webpack-plugin": "^11.0.0",
     "cors": "^2.8.5",
     "css-loader": "^6.5.1",
-    "dotenv": "^16.3.1",
     "eslint": "^7.32.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-config-standard": "^16.0.3",
@@ -66,8 +58,8 @@
     "last 2 edge version"
   ],
   "dependencies": {
-    "@dfinity/auth-client": "latest",
-    "@dfinity/identity": "latest",
+    "@icp-sdk/auth": "^7.1.0",
+    "@icp-sdk/core": "^5.4.0",
     "@popperjs/core": "^2.11.8",
     "bootstrap": "^5.3.1",
     "bootstrap-icons": "^1.11.0",

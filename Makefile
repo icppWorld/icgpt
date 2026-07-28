@@ -4,13 +4,13 @@ SHELL := /bin/bash
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-builtin-variables
 
-NETWORK ?= local
-DFX_WEBSERVER_PORT ?= $(shell dfx info webserver-port)
-IDENTITY ?= $(shell dfx identity whoami)
+# icp-cli is the deploy/test tool (dfx is fully retired). Identity is selected
+# per-command with `--identity <name>` where needed; the icp targets below default
+# to the active identity (`icp identity default`).
+IDENTITY ?= $(shell icp identity default)
 
 ###########################################################################
 # Some constants
-CANISTER_INSTALL_MODE ?= install
 CANISTER_CANDID_UI_IC ?= "a4gq6-oaaaa-aaaab-qaa4q-cai"
 
 ###########################################################################
@@ -65,197 +65,60 @@ git-on-origin-main:
 		echo "Ok, your working directory is at orgin/main" ;\
 	fi
 
-# This installs ~/bin/dfx
-# Make sure to source ~/.profile afterwards -> it adds ~/bin to the path if it exists
-.PHONY: dfx-install
-dfx-install:
-	sh -ci "$$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+###########################################################################
+# Local managed network lifecycle (icp.yaml `local` network, ephemeral port).
+# The gateway port is random on every start (icp.yaml gateway.port: 0) — always
+# read it back from `icp network status`, never hardcode it.
+.PHONY: icp-network-start
+icp-network-start:
+	@icp network start -d
+	@make --no-print-directory icp-network-status
 
-.PHONY: dfx-cycles-to-frontend
-dfx-cycles-to-frontend:
-	@$(eval CANISTER_FRONTEND_ID := $(shell dfx canister --network ic id canister_frontend))
-	@echo "-------------------------------------------------------------------------"
-	@echo "dfx identity             : $(IDENTITY)"
-	@echo "- balance before: "
-	@dfx wallet --network ic balance
-	@echo "-------------------------------------------------------------------------"
-	@echo "canister_frontend canister  before    : $(CANISTER_FRONTEND_ID)"
-	@dfx canister --network=ic status canister_frontend
-	@echo "-------------------------------------------------------------------------"
-	@echo "Sending 0.5T cycles to canister_frontend"
-	dfx wallet --network ic send $(CANISTER_FRONTEND_ID) 500000000000
-	@echo "-------------------------------------------------------------------------"
-	@echo "dfx identity             : $(IDENTITY)"
-	@echo "- balance after: "
-	@dfx wallet --network ic balance
-	@echo "-------------------------------------------------------------------------"
-	@echo "canister_frontend canister  after    : $(CANISTER_FRONTEND_ID)"
-	@dfx canister --network=ic status canister_frontend
+.PHONY: icp-network-stop
+icp-network-stop:
+	@icp network stop || true   # `icp network stop` exits non-zero when nothing runs
 
-.PHONY: dfx-canisters-of-project-ic
-dfx-canisters-of-project-ic:
-	@$(eval IDENTITY_PRINCIPAL := $(shell dfx identity --network ic get-principal))
-	@$(eval IDENTITY_CYCLES_WALLET := $(shell dfx identity --network ic get-wallet))
-	@$(eval IDENTITY_ICP_WALLET := $(shell dfx ledger --network ic account-id))
-	@$(eval IDENTITY_ICP_BALANCE := $(shell dfx ledger --network ic balance))
-	@$(eval IC_CANISTER_ID_FRONTEND := $(shell dfx canister --network ic id canister_frontend))
-	@$(eval IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 := $(shell dfx canister --network ic id llama_cpp_qwen25_05b_q8))
+# There is no `--clean` flag. A managed network keeps its replica state AND the
+# local canister-id mappings under .icp/cache. This wipes ONLY that disposable
+# cache (never .icp/data, which holds the live mainnet ids) and restarts fresh.
+.PHONY: icp-network-clean
+icp-network-clean:
+	@icp network stop || true
+	@rm -rf .icp/cache
+	@icp network start -d
+	@make --no-print-directory icp-network-status
 
-	@echo '-------------------------------------------------'
-	@echo "NETWORK                  : ic"
-	@echo "dfx identity             : $(IDENTITY)"
-	@echo "identity's principal     : $(IDENTITY_PRINCIPAL)"
-	@echo "identity's cycles wallet : $(IDENTITY_CYCLES_WALLET)"
-	@echo "identity's ICP wallet    : $(IDENTITY_ICP_WALLET)"
-	@echo "identity's ICP balance   : $(IDENTITY_ICP_BALANCE)"
-	@echo '-------------------------------------------------'
-	@echo "identity's cycles wallet : $(IDENTITY_CYCLES_WALLET)"
-	@echo "- balance: "
-	@dfx wallet --network ic balance
-	@echo "- status: "
-	@dfx canister --network=ic status $(IDENTITY_CYCLES_WALLET)
-	@echo '-------------------------------------------------'
-	@echo "canister_frontend        : $(IC_CANISTER_ID_FRONTEND)"
-	@dfx canister --network=ic status canister_frontend
-	@echo '-------------------------------------------------'
-	@echo "llama_cpp_qwen25_05b_q8 canister      : $(IC_CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8)"
-	@dfx canister --network=ic status llama_cpp_qwen25_05b_q8
-	@echo '-------------------------------------------------'
-	@echo 'View in browser at:'
-	@echo  "canister_frontend (ICGPT) : https://$(CANISTER_FRONTEND).ic0.app/"
-	@echo  "identity's wallet              : https://$(IDENTITY_CYCLES_WALLET).raw.ic0.app/"
-	@echo  "Candid UI                      : https://$(CANISTER_CANDID_UI_IC).raw.ic0.app/"
-	@echo  "Candid UI of canister_frontend : https://$(CANISTER_CANDID_UI_IC).raw.ic0.app/?id=$(CANISTER_FRONTEND)"
-	
+.PHONY: icp-network-status
+icp-network-status:          # gateway_url / api_url of the running local network
+	@icp network status -e local --json
 
-.PHONY: dfx-canisters-of-project-local
-dfx-canisters-of-project-local:
-	@$(eval IDENTITY_CYCLES_WALLET := $(shell dfx identity get-wallet))
-	@$(eval CANISTER_CANDID_UI_LOCAL ?= $(shell dfx canister id __Candid_UI))
-	@$(eval CANISTER_FRONTEND := $(shell dfx canister id canister_frontend))
+.PHONY: icp-identity
+icp-identity:                # active identity, its principal and ICP account-id
+	@echo -n "identity  : " && icp identity default
+	@echo -n "principal : " && icp identity principal
+	@echo -n "account   : " && icp identity account-id
 
-	
-	@echo '-------------------------------------------------'
-	@echo "NETWORK            : local"
-	@echo "cycles canister    : $(IDENTITY_CYCLES_WALLET)"
-	@echo "Candid UI canister : $(CANISTER_CANDID_UI_IC)"
-	@echo "canister_frontend  : $(CANISTER_FRONTEND)"
-	@echo '-------------------------------------------------'
-	@echo 'View in browser at:'
-	@echo  "__Candid_UI                    : http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(CANISTER_CANDID_UI_LOCAL)"
-	@echo  "Candid UI of canister_frontend : http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(CANISTER_CANDID_UI_LOCAL)&id=$(CANISTER_FRONTEND)"
-	@echo  "canister_frontend              : http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(CANISTER_FRONTEND)"
+.PHONY: icp-cycles-balance
+icp-cycles-balance:          # cycles balance of the active identity (make icp-cycles-balance ENV=production)
+	@icp cycles balance -e $(ENV)
 
-.PHONY: dfx-canisters-of-project
-dfx-canisters-of-project:
-	@if [[ ${NETWORK} == "ic" ]]; then \
-		make --no-print-directory dfx-canisters-of-project-ic; \
-	else \
-		make --no-print-directory dfx-canisters-of-project-local; \
-	fi
-
-.PHONY: dfx-canister-methods
-dfx-canister-methods:
-	@echo "make dfx-canister-methods CANISTER_NAME=$(CANISTER_NAME)"
-	@echo "NETWORK            : $(NETWORK)"
-	@echo "CANISTER_NAME           : $(CANISTER_NAME)"
-	@echo "View the canister's interface (i.e. the candid methods) at :"
-	@echo "- Candid UI: https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.ic0.app/?id=$(CANISTER_NAME)"
-	@echo "- icrocks  : https://ic.rocks/principal/$(CANISTER_NAME)"
-	@echo "- Canlist  : https://k7gat-daaaa-aaaae-qaahq-cai.ic0.app/search?s=$(CANISTER_NAME)"
-	@echo "-------------------------------------------------------------------------"
-	@echo "Checking if it is listed at Canlista"
-	@dfx canister --network $(NETWORK) call kyhgh-oyaaa-aaaae-qaaha-cai getCandid '(principal "$(CANISTER_NAME)")'
-
-.PHONY: dfx-canister-create
-dfx-canister-create:
-	@echo "make dfx-canister-create CANISTER_NAME=$(CANISTER_NAME)"
-	@echo "NETWORK            : $(NETWORK)"
-	@echo "CANISTER_NAME      : $(CANISTER_NAME)"
-	@dfx canister --network $(NETWORK) create $(CANISTER_NAME)
-
-.PHONY: dfx-canister-stop
-dfx-canister-stop:
-	@echo "make dfx-canister-stop CANISTER_NAME=$(CANISTER_NAME)"
-	@echo "NETWORK            : $(NETWORK)"
-	@echo "CANISTER_NAME      : $(CANISTER_NAME)"
-	@dfx canister --network $(NETWORK) stop $(CANISTER_NAME)
-
-.PHONY: dfx-canister-delete
-dfx-canister-delete:
-	@echo "make dfx-canister-delete CANISTER_NAME=$(CANISTER_NAME)"
-	@echo "NETWORK            : $(NETWORK)"
-	@echo "CANISTER_NAME      : $(CANISTER_NAME)"
-	@dfx canister --network $(NETWORK) stop $(CANISTER_NAME)
-	@dfx canister --network $(NETWORK) delete $(CANISTER_NAME)
-
-.PHONY: dfx-canister-install-upgrade
-dfx-canister-install-upgrade:
-	@make --no-print-directory dfx-canister-install CANISTER_INSTALL_MODE=upgrade
-
-.PHONY: dfx-canister-install-reinstall
-dfx-canister-install-reinstall:
-	@make --no-print-directory dfx-canister-install CANISTER_INSTALL_MODE=reinstall
-
-.PHONY: dfx-canister-install
-dfx-canister-install:
-	@echo "make dfx-canister-install CANISTER_NAME=$(CANISTER_NAME)"
-	@echo "NETWORK            : $(NETWORK)"
-	@echo "CANISTER_NAME      : $(CANISTER_NAME)"
-	@dfx canister --network $(NETWORK) install --mode $(CANISTER_INSTALL_MODE) $(CANISTER_NAME)
-
-.PHONY: dfx-canister-call
-dfx-canister-call:
-	@dfx canister --network $(NETWORK) call --output $(CANISTER_OUTPUT) --type $(CANISTER_INPUT) $(CANISTER_NAME) $(CANISTER_METHOD) '$(CANISTER_ARGUMENT)'
-
-.PHONY: dfx-deploy-local
-dfx-deploy-local:
-	@echo " "
-	@dfx deploy
-	@echo  "All done.... Getting details... "
-	@make --no-print-directory dfx-canisters-of-project
-
-.PHONY: dfx-deploy-ic-frontend
-dfx-deploy-ic-frontend:	
-	@echo " "
-	@echo "--Deploy--"
-	@dfx deploy --network ic canister_frontend
-	@echo "--All done.... Get canister details..--"
-	@make --no-print-directory dfx-canisters-of-project NETWORK=ic
-
-.PHONY: dfx-identity-and-wallet-for-cicd
-dfx-identity-and-wallet-for-cicd:
-	@echo $(DFX_IDENTITY_PEM_ENCODED) | base64 --decode > identity-cicd.pem
-	@dfx identity import cicd ./identity-cicd.pem
-	@rm ./identity-cicd.pem
-	@dfx identity use cicd
-	@dfx identity --network ic set-wallet "$(DFX_WALLET_CANISTER_ID)"
-
-.PHONY: dfx-identity-use
-dfx-identity-use:
-	@dfx identity use $(IDENTITY)
-
-.PHONY: dfx-identity-whoami
-dfx-identity-whoami:
-	@echo -n $(shell dfx identity whoami)
-	
-.PHONY: dfx-identity-get-principal
-dfx-identity-get-principal:
-	@echo -n $(shell dfx identity get-principal)
+# Top up a canister's cycles from the active identity's balance.
+# make icp-topup CANISTER_NAME=llama_cpp_qwen3_06b_q8 AMOUNT=20000000000000 ENV=local
+.PHONY: icp-topup
+icp-topup:
+	@icp canister top-up $(CANISTER_NAME) --amount $(AMOUNT) -e $(ENV)
 
 ###########################################################################
-# icp-cli targets (icp.yaml) — the PRIMARY deploy/test path. dfx is deprecated;
-# the dfx-* targets above are kept only as legacy/fallback and for the gguf
-# uploader (make upload-*, which is still dfx-coupled).
+# icp-cli targets (icp.yaml) — the deploy/test path. dfx is fully retired.
 #
 # ENV selects the icp environment:
-#   local      -> the local replica (dfx start binds it on :8080; icp connects via
-#                 the `connected` network in icp.yaml). Shared with the dfx uploader.
+#   local      -> the project-local managed replica (`make icp-network-start`;
+#                 ephemeral gateway port, read back from `icp network status`).
 #   production -> IC mainnet.
 # MODE is the install mode for deploys: auto | install | reinstall | upgrade.
 #
 # Existing canister IDs are recorded in the icp ID store with `icp canister link`
-# (see icp-link-ids-*). Update calls are made non-interactive by piping `y`.
+# (see icp-link). `icp canister call` does not prompt on update calls.
 ENV ?= local
 MODE ?= upgrade
 QUERY ?=
@@ -272,7 +135,7 @@ icp-status:                  # make icp-status CANISTER_NAME=icgpt_admin ENV=pro
 
 .PHONY: icp-call
 icp-call:                    # make icp-call CANISTER_NAME=.. CANISTER_METHOD=.. CANISTER_ARGUMENT='(..)' [QUERY=--query] ENV=..
-	@echo y | icp canister call $(CANISTER_NAME) $(CANISTER_METHOD) '$(CANISTER_ARGUMENT)' -e $(ENV) $(QUERY)
+	@icp canister call $(CANISTER_NAME) $(CANISTER_METHOD) '$(CANISTER_ARGUMENT)' -e $(ENV) $(QUERY)
 
 .PHONY: icp-deploy
 icp-deploy:                  # deploy ALL canisters to ENV (respects MODE)
@@ -282,17 +145,13 @@ icp-deploy:                  # deploy ALL canisters to ENV (respects MODE)
 icp-deploy-canister:         # make icp-deploy-canister CANISTER_NAME=icgpt_admin ENV=.. MODE=..
 	@icp deploy $(CANISTER_NAME) -e $(ENV) -m $(MODE) -y
 
-# Regenerate .env (DFX_NETWORK + app CANISTER_ID_*) from the icp ID store for ENV,
-# so the webpack build embeds the right IDs for the target network.
-.PHONY: icp-env-write
-icp-env-write:
-	@python3 scripts/icp_env_write.py $(ENV)
-
 # Build the frontend for ENV and deploy the assets canister (asset-canister recipe).
-# NODE_ENV=production for mainnet flips webpack to the IC II/host URLs.
+# Canister IDs + replica root key are resolved at RUNTIME from the `ic_env` cookie
+# (the asset canister serves it in production; the webpack dev server serves it
+# locally), so the build needs no canister-id injection and there is no .env.
+# NODE_ENV=production flips webpack to a minified production build for mainnet.
 .PHONY: icp-deploy-frontend
 icp-deploy-frontend:
-	@make --no-print-directory icp-env-write ENV=$(ENV)
 	@if [ "$(ENV)" = "production" ]; then NODE_ENV=production npm run build; else npm run build:dev; fi
 	@icp deploy canister_frontend -e $(ENV) -y
 
@@ -303,58 +162,6 @@ icp-link:
 	@mkdir -p .icp/data/mappings
 	@[ -f .icp/data/mappings/$(ENV).ids.json ] || echo '{}' > .icp/data/mappings/$(ENV).ids.json
 	@icp canister link $(CANISTER_NAME) $(PRINCIPAL) -e $(ENV) --force
-
-.PHONY: dfx-ping
-dfx-ping:
-	@dfx ping $(NETWORK)
-
-.PHONY: dfx-start-local
-dfx-start-local:
-	@dfx stop
-	@dfx start --clean --background
-
-.PHONY: dfx-stop-local
-dfx-stop-local:
-	@dfx stop
-
-.PHONY: dfx-wallet-details
-dfx-wallet-details:
-	@$(eval IDENTITY_CYCLES_WALLET := $(shell dfx identity --network $(NETWORK) get-wallet))
-	@echo "-------------------------------------------------------------------------"
-	@echo "make dfx-wallet-details NETWORK=$(NETWORK)"
-	@if [[ ${NETWORK} == "ic" ]]; then \
-		echo  "View details at         : https://$(IDENTITY_CYCLES_WALLET).raw.ic0.app/"; \
-	else \
-		echo  "View details at         : ?? http://localhost:$(DFX_WEBSERVER_PORT)?canisterId=$(IDENTITY_CYCLES_WALLET) ?? "; \
-	fi
-	
-	@echo "-------------------------------------------------------------------------"
-	@echo -n "cycles canister id      : " && dfx identity --network $(NETWORK) get-wallet
-	@echo -n "cycles canister name    : " && dfx wallet --network $(NETWORK) name
-	@echo -n "cycles canister balance : " && dfx wallet --network $(NETWORK) balance
-	@echo "-------------------------------------------------------------------------"
-	@echo "controllers: "
-	@dfx wallet --network $(NETWORK) controllers
-	@echo "-------------------------------------------------------------------------"
-	@echo "custodians: "
-	@dfx wallet --network $(NETWORK) custodians
-	@echo "-------------------------------------------------------------------------"
-	@echo "addresses: "
-	@dfx wallet --network $(NETWORK) addresses
-
-.PHONY: dfx-wallet-controller-add
-dfx-wallet-controller-add:
-	@[ "${PRINCIPAL}" ]	|| ( echo ">> Define PRINCIPAL to add as controller: 'make dfx-cycles-controller-add PRINCIPAL=....' "; exit 1 )
-	@echo    "NETWORK         : $(NETWORK)"
-	@echo    "PRINCIPAL       : $(PRINCIPAL)"
-	@dfx wallet --network $(NETWORK) add-controller $(PRINCIPAL)
-
-.PHONY: dfx-wallet-controller-remove
-dfx-wallet-controller-remove:
-	@[ "${PRINCIPAL}" ]	|| ( echo ">> Define PRINCIPAL to remove as controller: 'make dfx-cycles-controller-remove PRINCIPAL=....' "; exit 1 )
-	@echo    "NETWORK         : $(NETWORK)"
-	@echo    "PRINCIPAL       : $(PRINCIPAL)"
-	@dfx wallet --network $(NETWORK) remove-controller $(PRINCIPAL)
 
 .PHONY: javascript-format
 javascript-format:
@@ -422,16 +229,15 @@ python-type-check:
 ###########################################################################
 # Toolchain installation
 .PHONY: install-all-ubuntu
-install-all-ubuntu: install-jp-ubuntu install-dfx install-javascript install-python
+install-all-ubuntu: install-jp-ubuntu install-icp install-javascript install-python
 
 .PHONY: install-all-mac
-install-all-mac: install-jp-mac install-dfx install-javascript install-python
+install-all-mac: install-jp-mac install-icp install-javascript install-python
 
-# This installs ~/bin/dfx
-# Make sure to source ~/.profile afterwards -> it adds ~/bin to the path if it exists
-.PHONY: install-dfx
-install-dfx:
-	DFXVM_INIT_YES=true sh -ci "$$(curl -fsSL https://sdk.dfinity.org/install.sh)"
+# icp-cli is the IC build/deploy tool (dfx is retired). Needs Node.js on PATH.
+.PHONY: install-icp
+install-icp:
+	npm install -g @icp-sdk/icp-cli
 
 .PHONY: install-javascript
 install-javascript:
@@ -459,11 +265,14 @@ install-python:
 
 
 ###########################################################################
-# Model upload
+# Model upload (icp-native uploader, vendored with llama_cpp_canister v0.14.0)
 # (-) The parent of this folder is added to Python path, for `python -m` to work
-# (-) Everything else just works, because the upload script:
-#     -> uses model & tokenizer path are relative to itself
-#     -> pulls the canister information out of the network info (.dfx in icgpt repo)
+# (-) The uploader is icp-native: it resolves the canister id from
+#     .icp/data/mappings/<env>.ids.json and the replica url from `icp network status`,
+#     and exports the active identity's PEM via `icp identity export`. So the LOCAL
+#     network must be running (make icp-network-start) and the right identity active
+#     (e.g. --identity icpp-llm for production).
+#     NOTE: --network here is the icp.yaml ENVIRONMENT name (local | production).
 
 # The sha256 of qwen2.5-0.5b-instruct-q8_0.gguf, as published on HuggingFace.
 # The upload script verifies the file on disk against it before uploading.
@@ -484,13 +293,13 @@ upload-llama-cpp-qwen25-05b-q8-local:
 upload-llama-cpp-qwen25-05b-q8-ic:
 	@echo "---"
 	@echo "upload-llama-cpp-qwen25-05b-q8-ic"
-	python -m llms.llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf --filetype gguf --hf-sha256 "$(QWEN25_05B_Q8_SHA256)" $(QWEN25_05B_Q8_GGUF)
+	python -m llms.llama_cpp_canister.scripts.upload --network production --canister llama_cpp_qwen25_05b_q8 --canister-filename model.gguf --filetype gguf --hf-sha256 "$(QWEN25_05B_Q8_SHA256)" $(QWEN25_05B_Q8_GGUF)
 	
 .PHONY: download-log-llama-cpp-qwen25-05b-q8-ic
 download-log-llama-cpp-qwen25-05b-q8-ic:
 	@echo "---"
 	@echo "download-log-llama-cpp-qwen25-05b-q8-ic"
-	python -m llms.llama_cpp_canister.scripts.download --network ic --canister llama_cpp_qwen25_05b_q8 --local-filename main-llama-cpp-qwen25-05b-q8.log main.log
+	python -m llms.llama_cpp_canister.scripts.download --network production --canister llama_cpp_qwen25_05b_q8 --local-filename main-llama-cpp-qwen25-05b-q8.log main.log
 
 # The sha256 of Qwen3-0.6B-Q8_0.gguf, as published on HuggingFace.
 QWEN3_06B_Q8_SHA256 ?= 9465e63a22add5354d9bb4b99e90117043c7124007664907259bd16d043bb031
@@ -509,13 +318,13 @@ upload-llama-cpp-qwen3-06b-q8-local:
 upload-llama-cpp-qwen3-06b-q8-ic:
 	@echo "---"
 	@echo "upload-llama-cpp-qwen3-06b-q8-ic"
-	python -m llms.llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen3_06b_q8 --canister-filename model.gguf --filetype gguf --hf-sha256 "$(QWEN3_06B_Q8_SHA256)" $(QWEN3_06B_Q8_GGUF)
+	python -m llms.llama_cpp_canister.scripts.upload --network production --canister llama_cpp_qwen3_06b_q8 --canister-filename model.gguf --filetype gguf --hf-sha256 "$(QWEN3_06B_Q8_SHA256)" $(QWEN3_06B_Q8_GGUF)
 
 .PHONY: download-log-llama-cpp-qwen3-06b-q8-ic
 download-log-llama-cpp-qwen3-06b-q8-ic:
 	@echo "---"
 	@echo "download-log-llama-cpp-qwen3-06b-q8-ic"
-	python -m llms.llama_cpp_canister.scripts.download --network ic --canister llama_cpp_qwen3_06b_q8 --local-filename main-llama-cpp-qwen3-06b-q8.log main.log
+	python -m llms.llama_cpp_canister.scripts.download --network production --canister llama_cpp_qwen3_06b_q8 --local-filename main-llama-cpp-qwen3-06b-q8.log main.log
 
 # The sha256 of Qwen3-1.7B-Q4_K_M.gguf, as published on HuggingFace (unsloth).
 QWEN3_17B_Q4_SHA256 ?= b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897
@@ -536,10 +345,10 @@ upload-llama-cpp-qwen3-17b-q4-local:
 upload-llama-cpp-qwen3-17b-q4-ic:
 	@echo "---"
 	@echo "upload-llama-cpp-qwen3-17b-q4-ic"
-	python -m llms.llama_cpp_canister.scripts.upload --network ic --canister llama_cpp_qwen3_17b_q4 --canister-filename models/model.gguf --filetype gguf --hf-sha256 "$(QWEN3_17B_Q4_SHA256)" $(QWEN3_17B_Q4_GGUF)
+	python -m llms.llama_cpp_canister.scripts.upload --network production --canister llama_cpp_qwen3_17b_q4 --canister-filename models/model.gguf --filetype gguf --hf-sha256 "$(QWEN3_17B_Q4_SHA256)" $(QWEN3_17B_Q4_GGUF)
 
 .PHONY: download-log-llama-cpp-qwen3-17b-q4-ic
 download-log-llama-cpp-qwen3-17b-q4-ic:
 	@echo "---"
 	@echo "download-log-llama-cpp-qwen3-17b-q4-ic"
-	python -m llms.llama_cpp_canister.scripts.download --network ic --canister llama_cpp_qwen3_17b_q4 --local-filename main-llama-cpp-qwen3-17b-q4.log main.log
+	python -m llms.llama_cpp_canister.scripts.download --network production --canister llama_cpp_qwen3_17b_q4 --local-filename main-llama-cpp-qwen3-17b-q4.log main.log

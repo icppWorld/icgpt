@@ -4,9 +4,9 @@ import 'dracula-ui/styles/dracula-ui.css'
 import { Card, Text } from 'dracula-ui'
 
 /*
-  When implementing separate staging & production canisters, 
-  selectively display this banner based on DFX_NETWORK.
-  See: https://github.com/krpeacock/dfx-staging-env-example
+  When implementing separate staging & production canisters,
+  selectively display this banner based on the deployment environment
+  (e.g. a PUBLIC_CANISTER_ID:* value from the ic_env cookie).
 */
 export function StagingBanner() {
   return (

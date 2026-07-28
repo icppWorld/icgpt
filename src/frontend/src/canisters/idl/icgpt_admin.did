@@ -1,0 +1,115 @@
+type UsageInfo = 
+ record {
+   calls: nat;
+   conversations: nat;
+   cyclesCost: nat;
+   lastAt: int;
+   "principal": principal;
+   tokensOut: nat;
+ };
+type StatusCodeRecordResult = 
+ variant {
+   Err: ApiError;
+   Ok: StatusCodeRecord;
+ };
+type StatusCodeRecord = record {status_code: nat16;};
+type RunOutputRecordX = 
+ record {
+   conversation: text;
+   cycles_cost: nat;
+   duration_ns: nat;
+   error: text;
+   generated_eog: bool;
+   output: text;
+   prompt_remaining: text;
+   status_code: nat16;
+ };
+type Result = 
+ variant {
+   err: text;
+   ok;
+ };
+type OutputRecordResultX = 
+ variant {
+   Err: RunOutputRecordX;
+   Ok: RunOutputRecordX;
+ };
+type InputRecord = record {args: vec text;};
+type Info = 
+ record {
+   at: int;
+   email: text;
+   note: text;
+   "principal": principal;
+ };
+type ApiError = 
+ variant {
+   Other: text;
+   StatusCode: nat16;
+ };
+type AdminInfo = 
+ record {
+   "principal": principal;
+   who: text;
+ };
+type Access = 
+ record {
+   allowed: bool;
+   earlyAccess: bool;
+   isAdmin: bool;
+   requested: bool;
+   whitelisted: bool;
+ };
+service : {
+  /// Grant admin to a principal at runtime (in addition to the hardcoded bootstrap).
+  /// Re-calling updates the who label. Admin-only.
+  addAdmin: (p: principal, who: text) -> ();
+  /// Directly whitelist a principal (no prior request), e.g. a known colleague.
+  addToWhitelist: (p: principal, email: text, note: text) -> ();
+  add_llm_canister: (modelKey: text, canisterId: text) -> (Result);
+  /// Approve a pending request: move it onto the whitelist, preserving email + timestamp.
+  approve: (p: principal) -> (Result);
+  /// Verify the controller can reach every registered LLM (it is a controller of
+  /// each, so check_access should return Ok). Admin-only.
+  checkAccessToLLMs: () -> (Result);
+  getEarlyAccess: () -> (bool) query;
+  getEarlyAccessCallCap: () -> (nat) query;
+  /// The live cycle balance of each registered LLM (via the management canister's
+  /// canister_status — this canister is a controller of each). Ops-only; also confirms
+  /// the per-call cost measurement can read balances. (On a local replica cycles are
+  /// not charged, so per-call deltas are 0 there; real on the IC.)
+  get_llm_balances: () -> (vec nat);
+  get_llm_canisters: () -> (vec record {
+                                  text;
+                                  text;
+                                }) query;
+  health: () -> (StatusCodeRecordResult) query;
+  isCallerAdmin: () -> (bool) query;
+  listAdmins: () ->
+   (record {
+      added: vec AdminInfo;
+      bootstrap: vec AdminInfo;
+    }) query;
+  listRequests: () -> (vec Info) query;
+  listUsage: () -> (vec UsageInfo) query;
+  listWhitelist: () -> (vec Info) query;
+  /// The single call the frontend gate needs. allowed = admin OR not earlyAccess OR
+  /// whitelisted. Non-allowed users are shown the request-access screen.
+  myAccess: () -> (Access) query;
+  new_chat: (model: text, input: InputRecord) -> (OutputRecordResultX);
+  reject: (p: principal) -> ();
+  /// Revoke a runtime-added admin. The hardcoded bootstrap admins are permanent.
+  removeAdmin: (p: principal) -> ();
+  removeFromWhitelist: (p: principal) -> ();
+  remove_llm_canister: (canisterId: text) -> ();
+  /// A signed-in, not-yet-allowed caller requests access, describing their use case.
+  /// An admin later approves it onto the whitelist (approval is discussed on OpenChat).
+  /// The use case is stored in the `note` field. Bounded to protect stable memory.
+  requestAccess: (useCase: text) -> (Result);
+  run_update: (input: InputRecord) -> (OutputRecordResultX);
+  setEarlyAccess: (e: bool) -> ();
+  setEarlyAccessCallCap: (n: nat) -> ();
+  /// The caller's principal - handy for the access screen and for capturing a
+  /// principal to hardcode as a bootstrap admin.
+  whoami: () -> (principal) query;
+}

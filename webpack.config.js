@@ -1,142 +1,64 @@
-require('dotenv').config()
-console.warn(`process.env.DFX_VERSION before: ${process.env.DFX_VERSION}`)
-console.warn(`process.env.DFX_NETWORK before: ${process.env.DFX_NETWORK}`)
-console.warn(
-  `process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 before: ${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
-)
-
-// Overwrite the DFX_VERSION and DFX_NETWORK environment variables already present in the shell
-// process.env.DFX_VERSION = process.env.DFX_VERSION || 'local';
-// process.env.DFX_NETWORK = process.env.DFX_NETWORK || 'local';
-// Force override of all variables -> ensure .env always wins
-const dotenv = require('dotenv')
-const fs = require('fs')
-
-// Load .env manually
-const envConfig = dotenv.parse(fs.readFileSync('.env'))
-
-// Force override: apply all keys from .env to process.env
-for (const k in envConfig) {
-  process.env[k] = envConfig[k]
-}
-
-// Now log to confirm
-for (const key in process.env) {
-  if (key.startsWith('CANISTER_ID_') || key.startsWith('DFX_')) {
-    console.warn(`${key}: ${process.env[key]}`)
-  }
-}
-
-console.warn(`--------------------------------------------`)
-console.warn(`process.env.DFX_VERSION after: ${process.env.DFX_VERSION}`)
-console.warn(`process.env.DFX_NETWORK after: ${process.env.DFX_NETWORK}`)
-console.warn(
-  `process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 before: ${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
-)
-
 const path = require('path')
+const { execSync } = require('child_process')
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const TerserPlugin = require('terser-webpack-plugin')
 const CopyPlugin = require('copy-webpack-plugin')
 
-// The environment variable NODE_ENV will the set to 'production' by the command
-//   dfx deploy --network ic
+// The environment variable NODE_ENV is set to 'production' by `make icp-deploy-frontend
+// ENV=production` (mainnet). A production webpack build flips minification + the
+// production mode; a development build keeps source maps and certificate-friendly output.
 const isDevelopment = process.env.NODE_ENV !== 'production'
 console.warn(`isDevelopment: ${isDevelopment}`)
 
 const frontendDirectory = 'frontend'
 
-// URL for Internet Identity
-// When using `dfx nns install`, the Internet Identity canister ID is always qhbym-qaaaa-aaaaa-aaafq-cai
-// Local network port is 8080 (see dfx.json networks.local.bind)
-const II_CANISTER_ID_LOCAL = 'qhbym-qaaaa-aaaaa-aaafq-cai'
-const II_URL_LOCAL = `http://${II_CANISTER_ID_LOCAL}.localhost:8080`
-const II_URL_IC = 'https://identity.ic0.app/'
-const II_URL = process.env.NODE_ENV === 'production' ? II_URL_IC : II_URL_LOCAL
-console.warn(`II_URL_LOCAL: ${II_URL_LOCAL}`)
-console.warn(`II_URL_IC: ${II_URL_IC}`)
-console.warn(`II_URL: ${II_URL}`)
+// Backend canisters the frontend talks to. Their ids are injected into the dev-server
+// `ic_env` cookie below so the runtime `safeGetCanisterEnv()` resolves them locally.
+const BACKEND_CANISTERS = ['icgpt_admin', 'llama_cpp_qwen25_05b_q8']
 
-// URL for IC host (local network port is 8080, see dfx.json networks.local.bind)
-const IC_HOST_URL_LOCAL = 'http://localhost:8080'
-const IC_HOST_URL_IC = 'https://ic0.app'
-const IC_HOST_URL =
-  process.env.NODE_ENV === 'production' ? IC_HOST_URL_IC : IC_HOST_URL_LOCAL
-console.warn(`IC_HOST_URL_LOCAL: ${IC_HOST_URL_LOCAL}`)
-console.warn(`IC_HOST_URL_IC: ${IC_HOST_URL_IC}`)
-console.warn(`IC_HOST_URL: ${IC_HOST_URL}`)
+// DEV-SERVER ONLY: simulate the `ic_env` cookie that the asset canister serves in
+// production, and proxy /api to the managed local replica. Everything is read from
+// icp-cli at RUNTIME — no hardcoded ports, no .env. Requires the local network running
+// (`make icp-network-start`) and the backend canisters deployed (`make icp-deploy
+// ENV=local`), so that `icp network status` / `icp canister status` have something to
+// report. The frontend canister itself does NOT need deploying — webpack serves it.
+function getDevServerConfig() {
+  const status = JSON.parse(
+    execSync('icp network status -e local --json', { encoding: 'utf-8' })
+  )
+  const canisterParams = BACKEND_CANISTERS.map((name) => {
+    // -i returns only the canister id (from the local ID store).
+    const id = execSync(`icp canister status ${name} -e local -i`, {
+      encoding: 'utf-8',
+      stdio: 'pipe',
+    }).trim()
+    return `PUBLIC_CANISTER_ID:${name}=${id}`
+  }).join('&')
+  const cookie = encodeURIComponent(
+    `${canisterParams}&ic_root_key=${status.root_key}`
+  )
+  return {
+    port: 8081, // pinned so the II derivationOrigin / dev URL is stable
+    headers: { 'Set-Cookie': `ic_env=${cookie}; SameSite=Lax;` },
+    proxy: {
+      '/api': {
+        // api_url has a trailing slash; strip it or the replica 400s on //api/v3.
+        target: status.api_url.replace(/\/$/, ''),
+        changeOrigin: true,
+      },
+    },
+    static: path.resolve(__dirname, 'src', frontendDirectory, 'assets'),
+    hot: true,
+    watchFiles: [path.resolve(__dirname, 'src', frontendDirectory)],
+    liveReload: true,
+    // SPA fallback: serve index.html for client-side routes (e.g. /docs, /docs/:slug)
+    // so hard-loads / deep links resolve to the app instead of 404.
+    historyApiFallback: true,
+  }
+}
 
-// More data from .env
-// If you want to develop frontend locally, calling canisters on IC:
-// (1) make dfx-deploy-local   (local deploy, updates .env)
-// (2) edit .env, and update canister IDs to the ones of mainnet
-// (3) nmp run start
-const DFX_VERSION = process.env.DFX_VERSION || 'local'
-const DFX_NETWORK = process.env.DFX_NETWORK || 'local'
-const CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8 = `${process.env.CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
-const CANISTER_ID_ICGPT_ADMIN = `${process.env.CANISTER_ID_ICGPT_ADMIN}`
-const CANISTER_ID_INTERNET_IDENTITY = `${process.env.CANISTER_ID_INTERNET_IDENTITY}`
-const CANISTER_ID_CANISTER_FRONTEND = `${process.env.CANISTER_ID_CANISTER_FRONTEND}`
-console.warn(`DFX_VERSION: ${DFX_VERSION}`)
-console.warn(`DFX_NETWORK: ${DFX_NETWORK}`)
-console.warn(
-  `CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8: ${CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8}`
-)
-console.warn(`CANISTER_ID_ICGPT_ADMIN: ${CANISTER_ID_ICGPT_ADMIN}`)
-console.warn(`CANISTER_ID_INTERNET_IDENTITY: ${CANISTER_ID_INTERNET_IDENTITY}`)
-console.warn(`CANISTER_ID_CANISTER_FRONTEND: ${CANISTER_ID_CANISTER_FRONTEND}`)
-
-// function initCanisterEnv() {
-//   let localCanisters, prodCanisters
-//   try {
-//     localCanisters = require(path.resolve('.dfx', 'local', 'canister_ids.json'))
-//   } catch (error) {
-//     console.log('No local canister_ids.json found. Continuing production')
-//   }
-//   try {
-//     prodCanisters = require(path.resolve('canister_ids.json'))
-//   } catch (error) {
-//     console.log('No production canister_ids.json found. Continuing with local')
-//   }
-
-//   //   console.log(`process.env.DFX_NETWORK: ${process.env.DFX_NETWORK}`)
-//   const network = process.env.DFX_NETWORK || 'local'
-
-//   const canisterConfig = network === 'local' ? localCanisters : prodCanisters
-
-//   return Object.entries(canisterConfig).reduce((prev, current) => {
-//     const [canisterName, canisterDetails] = current
-//     prev[canisterName.toUpperCase() + '_CANISTER_ID'] = canisterDetails[network]
-//     return prev
-//   }, {})
-// }
-// const canisterEnvVariables = initCanisterEnv()
-// console.log(
-//   `canisterEnvVariables: ${JSON.stringify(canisterEnvVariables, null, 2)}`
-// )
-
-module.exports = (env = {}, args = {}) => {
-  console.log(`env: ${JSON.stringify(env, null, 2)}`)
-  /* 
-    See:
-    https://webpack.js.org/guides/production/#specify-the-mode
-
-    dfx build  (which is run by dfx deploy) runs the `npm build` script:
-    (-) For network=ic, it sets NODE_ENV=production before running the script
-        https://github.com/dfinity/sdk/blob/master/src/dfx/src/lib/builders/assets.rs#L279
-    (-) For network=local, it does not do that, so it makes a development build
-
-    I would love to define this in package.json, so we ALWAYS get a production build:
-    "scripts": {
-      "build": "webpack --mode production --env production",
-    }
-
-    But, that does not work, because when installing a production build in the
-    local network, it gives this error when the frontend calls the backend:
-    
-    "fail to verify certificate"
-  */
+module.exports = () => {
   console.warn(`isDevelopment: ${isDevelopment}`)
 
   return {
@@ -155,13 +77,12 @@ module.exports = (env = {}, args = {}) => {
       separate bundle, because it is likely that those will
       NOT change between builds, and you don't want to have
       browsers reload them unnecesary.
-  
+
       The actual application code bundle will also become smaller.
-  
+
       See https://webpack.js.org/guides/caching/
       */
       moduleIds: 'deterministic',
-      // runtimeChunk: 'single',
       splitChunks: {
         cacheGroups: {
           vendor: {
@@ -173,38 +94,8 @@ module.exports = (env = {}, args = {}) => {
       },
     },
     resolve: {
-      // https://webpack.js.org/configuration/resolve
-
-      // Use these aliases in import statements
-      alias: {
-        DeclarationsCanisterLlamacpp_Qwen25_05B_Q8: path.resolve(
-          __dirname,
-          'src/declarations',
-          'llama_cpp_qwen25_05b_q8'
-        ),
-        DeclarationsCanisterIcgptAdmin: path.resolve(
-          __dirname,
-          'src/declarations',
-          'icgpt_admin'
-        ),
-        DeclarationsCanisterFrontend: path.resolve(
-          __dirname,
-          'src/declarations',
-          'canister_frontend'
-        ),
-      },
-
       // Order in which imports without extension are resolved
       extensions: ['.ts', '.tsx', '.jsx', '.js', '...'],
-
-      // Polyfills... not used
-      // fallback: {
-      //   assert: require.resolve("assert/"),
-      //   buffer: require.resolve("buffer/"),
-      //   events: require.resolve("events/"),
-      //   stream: require.resolve("stream-browserify/"),
-      //   util: require.resolve("util/"),
-      // },
     },
     module: {
       /*
@@ -260,34 +151,17 @@ module.exports = (env = {}, args = {}) => {
         chunks: ['Main'],
         cache: false,
       }),
-      new webpack.EnvironmentPlugin({
-        // This does not seem to work
-        // ...Object.keys(process.env).filter((key) => {
-        //   if (key.includes('CANISTER')) return true
-        //   if (key.includes('DFX')) return true
-        //   return false
-        // }),
-        DFX_VERSION,
-        DFX_NETWORK,
-        CANISTER_ID_LLAMA_CPP_QWEN25_05B_Q8,
-        CANISTER_ID_ICGPT_ADMIN,
-        CANISTER_ID_INTERNET_IDENTITY,
-        CANISTER_ID_CANISTER_FRONTEND,
-        //
-        II_URL,
-        IC_HOST_URL,
-      }),
       /*
       Do not use the CopyPlugin, because:
       (-) It copies blindly, without giving webpack a chance to build a dependency graph,
           ie, build a `webpack module`, that does all of it's magic:
           (-) Copies only files that are actually used
           (-) Long Term Caching: Applies a hash to the name in dist, ensuring reload upon upgrade
-      (-) Use in HTML (href) & JS CODE (import) reflect the post build `dist` directory structure, 
+      (-) Use in HTML (href) & JS CODE (import) reflect the post build `dist` directory structure,
           not the code `src` directory structure, which is confusing.
-  
+
       Instead, use the Asset Modules capability, defined above in `module: {rules: type: 'asset'}`
-      
+
       References:
       - https://dev.to/smelukov/webpack-5-asset-modules-2o3h
       - https://webpack.js.org/concepts/modules/
@@ -353,24 +227,9 @@ module.exports = (env = {}, args = {}) => {
       // script against /docs/ and 404s → blank page.
       publicPath: '/',
     },
-    // proxy /api to port 8080 during development (see dfx.json networks.local.bind).
-    devServer: {
-      proxy: {
-        '/api': {
-          target: 'http://127.0.0.1:8080',
-          changeOrigin: true,
-          pathRewrite: {
-            '^/api': '/api',
-          },
-        },
-      },
-      static: path.resolve(__dirname, 'src', frontendDirectory, 'assets'),
-      hot: true,
-      watchFiles: [path.resolve(__dirname, 'src', frontendDirectory)],
-      liveReload: true,
-      // SPA fallback: serve index.html for client-side routes (e.g. /docs, /docs/:slug)
-      // so hard-loads / deep links resolve to the app instead of 404.
-      historyApiFallback: true,
-    },
+    // The dev server injects the ic_env cookie + proxies /api to the managed replica.
+    // Only attach it for `webpack serve` (WEBPACK_SERVE=true) so a production `webpack`
+    // build never shells out to icp-cli.
+    ...(process.env.WEBPACK_SERVE ? { devServer: getDevServerConfig() } : {}),
   }
 }

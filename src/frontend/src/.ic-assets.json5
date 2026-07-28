@@ -24,7 +24,12 @@
       //   See: https://github.com/WebAssembly/content-security-policy/blob/main/proposals/CSP.md.
       // - We added img-src data: because data: images are used often.
       // - frame-ancestors: none mitigates clickjacking attacks. See https://owasp.org/www-community/attacks/Clickjacking.
-      'Content-Security-Policy': "default-src 'self';script-src 'self' 'unsafe-eval';connect-src 'self' http://localhost:8080 https://icp0.io https://*.icp0.io https://ic0.app;img-src 'self' data:;style-src * 'unsafe-inline';style-src-elem * 'unsafe-inline';font-src *;object-src 'none';base-uri 'self';frame-ancestors 'none';form-action 'self';upgrade-insecure-requests;",
+      // connect-src: 'self' covers same-origin /api calls (the agent posts to
+      // window.location.origin/api, proxied to the boundary node / local dev server);
+      // icp0.io/ic0.app cover direct boundary-node calls; id.ai is the Internet
+      // Identity provider used by @icp-sdk/auth. (The old dfx local replica on
+      // http://localhost:8080 is gone — local dev is same-origin via the webpack proxy.)
+      'Content-Security-Policy': "default-src 'self';script-src 'self' 'unsafe-eval';connect-src 'self' https://icp0.io https://*.icp0.io https://ic0.app https://id.ai;img-src 'self' data:;style-src * 'unsafe-inline';style-src-elem * 'unsafe-inline';font-src *;object-src 'none';base-uri 'self';frame-ancestors 'none';form-action 'self';upgrade-insecure-requests;",
 
       // Security: The permissions policy disables all features for security reasons. If your site needs such permissions, activate them.
       // To configure permissions go here https://www.permissionspolicy.com/

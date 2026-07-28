@@ -3,7 +3,7 @@
 This folder holds an unzipped official release of
 https://github.com/onicai/llama_cpp_canister
 
-Currently: **v0.12.1** (see version.txt)
+Currently: **v0.14.0** (see version.txt)
 
 Note that `build/` and `*.wasm` are gitignored, so after a fresh clone of ICGPT
 you must unzip the release here yourself, using the steps below.
@@ -21,20 +21,19 @@ eslint (see .eslintignore), so it stays byte-identical to the release zip.
 
 ## Regenerating the frontend bindings
 
-After unzipping a release whose `build/llama_cpp.did` changed, regenerate the
-declarations:
+The frontend builds actors from committed candid `idlFactory` files in
+`src/frontend/src/canisters/idl/` (dfx is retired — bindings are generated with
+`didc`, not `dfx generate`). After unzipping a release whose `build/llama_cpp.did`
+changed, refresh the llama binding:
 
 ```bash
-dfx generate llama_cpp_qwen25_05b_q8 --network local
+cp llms/llama_cpp_canister/build/llama_cpp.did src/frontend/src/canisters/idl/llama_cpp.did
+didc bind -t js src/frontend/src/canisters/idl/llama_cpp.did \
+  > src/frontend/src/canisters/idl/llama_cpp.idl.js
 ```
 
-Careful: dfx 0.32 generates declarations that import from `@icp-sdk/core/*`,
-while ICGPT uses the `@dfinity/*` packages. Until ICGPT migrates, rewrite the
-imports in `src/declarations/llama_cpp_qwen25_05b_q8/` back to
-`@dfinity/agent`, `@dfinity/principal` & `@dfinity/candid`, or webpack fails
-with `Module not found: Can't resolve '@icp-sdk/core/agent'`.
-
-Then redeploy ICGPT using instructions of README.
+(The `icgpt_admin` binding is regenerated the same way from its `.did`.) Then
+redeploy ICGPT using the instructions in the README.
 
 ## History
 

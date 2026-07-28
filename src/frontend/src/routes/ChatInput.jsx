@@ -4,9 +4,6 @@ import 'dracula-ui/styles/dracula-ui.css'
 import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
 import { doSubmitLlamacpp } from '../canisters/llamacpp.js'
 
-const II_URL = process.env.II_URL
-const IC_HOST_URL = process.env.IC_HOST_URL
-
 const DEBUG = true
 
 export function ChatInput({
