@@ -67,6 +67,38 @@ export function Login({ setAuthClient }) {
               label="Request early access"
             />
 
+            {/* Demo movie: Gemma-3-270M running on-chain. H.264/AAC in an MP4
+                container, served as a static asset (see webpack CopyPlugin). */}
+            <div style={{ marginTop: '40px' }}>
+              <p
+                style={{
+                  fontSize: '13px',
+                  color: '#6272a4',
+                  margin: '0 0 10px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                }}
+              >
+                ▶ Watch it run — Gemma-3-270M on-chain
+              </p>
+              <video
+                src="/video/gemma.mp4"
+                controls
+                playsInline
+                preload="metadata"
+                style={{
+                  width: '100%',
+                  height: 'auto',
+                  borderRadius: '12px',
+                  border: '1px solid #44475a',
+                  boxShadow: '0 10px 34px rgba(0, 0, 0, 0.45)',
+                  display: 'block',
+                }}
+              >
+                Your browser does not support the video tag.
+              </video>
+            </div>
+
             <div
               style={{
                 display: 'flex',

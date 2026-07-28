@@ -1,7 +1,7 @@
 <section>
   <h1>Models</h1>
   <p class="lead">
-    Two on-chain models, each served from its own Internet Computer canister.
+    Four on-chain models, each served from its own Internet Computer canister.
     Switch between them from the dropdown at the top of the studio.
   </p>
 
@@ -28,6 +28,30 @@
     </li>
   </ul>
 
+  <h2>Qwen3-1.7B</h2>
+  <p>
+    The largest, most capable model here — best for tasks needing precise
+    instruction-following, negation, or keeping a secret. Also a hybrid thinking
+    model. Being bigger, it generates fewer tokens per update call, so replies
+    cost more cycles and stream a little slower.
+  </p>
+  <ul>
+    <li>
+      <strong>File:</strong> <code>Qwen3-1.7B-Q4_K_M.gguf</code> (Q4_K_M
+      quantized)
+    </li>
+    <li><strong>Context:</strong> 16K tokens (~12K words)</li>
+    <li>
+      <strong>Model card:</strong>
+      <a
+        href="https://huggingface.co/unsloth/Qwen3-1.7B-GGUF"
+        target="_blank"
+        rel="noreferrer"
+        >unsloth/Qwen3-1.7B-GGUF on HuggingFace</a
+      >
+    </li>
+  </ul>
+
   <h2>Qwen2.5-0.5B-Instruct</h2>
   <p>
     The previous default — an excellent, lightweight instruct model, kept
@@ -47,6 +71,33 @@
         target="_blank"
         rel="noreferrer"
         >Qwen/Qwen2.5-0.5B-Instruct-GGUF on HuggingFace</a
+      >
+    </li>
+  </ul>
+
+  <h2>Gemma-3-270M <span class="tag">Smallest</span></h2>
+  <p>
+    Google's Gemma-3-270M — the <strong>smallest and cheapest</strong> model
+    that runs on-chain, and the fastest (the highest tokens-per-call and lowest
+    cycle cost of any ICGPT model). Great for quick, simple tasks and demos. As
+    a 270M model it is <strong>unreliable</strong> for precise
+    instruction-following, negation, or secret-keeping — for those, prefer
+    Qwen3-0.6B or Qwen3-1.7B. It uses Gemma's own chat template (no system role,
+    no thinking block).
+  </p>
+  <ul>
+    <li>
+      <strong>File:</strong> <code>gemma-3-270m-it-Q8_0.gguf</code> (q8_0
+      quantized)
+    </li>
+    <li><strong>Context:</strong> 4K tokens (~3K words)</li>
+    <li>
+      <strong>Model card:</strong>
+      <a
+        href="https://huggingface.co/unsloth/gemma-3-270m-it-GGUF"
+        target="_blank"
+        rel="noreferrer"
+        >unsloth/gemma-3-270m-it-GGUF on HuggingFace</a
       >
     </li>
   </ul>

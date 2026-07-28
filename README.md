@@ -161,15 +161,17 @@ The wasm & did are not committed (see .gitignore), so after a fresh clone you mu
 unzip the release yourself. To do that, or to upgrade to a newer release, follow
 `llms/llama_cpp_canister/README-instructions.md`.
 
-Download qwen2.5-0.5b-instruct-q8_0.gguf from https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF
+Download each model's gguf into `llms/models/<repo>/…` (the `make upload-*` targets check
+the sha256 before uploading — the values live in the Makefile per model):
 
-Place it in this location:
+| model | download from | place at |
+| --- | --- | --- |
+| Qwen2.5-0.5B | huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF | `llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf` |
+| Qwen3-0.6B | huggingface.co/Qwen/Qwen3-0.6B-GGUF | `llms/models/Qwen/Qwen3-0.6B-GGUF/Qwen3-0.6B-Q8_0.gguf` |
+| Qwen3-1.7B | huggingface.co/unsloth/Qwen3-1.7B-GGUF | `llms/models/unsloth/Qwen3-1.7B-GGUF/Qwen3-1.7B-Q4_K_M.gguf` |
+| Gemma-3-270M | huggingface.co/unsloth/gemma-3-270m-it-GGUF | `llms/models/unsloth/gemma-3-270m-it-GGUF/gemma-3-270m-it-Q8_0.gguf` |
 
-```
-llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
-```
-
-Verify the sha256 (`make upload-...` checks this too):
+For example, verify a download's sha256 (the upload also checks this):
 
 ```bash
 $ shasum -a 256 llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
@@ -190,14 +192,18 @@ models are:
 | `llama_cpp_qwen3_06b_q8`  (Qwen3-0.6B)      | `model.gguf`        | `--model model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 64 --ubatch-size 64 --ctx-size 16384` | 1 / 20                          |
 | `llama_cpp_qwen25_05b_q8` (Qwen2.5-0.5B)    | `model.gguf`        | identical to Qwen3-0.6B (line above)                                                                    | 1 / 20                          |
 | `llama_cpp_qwen3_17b_q4`  (Qwen3-1.7B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --batch-size 8 --ubatch-size 8 --ctx-size 16384`                            | 1 / 4                           |
+| `llama_cpp_gemma3_270m`   (Gemma-3-270M)      | `models/model.gguf` | `--model models/model.gguf -c 4096 --cache-type-k q8_0 --cache-type-v q8_0`                            | 1 / 44                          |
 
 Notes:
 
 - The `--model` path must match where the gguf was uploaded: `model.gguf` for the 0.5B/0.6B,
-  `models/model.gguf` for the 1.7B (see the `make upload-*` targets).
-- The 1.7B is capped at `max_tokens_update = 4` (vs 20 for the small models) to stay under
-  the IC per-message instruction limit — a bigger model does less work per update call, so
-  it needs more update calls per reply.
+  `models/model.gguf` for the 1.7B and Gemma (see the `make upload-*` targets).
+- The 1.7B is capped at `max_tokens_update = 4` (vs 20 for the small Qwens) to stay under the
+  IC per-message instruction limit — a bigger model does less work per update call, so it needs
+  more update calls per reply. Conversely Gemma-3-270M (the smallest) buys **44** tokens/call
+  (60 traps `IC0522`); it uses a smaller 4K context and, being ~0.9 GiB, needs **no**
+  `wasm_memory_limit` bump (unlike the Qwens' 3.75 GiB). Gemma uses a different chat template
+  (no system role) — handled in `llamacpp.js` via `inference.promptFormat: 'gemma'`.
 - After **every** install/upgrade also re-arm the in-memory timers
   (`cache_cleanup_start_timer`, `cycle_balance_start_timer`) and, under the hard gate, keep
   `set_access` at level 0 (controllers only). See the walkthrough below for the full call
@@ -208,11 +214,14 @@ Notes:
 Once the model gguf is in place, as described in the previous step, you can deploy everything with:
 
 ```bash
-# ICGPT serves THREE models, each in its own canister (same llama_cpp v0.14.0 wasm):
+# ICGPT serves FOUR models, each in its own canister (same llama_cpp v0.14.0 wasm):
 #   llama_cpp_qwen3_06b_q8  (Qwen3-0.6B, the default)   16K ctx, max_tokens_update 20
 #   llama_cpp_qwen25_05b_q8 (Qwen2.5-0.5B)              16K ctx, max_tokens_update 20
 #   llama_cpp_qwen3_17b_q4  (Qwen3-1.7B, Q4_K_M)         16K ctx, max_tokens_update 4,
 #                                                        loaded from models/model.gguf, batch 8
+#   llama_cpp_gemma3_270m   (Gemma-3-270M)               4K ctx,  max_tokens_update 44,
+#                                                        models/model.gguf; NO 3.75GiB bump
+# See the "LLM model configuration" table above for exact load_model args per model.
 #
 # Everything runs on icp-cli against a project-local MANAGED network (ephemeral port).
 

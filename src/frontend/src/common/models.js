@@ -16,7 +16,11 @@
 //                               loaded the model (both q8_0 for the 16K-context config)
 //     supportsThinking        - true => hybrid thinking model (Qwen3): the Parameters
 //                               panel's Thinking toggle chooses the assistant-turn opener.
-//                               false (Qwen2.5) => always the plain assistant open.
+//                               false (Qwen2.5, Gemma) => always the plain open.
+//     promptFormat            - chat template family: 'chatml' (Qwen) | 'gemma' (Gemma 3,
+//                               which has NO system role). Selects the template in
+//                               llamacpp.js (TEMPLATES). Defaults to 'chatml' if absent.
+//   note          - optional one-line quality/use-case hint shown under the dropdown.
 
 export const MODELS = [
   {
@@ -31,6 +35,7 @@ export const MODELS = [
       cacheTypeK: 'q8_0',
       cacheTypeV: 'q8_0',
       supportsThinking: true,
+      promptFormat: 'chatml',
     },
   },
   {
@@ -45,6 +50,7 @@ export const MODELS = [
       cacheTypeK: 'q8_0',
       cacheTypeV: 'q8_0',
       supportsThinking: true,
+      promptFormat: 'chatml',
     },
   },
   {
@@ -57,6 +63,23 @@ export const MODELS = [
       cacheTypeK: 'q8_0',
       cacheTypeV: 'q8_0',
       supportsThinking: false,
+      promptFormat: 'chatml',
+    },
+  },
+  {
+    id: 'gemma-3-270m-it-q8',
+    gguf: 'gemma-3-270m-it-Q8_0.gguf',
+    hfUrl: 'https://huggingface.co/unsloth/gemma-3-270m-it-GGUF',
+    hfDownloadUrl:
+      'https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q8_0.gguf',
+    finetuneType: 'Instruct',
+    available: true,
+    note: 'Smallest & cheapest on-chain model — fast, great for simple tasks & demos, but unreliable at precise instructions. Prefer Qwen3 for quality.',
+    inference: {
+      cacheTypeK: 'q8_0', // matches the q8_0 KV cache the canister loaded with
+      cacheTypeV: 'q8_0',
+      supportsThinking: false, // gemma is NOT a thinking model
+      promptFormat: 'gemma', // NEW template — no system role (see llamacpp.js TEMPLATES)
     },
   },
 ]

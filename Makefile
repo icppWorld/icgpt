@@ -352,3 +352,29 @@ download-log-llama-cpp-qwen3-17b-q4-ic:
 	@echo "---"
 	@echo "download-log-llama-cpp-qwen3-17b-q4-ic"
 	python -m llms.llama_cpp_canister.scripts.download --network production --canister llama_cpp_qwen3_17b_q4 --local-filename main-llama-cpp-qwen3-17b-q4.log main.log
+
+# The sha256 of gemma-3-270m-it-Q8_0.gguf, as published on HuggingFace (unsloth).
+GEMMA3_270M_SHA256 ?= d156a5159f2f79c1b1d53c7c1cc20f1ff28ab8d00f17a292620aad13399b9698
+
+# NOTE: pass an ABSOLUTE path for the model (resolved by the upload script against
+#       its own repo root, not our working directory).
+GEMMA3_270M_GGUF ?= $(CURDIR)/llms/models/unsloth/gemma-3-270m-it-GGUF/gemma-3-270m-it-Q8_0.gguf
+
+# NOTE: gemma is uploaded as "models/model.gguf" (like the 1.7B). load_model must match.
+.PHONY: upload-llama-cpp-gemma3-270m-local
+upload-llama-cpp-gemma3-270m-local:
+	@echo "---"
+	@echo "upload-llama-cpp-gemma3-270m-local"
+	python -m llms.llama_cpp_canister.scripts.upload --network local --canister llama_cpp_gemma3_270m --canister-filename models/model.gguf --filetype gguf --hf-sha256 "$(GEMMA3_270M_SHA256)" $(GEMMA3_270M_GGUF)
+
+.PHONY: upload-llama-cpp-gemma3-270m-ic
+upload-llama-cpp-gemma3-270m-ic:
+	@echo "---"
+	@echo "upload-llama-cpp-gemma3-270m-ic"
+	python -m llms.llama_cpp_canister.scripts.upload --network production --canister llama_cpp_gemma3_270m --canister-filename models/model.gguf --filetype gguf --hf-sha256 "$(GEMMA3_270M_SHA256)" $(GEMMA3_270M_GGUF)
+
+.PHONY: download-log-llama-cpp-gemma3-270m-ic
+download-log-llama-cpp-gemma3-270m-ic:
+	@echo "---"
+	@echo "download-log-llama-cpp-gemma3-270m-ic"
+	python -m llms.llama_cpp_canister.scripts.download --network production --canister llama_cpp_gemma3_270m --local-filename main-llama-cpp-gemma3-270m.log main.log

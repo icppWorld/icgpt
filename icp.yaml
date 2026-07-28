@@ -48,6 +48,16 @@ canisters:
         path: llms/llama_cpp_canister/build/llama_cpp.wasm
         sha256: 7ef7c0a1cd71717bef0641035b4b5be80f9f771e88a38de1c16d8dd114903f74
 
+  # Gemma-3-270M — the smallest on-chain model (same llama_cpp v0.14.0 wasm; the
+  # b10076 fork is required to load the gemma3 arch). ~0.9 GiB heap after load, so it
+  # does NOT get the 3.75 GiB wasm_memory_limit bump (see settings below).
+  - name: llama_cpp_gemma3_270m
+    recipe:
+      type: '@dfinity/prebuilt@v2.0.0'
+      configuration:
+        path: llms/llama_cpp_canister/build/llama_cpp.wasm
+        sha256: 7ef7c0a1cd71717bef0641035b4b5be80f9f771e88a38de1c16d8dd114903f74
+
   - name: canister_frontend
     recipe:
       type: '@dfinity/asset-canister@v2.2.1'
@@ -85,6 +95,12 @@ environments:
           - icgpt_admin
       llama_cpp_qwen3_17b_q4:
         wasm_memory_limit: 3.75gib
+        controllers:
+          - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
+          - icgpt_admin
+      llama_cpp_gemma3_270m:
+        # No wasm_memory_limit bump — 270M uses ~0.9 GiB (the default limit is enough).
+        # Only the hard-gate controllers are set (chfec deployer + icgpt_admin).
         controllers:
           - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
           - icgpt_admin

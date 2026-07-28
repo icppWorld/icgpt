@@ -25,39 +25,81 @@ function makeControllerActor(authClient) {
 // The Qwen chat template pieces. The system prompt TEXT is user-configurable
 // (the system-prompt test bed); we wrap the chosen text in the template here.
 const DEFAULT_SYSTEM_PROMPT_TEXT = 'You are a helpful assistant.'
-function wrapSystemPrompt(text) {
-  return (
-    '<|im_start|>system\n' +
-    (text ?? DEFAULT_SYSTEM_PROMPT_TEXT) +
-    '<|im_end|>\n'
-  )
+
+// Chat-template families. Qwen models use ChatML (a real `system` role + Qwen3's
+// hybrid thinking mode); Gemma 3 uses its own template with NO system role and no
+// thinking. Each model's `inference.promptFormat` selects one ('chatml' is the
+// default when absent). `-sp` makes the canister emit these control tokens in the
+// `conversation` field, so we keep them in the cache prefix (for exact next-turn
+// matching) but strip them from what the user SEES.
+const TEMPLATES = {
+  chatml: {
+    // ChatML control tokens + Qwen3 <think> tags (stripped from displayed text).
+    specialTokenRe:
+      /<\|im_start\|>|<\|im_end\|>|<\|endoftext\|>|<think>|<\/think>/g,
+    // The marker after which the CURRENT turn's reply begins, in `conversation`.
+    assistantMarker: '<|im_start|>assistant\n',
+    // Full prompt for ONE turn, appended onto `base` (the canister's prior
+    // `conversation`, or '' on the first turn — where we synthesize the system block).
+    buildTurn(base, userMessage, systemPromptText, model, params) {
+      const b =
+        base ||
+        '<|im_start|>system\n' +
+          (systemPromptText ?? DEFAULT_SYSTEM_PROMPT_TEXT) +
+          '<|im_end|>\n'
+      // Qwen3 hybrid: thinking OFF (default) => an empty <think></think> block forces
+      // non-thinking (clean answers); thinking ON (or a non-hybrid model) => plain open.
+      const nonThinking = model.inference.supportsThinking && !params.thinking
+      const assistantOpen = nonThinking
+        ? '<|im_start|>assistant\n<think>\n\n</think>\n\n'
+        : '<|im_start|>assistant\n'
+      return (
+        b + '<|im_start|>user\n' + userMessage + '<|im_end|>\n' + assistantOpen
+      )
+    },
+  },
+  gemma: {
+    // Gemma 3 control tokens (no <think> — not a thinking model).
+    specialTokenRe: /<start_of_turn>|<end_of_turn>|<eos>|<bos>/g,
+    assistantMarker: '<start_of_turn>model\n',
+    buildTurn(base, userMessage, systemPromptText) {
+      // Gemma has NO system role. On the FIRST turn (empty base) fold the system
+      // prompt into the user message; later turns just append the user turn. The
+      // model turn opens with <start_of_turn>model (not assistant) and turns end
+      // with <end_of_turn>. No thinking mode.
+      const sys = systemPromptText ?? DEFAULT_SYSTEM_PROMPT_TEXT
+      const userText = !base && sys ? sys + '\n\n' + userMessage : userMessage
+      return (
+        (base || '') +
+        '<start_of_turn>user\n' +
+        userText +
+        '<end_of_turn>\n' +
+        '<start_of_turn>model\n'
+      )
+    },
+  },
 }
 
-// Special tokens llama.cpp emits with `-sp`. We strip them from what the user
-// SEES, but keep them in the conversation base (from the canister's `conversation`
-// field) so the next turn's cache prefix still matches exactly. In thinking mode
-// (Qwen3) the model emits <think>…</think> around its reasoning; we strip the tags
-// so the reasoning shows as plain text before the answer (a distinct, collapsible
-// reasoning block is a future refinement).
-const SPECIAL_TOKEN_RE =
-  /<\|im_start\|>|<\|im_end\|>|<\|endoftext\|>|<think>|<\/think>/g
-function stripSpecialTokens(s) {
-  return s.replace(SPECIAL_TOKEN_RE, '')
+function templateFor(model) {
+  return TEMPLATES[model?.inference?.promptFormat] || TEMPLATES.chatml
+}
+
+function stripSpecialTokens(s, model) {
+  return s.replace(templateFor(model).specialTokenRe, '')
 }
 
 // The assistant's reply for the CURRENT turn, extracted from the canister's canonical
-// `conversation` text: everything after the last assistant-turn opener, with special
-// tokens stripped and the leading think-block / whitespace trimmed. Streaming the delta
-// of this across run_update calls (see fetchInference) avoids the per-call boundary
-// repeat and works uniformly for every model. For a non-thinking Qwen3 turn the opener
-// is followed by an empty <think>\n\n</think>\n\n block (stripped here); for a thinking
-// turn the model's <think>…</think> reasoning is shown before the answer.
-const ASSISTANT_TURN_MARKER = '<|im_start|>assistant\n'
-function extractReply(conversation) {
-  const idx = conversation.lastIndexOf(ASSISTANT_TURN_MARKER)
-  const raw =
-    idx >= 0 ? conversation.slice(idx + ASSISTANT_TURN_MARKER.length) : ''
-  return stripSpecialTokens(raw).replace(/^\s+/, '')
+// `conversation` text: everything after the last model/assistant-turn marker, with
+// special tokens stripped and leading whitespace trimmed. Streaming the delta of this
+// across run_update calls (see fetchInference) avoids the per-call boundary repeat and
+// works uniformly for every model/template. For a non-thinking Qwen3 turn the marker is
+// followed by an empty <think>\n\n</think>\n\n block (stripped here); for a thinking turn
+// the model's <think>…</think> reasoning shows before the answer.
+function extractReply(conversation, model) {
+  const marker = templateFor(model).assistantMarker
+  const idx = conversation.lastIndexOf(marker)
+  const raw = idx >= 0 ? conversation.slice(idx + marker.length) : ''
+  return stripSpecialTokens(raw, model).replace(/^\s+/, '')
 }
 
 const DEBUG = true
@@ -84,18 +126,12 @@ function buildNewChatInput(model) {
   }
 }
 
-// The full prompt for ONE turn. First turn: system + user. Later turns: the
-// canister's previous `conversation` (which already holds system + all prior
-// turns) + the new user turn. Ends with the assistant tag so the LLM continues
-// as the assistant.
-//
-// Thinking toggle (Qwen3 is a hybrid thinking model): with thinking OFF (default)
-// we end the assistant turn with an empty <think>\n\n</think>\n\n block, which puts
-// it in non-thinking mode (clean, direct answers). With thinking ON, we use the
-// plain assistant open so the model opens its own <think> and reasons first. A
-// non-hybrid model (Qwen2.5) always uses the plain open. The system prompt only
-// appears on the first turn (empty conversationBase), so switching it requires a
-// New chat to take effect.
+// The full prompt for ONE turn, delegated to the model's chat template (see
+// TEMPLATES). First turn: system + user (ChatML) or system-folded-into-user (Gemma).
+// Later turns: the canister's previous `conversation` (which already holds all prior
+// turns) + the new user turn, ending with the model/assistant-turn opener. The system
+// prompt only appears on the first turn (empty conversationBase), so switching it
+// requires a New chat to take effect.
 function buildInstructTurnPrompt(
   conversationBase,
   userMessage,
@@ -103,13 +139,12 @@ function buildInstructTurnPrompt(
   model,
   params
 ) {
-  const base = conversationBase || wrapSystemPrompt(systemPromptText)
-  const nonThinking = model.inference.supportsThinking && !params.thinking
-  const assistantOpen = nonThinking
-    ? '<|im_start|>assistant\n<think>\n\n</think>\n\n'
-    : '<|im_start|>assistant\n'
-  return (
-    base + '<|im_start|>user\n' + userMessage + '<|im_end|>\n' + assistantOpen
+  return templateFor(model).buildTurn(
+    conversationBase,
+    userMessage,
+    systemPromptText,
+    model,
+    params
   )
 }
 
@@ -450,7 +485,7 @@ async function fetchInference({
     // correct for every model, and it also subsumes the old ingestion->first-generation
     // boundary special-case.
     if (generating) {
-      const replyClean = extractReply(conversationText)
+      const replyClean = extractReply(conversationText, selectedModel)
       // conversation is append-only, so the reply-so-far starts with what we already
       // showed; paint only the new suffix. (Guard against any divergence: keep
       // fullReply canonical and just skip painting that one call.)
@@ -505,7 +540,7 @@ async function fetchInference({
   generationDone = true
   await painterDone
 
-  const reply = stripSpecialTokens(fullReply).trim()
+  const reply = stripSpecialTokens(fullReply, selectedModel).trim()
   // Move the completed assistant reply from the streaming bubble into the
   // conversation, and clear the streaming bubble in the same tick.
   setMessages((prev) => [...prev, { role: 'assistant', content: reply }])

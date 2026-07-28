@@ -203,6 +203,12 @@ module.exports = () => {
             noErrorOnMissing: true,
           },
           {
+            // landing-page demo movie(s) (served at /video/)
+            from: path.join(__dirname, 'src', 'frontend/assets/video'),
+            to: path.join(__dirname, 'dist', 'frontend/video'),
+            noErrorOnMissing: true,
+          },
+          {
             from: path.join(__dirname, 'src', 'frontend/domain-info'),
             to: path.join(__dirname, 'dist', 'frontend'),
           },

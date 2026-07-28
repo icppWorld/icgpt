@@ -9,8 +9,9 @@ import { useIsMobile } from './useIsMobile'
 // filename, with a HuggingFace ↗ link) and the active system prompt (a button
 // showing its name that opens the editor modal).
 //
-// Only one model is live now (Qwen2.5); Qwen3-0.6B is a disabled "coming soon"
-// placeholder. Built data-driven from MODELS so adding a model is just a new entry.
+// Built data-driven from MODELS (see models.js) so adding a model is just a new
+// entry. The selected model's `note` (a quality/use-case hint) shows as the
+// dropdown's hover tooltip.
 export function ModelSelector({
   selectedModelId,
   setSelectedModelId,
@@ -88,6 +89,7 @@ export function ModelSelector({
     <div style={barStyle}>
       <select
         aria-label="Select model"
+        title={selected.note || `Select model — active: ${selected.gguf}`}
         value={selectedModelId}
         onChange={(e) => setSelectedModelId(e.target.value)}
         style={selectStyle}
