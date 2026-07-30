@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { App } from './App'
 import { Chat } from './routes/Chat'
+import { PromptCostLab } from './lab/PromptCostLab'
 import { NothingHere } from './common/NothingHere'
 import { DocsLayout } from './routes/DocsLayout'
 import { DocsHome } from './routes/DocsHome'
@@ -23,6 +24,9 @@ ReactDOM.render(
         </Route>
         <Route path="/" element={<App />}>
           <Route index element={<Chat />} />
+          {/* Prompt Cost Lab — nested under <App>, so it inherits the early-access
+              gate automatically and is reachable by any allowed user. */}
+          <Route path="lab" element={<PromptCostLab />} />
           <Route path="*" element={<NothingHere />} />
         </Route>
       </Routes>

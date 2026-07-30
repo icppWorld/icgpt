@@ -35,8 +35,13 @@ function getDevServerConfig() {
     }).trim()
     return `PUBLIC_CANISTER_ID:${name}=${id}`
   }).join('&')
+  // The LOCAL Internet Identity (icp.yaml `ii: true`) is served at id.ai.localhost on the
+  // replica's (ephemeral) gateway port — the same port as api_url. Inject its /authorize URL
+  // so the frontend signs in against the throwaway local II instead of mainnet id.ai.
+  const iiPort = new URL(status.api_url).port
+  const iiUrl = `http://id.ai.localhost:${iiPort}/authorize`
   const cookie = encodeURIComponent(
-    `${canisterParams}&ic_root_key=${status.root_key}`
+    `${canisterParams}&ic_root_key=${status.root_key}&ii_url=${iiUrl}`
   )
   return {
     port: 8081, // pinned so the II derivationOrigin / dev URL is stable

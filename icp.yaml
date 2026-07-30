@@ -78,6 +78,12 @@ networks:
     mode: managed
     gateway:
       port: 0
+    # Deploy a LOCAL Internet Identity too (served at http://id.ai.localhost:<port>/authorize,
+    # II canister uqzsh-gqaaa-aaaaq-qaada-cai). Local dev then signs in against this throwaway
+    # II (fast, no real passkey / real anchor) instead of mainnet id.ai — the frontend picks the
+    # local II URL on localhost and id.ai in production (see LoginWithInternetIdentity.jsx). The
+    # dev server injects the actual II URL (with the ephemeral port) via the ic_env cookie.
+    ii: true
 
 environments:
   - name: local

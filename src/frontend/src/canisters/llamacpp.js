@@ -18,7 +18,7 @@ const CONTROLLER_CANISTER_ID = canisterIdFor('icgpt_admin')
 // Build an actor for the controller canister (which exposes new_chat/run_update/
 // health). Built from the committed idlFactory + @icp-sdk/core (see ./agent.js);
 // the canister id + root key come from the ic_env cookie.
-function makeControllerActor(authClient) {
+export function makeControllerActor(authClient) {
   return makeActor(controllerIdlFactory, CONTROLLER_CANISTER_ID, authClient)
 }
 
@@ -95,7 +95,7 @@ function stripSpecialTokens(s, model) {
 // works uniformly for every model/template. For a non-thinking Qwen3 turn the marker is
 // followed by an empty <think>\n\n</think>\n\n block (stripped here); for a thinking turn
 // the model's <think>…</think> reasoning shows before the answer.
-function extractReply(conversation, model) {
+export function extractReply(conversation, model) {
   const marker = templateFor(model).assistantMarker
   const idx = conversation.lastIndexOf(marker)
   const raw = idx >= 0 ? conversation.slice(idx + marker.length) : ''
@@ -120,7 +120,7 @@ function cacheTypeArgs(model) {
   return args
 }
 
-function buildNewChatInput(model) {
+export function buildNewChatInput(model) {
   return {
     args: ['--prompt-cache', 'my_cache/prompt.cache', ...cacheTypeArgs(model)],
   }
@@ -132,7 +132,7 @@ function buildNewChatInput(model) {
 // turns) + the new user turn, ending with the model/assistant-turn opener. The system
 // prompt only appears on the first turn (empty conversationBase), so switching it
 // requires a New chat to take effect.
-function buildInstructTurnPrompt(
+export function buildInstructTurnPrompt(
   conversationBase,
   userMessage,
   systemPromptText,
@@ -186,7 +186,7 @@ function samplingArgs(params) {
 // no new tokens are generated yet. Generation (generating=true): empty prompt,
 // -n 512 so it generates in batches. The canister caps -n per call at
 // max_tokens_update; the app loop enforces the user's total max-length.
-function runUpdateArgs(turnPrompt, generating, model, params) {
+export function runUpdateArgs(turnPrompt, generating, model, params) {
   return {
     args: [
       '--prompt-cache',
@@ -353,7 +353,7 @@ function runPainter(setChatOutputText) {
 
 // Rough token estimate from word count (~1.35 tokens/word for English). The
 // canister does not report exact token counts, so this is clearly approximate.
-function estimateTokens(text) {
+export function estimateTokens(text) {
   const words = text.split(/\s+/).filter(Boolean).length
   return Math.round(words * 1.35)
 }

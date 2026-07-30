@@ -3,16 +3,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { InfoPopover } from './InfoPopover'
 import { useIsMobile } from './useIsMobile'
-
-const USD_PER_TRILLION_CYCLES = 1.33 // ~1 XDR / 1T cycles, 1 XDR ~ $1.33
-
-function formatCycles(cycles) {
-  if (cycles >= 1e12) return `${(cycles / 1e12).toFixed(3)}T`
-  if (cycles >= 1e9) return `${(cycles / 1e9).toFixed(2)}B`
-  if (cycles >= 1e6) return `${(cycles / 1e6).toFixed(1)}M`
-  if (cycles >= 1e3) return `${(cycles / 1e3).toFixed(0)}K`
-  return `${cycles}`
-}
+import { USD_PER_TRILLION_CYCLES, formatCycles } from './cycles'
 
 // A subtle live stats line for the conversation, pinned just above the input,
 // with an (i) popover explaining how each number is determined. cyclesCost and

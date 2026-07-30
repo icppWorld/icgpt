@@ -19,6 +19,12 @@ export function canisterIdFor(name) {
   return canisterEnv?.[`PUBLIC_CANISTER_ID:${name}`]
 }
 
+// Read a raw value from the ic_env cookie by key. Used for dev-server-injected
+// values like `ii_url` (the local Internet Identity URL); undefined in production.
+export function envValue(key) {
+  return canisterEnv?.[key]
+}
+
 // Build an authenticated actor for `canisterId` using the caller's II identity.
 // Uses the @icp-sdk/core Actor API with a pre-built agent (same candid lineage as
 // the old @dfinity/agent, so decoding of results is unchanged). The root key comes

@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-use-before-define
 import React from 'react'
 import { Helmet } from 'react-helmet'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, Link } from 'react-router-dom'
 import 'dracula-ui/styles/dracula-ui.css'
 
 import { StatsBar } from '../common/StatsBar'
@@ -146,6 +146,30 @@ export function Chat() {
                 gap: '8px',
               }}
             >
+              <Link
+                to="/lab"
+                title="Prompt Cost Lab — design & cost out a repeating AI task"
+                style={{
+                  backgroundColor: '#21222c',
+                  color: '#bd93f9',
+                  border: '1px solid #44475a',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  fontFamily: 'monospace',
+                  fontSize: '13px',
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+              >
+                <i
+                  className="bi bi-graph-up"
+                  style={{ marginRight: '5px' }}
+                ></i>
+                Lab
+              </Link>
               <a
                 href="/docs"
                 target="_blank"

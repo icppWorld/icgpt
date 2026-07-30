@@ -5,13 +5,16 @@ import PropTypes from 'prop-types'
 import 'dracula-ui/styles/dracula-ui.css'
 
 import { AuthClient } from '@icp-sdk/auth/client'
+import { Ed25519KeyIdentity } from '@icp-sdk/core/identity'
+import { envValue } from '../canisters/agent'
 
 // Internet Identity provider. @icp-sdk/auth 7.x uses this URL verbatim, so the
-// `/authorize` path is required (5.x appended it for you). id.ai is the current II
-// domain (same anchors/passkeys as identity.ic0.app); the user's principal is derived
-// from THIS app's origin, not the II domain, so switching domains does not change it.
-// Mainnet II works from local dev too — pocket-ic trusts mainnet subnet signatures.
-const II_URL = 'https://id.ai/authorize'
+// `/authorize` path is required (5.x appended it for you). In PRODUCTION this is
+// mainnet id.ai; in LOCAL dev the webpack dev server injects `ii_url` (the local II at
+// http://id.ai.localhost:<port>/authorize) into the ic_env cookie, so testers sign in
+// against a throwaway local II — no real passkey / real anchor needed. The user's
+// principal is derived from THIS app's origin, not the II domain.
+const II_URL = envValue('ii_url') || 'https://id.ai/authorize'
 
 // Delegation lifetime: 8 hours, in nanoseconds.
 const MAX_TIME_TO_LIVE = BigInt(8) * BigInt(3_600_000_000_000)
@@ -29,6 +32,50 @@ function makeAuthAdapter(client, identity) {
   }
 }
 
+// ---- LOCAL-DEV ONLY: sign in with a generated key identity, no Internet Identity ----
+// This exists solely so local development/testing (and headless automation) can get an
+// authenticated session with one click, skipping the II passkey ceremony. It is gated to
+// local dev — shown ONLY when the dev server injected a local `ii_url` cookie AND the host
+// is *.localhost. In production `ii_url` is absent, so this path never renders or runs.
+// The generated Ed25519 identity persists in localStorage (stable principal across reloads).
+const LS_DEV_IDENTITY = 'icgpt.dev.identity'
+
+export function isLocalDev() {
+  try {
+    return (
+      !!envValue('ii_url') && /(^|\.)localhost$/.test(window.location.hostname)
+    )
+  } catch (e) {
+    return false
+  }
+}
+
+function loadOrCreateDevIdentity() {
+  try {
+    const raw = window.localStorage.getItem(LS_DEV_IDENTITY)
+    if (raw) return Ed25519KeyIdentity.fromJSON(raw)
+  } catch (e) {
+    // fall through to generate a fresh one
+  }
+  const id = Ed25519KeyIdentity.generate()
+  try {
+    window.localStorage.setItem(LS_DEV_IDENTITY, JSON.stringify(id.toJSON()))
+  } catch (e) {
+    // ignore storage failures — an in-memory identity still works this session
+  }
+  return id
+}
+
+// Same legacy surface as makeAuthAdapter, but backed by a local key identity (no II
+// client). logout() keeps the stored identity so the principal is stable across sessions.
+function makeDevAdapter(identity) {
+  return {
+    getIdentity: () => identity,
+    logout: () => {},
+    _dev: true,
+  }
+}
+
 // The primary call-to-action: signs in with Internet Identity. The label is
 // caller-supplied (the landing frames it as "Request early access"), and the same
 // button serves approved users, who the access gate then routes straight into the app.
@@ -43,6 +90,10 @@ export function LogInWithInternetIdentity({ setAuthClient, label }) {
     } catch (e) {
       console.warn('Internet Identity sign-in was not completed', e)
     }
+  }
+
+  function doDevLogIn() {
+    setAuthClient(makeDevAdapter(loadOrCreateDevIdentity()))
   }
 
   return (
@@ -66,6 +117,26 @@ export function LogInWithInternetIdentity({ setAuthClient, label }) {
       <div style={{ marginTop: '10px', fontSize: '12px', color: '#6272a4' }}>
         Sign in with Internet Identity — approved users go straight in.
       </div>
+      {isLocalDev() ? (
+        <div style={{ marginTop: '14px' }}>
+          <button
+            type="button"
+            onClick={doDevLogIn}
+            style={{
+              backgroundColor: '#21222c',
+              color: '#50fa7b',
+              border: '1px dashed #50fa7b',
+              borderRadius: '8px',
+              padding: '7px 14px',
+              fontSize: '12px',
+              fontFamily: 'monospace',
+              cursor: 'pointer',
+            }}
+          >
+            ⚙ Dev sign-in (local key identity, no II)
+          </button>
+        </div>
+      ) : null}
     </div>
   )
 }
