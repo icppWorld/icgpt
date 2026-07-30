@@ -8,6 +8,8 @@ import Error "mo:base/Error";
 import Int "mo:base/Int";
 import Bootstrap "Bootstrap";
 import LlmTypes "LlmTypes";
+import LLM "mo:llm";
+import Judge "Judge";
 
 // ICGPT admin & CONTROLLER canister.
 //
@@ -471,6 +473,58 @@ persistent actor {
       },
     );
     xify(raw, cost, durNs);
+  };
+
+  // ----- LLM-as-judge (Prompt Cost Lab quality signal) ----------------------
+  // Free DFINITY LLM model (0 cycles attached; see mo:llm FREE_MODELS). Advisory:
+  // Qwen3-32B exposes no temperature/seed, so a single score is noisy - we average
+  // JUDGE_SAMPLES runs. Byte caps keep reply+rubric under the canister's 10 KiB request
+  // limit. Pure parsing/averaging/truncation live in Judge.mo (unit-tested).
+  let JUDGE_MODEL : Text = "qwen3:32b";
+  let JUDGE_SAMPLES : Nat = 3;
+  let JUDGE_REPLY_CAP : Nat = 6000; // UTF-8 bytes
+  let JUDGE_RUBRIC_CAP : Nat = 3000; // UTF-8 bytes
+
+  public type JudgeOutput = {
+    score : Nat; // averaged 0..100
+    samples : [Nat]; // per-run parsed scores (may be fewer than JUDGE_SAMPLES)
+    note : Text; // last raw judge output (advisory; may include reasoning)
+  };
+
+  /// Score how well `reply` satisfies `rubric` on 0..100, using the free on-chain
+  /// DFINITY LLM canister (Qwen3-32B). Gated on early-access (same as inference), not
+  /// admin-only, so any Lab user can grade. Averages JUDGE_SAMPLES runs; returns #err
+  /// if the model never produced a parseable score or the call failed.
+  public shared ({ caller }) func judge(reply : Text, rubric : Text) : async Result.Result<JudgeOutput, Text> {
+    if (not isAllowed(caller)) {
+      return #err("Access denied - request early access");
+    };
+    let sys = "You are a strict evaluator. Score how well the ANSWER satisfies the RUBRIC on a scale from 0 to 100, where 0 is total failure and 100 is perfect. Respond with ONLY a single integer between 0 and 100 - no words, no punctuation, no explanation.\nRUBRIC:\n" # Judge.truncateBytes(rubric, JUDGE_RUBRIC_CAP);
+    let usr = "ANSWER:\n" # Judge.truncateBytes(reply, JUDGE_REPLY_CAP);
+    var samples : [Nat] = [];
+    var lastRaw : Text = "";
+    var i = 0;
+    while (i < JUDGE_SAMPLES) {
+      let raw = try {
+        let resp = await LLM.chat(JUDGE_MODEL).withMessages([
+          #system_({ content = sys }),
+          #user({ content = usr }),
+        ]).send();
+        switch (resp.message.content) { case (?t) { t }; case null { "" } };
+      } catch (e) { return #err("LLM judge call failed: " # Error.message(e)) };
+      lastRaw := raw;
+      switch (Judge.parseScore(raw)) {
+        case (?s) { samples := Array.append(samples, [Judge.clamp100(s)]) };
+        case null {};
+      };
+      i += 1;
+    };
+    switch (Judge.average(samples)) {
+      case (?avg) { #ok({ score = avg; samples = samples; note = lastRaw }) };
+      case null {
+        #err("judge produced no parseable score; last output: " # lastRaw);
+      };
+    };
   };
 
   // ----- admin: usage -------------------------------------------------------

@@ -25,7 +25,13 @@ import {
   placementEstimate,
   sweepVars,
 } from '../common/templateEngine'
-import { evalRules } from '../common/quality'
+import {
+  evalRules,
+  judgeRules,
+  combineVerdicts,
+  DEFAULT_JUDGE_THRESHOLD,
+} from '../common/quality'
+import { judge as judgeCall } from '../canisters/admin'
 
 const SAFETY_CAP = 2000 // max run_update calls per prompt (guard against runaways)
 
@@ -83,6 +89,43 @@ async function runPrompt(
     reply,
     genTokensEst: estimateTokens(reply),
   }
+}
+
+// Score a reply against every judge rule on the template, via the on-chain LLM judge.
+// Returns [{ rubric, threshold, score, samples, note, pass }] (pass=null on error or
+// unparseable score). Empty replies are not judged (they already fail as empty).
+async function runJudgeRules(authClient, rules, reply, binding) {
+  const jrules = judgeRules(rules)
+  if (!jrules.length || !reply.trim()) return []
+  const infos = []
+  for (const jr of jrules) {
+    const rubric = renderTemplate(jr.arg || '', binding)
+    const threshold = Number(jr.threshold ?? DEFAULT_JUDGE_THRESHOLD)
+    try {
+      const res = await judgeCall(authClient, reply, rubric)
+      if ('ok' in res) {
+        const score = Number(res.ok.score)
+        infos.push({
+          rubric,
+          threshold,
+          score,
+          samples: res.ok.samples.map(Number),
+          note: res.ok.note,
+          pass: score >= threshold,
+        })
+      } else {
+        infos.push({ rubric, threshold, error: res.err, pass: null })
+      }
+    } catch (e) {
+      infos.push({
+        rubric,
+        threshold,
+        error: String((e && e.message) || e),
+        pass: null,
+      })
+    }
+  }
+  return infos
 }
 
 // Run a full experiment: warm the fixed prefix once, then sweep every binding
@@ -164,12 +207,25 @@ export async function runExperiment({
         maxTokens,
       })
       const quality = evalRules(template.quality, run.reply, binding)
+      // Resolve any LLM-judge rules on-chain and fold their verdicts into the trial's.
+      const judgeInfos = await runJudgeRules(
+        authClient,
+        template.quality,
+        run.reply,
+        binding
+      )
+      if (judgeInfos.length) {
+        quality.pass = combineVerdicts([
+          quality.pass,
+          ...judgeInfos.map((j) => j.pass),
+        ])
+      }
       // An empty reply is not a valid answer — don't let it vacuously "pass" (a
       // notContains rule is trivially true on empty text). Small on-chain models
       // sometimes emit an immediate end-of-turn; count that as a failed trial, flagged.
       const empty = !run.reply.trim()
       if (empty) quality.pass = false
-      samples.push({ ...run, quality, empty })
+      samples.push({ ...run, quality, judge: judgeInfos, empty })
       done += 1
     }
     results.push(summarizeBinding(binding, samples, placement))
@@ -197,10 +253,20 @@ function summarizeBinding(binding, samples, placement) {
   const fails = samples.filter((s) => s.quality.pass === false).length
   const pending = samples.filter((s) => s.quality.pass === null).length
   const empties = samples.filter((s) => s.empty).length
+  // Mean LLM-judge score across every judged sample of this binding (null if no judge).
+  const judgeScores = samples.flatMap((s) =>
+    (s.judge || [])
+      .filter((j) => typeof j.score === 'number')
+      .map((j) => j.score)
+  )
+  const meanJudgeScore = judgeScores.length
+    ? Math.round(meanCost(judgeScores))
+    : null
   return {
     binding,
     samples,
     empties,
+    meanJudgeScore,
     meanCyclesCost: meanCost(costs),
     meanDurationNs: meanCost(samples.map((s) => s.durationNs)),
     meanGenTokensEst: Math.round(meanCost(samples.map((s) => s.genTokensEst))),

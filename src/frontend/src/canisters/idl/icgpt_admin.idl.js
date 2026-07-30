@@ -9,6 +9,12 @@ export const idlFactory = ({ IDL }) => {
     'Ok' : StatusCodeRecord,
     'Err' : ApiError,
   });
+  const JudgeOutput = IDL.Record({
+    'note' : IDL.Text,
+    'score' : IDL.Nat,
+    'samples' : IDL.Vec(IDL.Nat),
+  });
+  const Result_1 = IDL.Variant({ 'ok' : JudgeOutput, 'err' : IDL.Text });
   const AdminInfo = IDL.Record({
     'who' : IDL.Text,
     'principal' : IDL.Principal,
@@ -65,6 +71,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     'health' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'judge' : IDL.Func([IDL.Text, IDL.Text], [Result_1], []),
     'listAdmins' : IDL.Func(
         [],
         [

@@ -67,6 +67,13 @@ export async function addAdmin(authClient, principalText, who) {
   return actor.addAdmin(Principal.fromText(principalText), who)
 }
 
+// ----- LLM-as-judge (Prompt Cost Lab quality signal) ----------------------
+// Scores a reply 0..100 against a rubric via the free on-chain DFINITY LLM canister.
+// Returns { ok: { score, samples, note } } | { err: text }.
+export async function judge(authClient, reply, rubric) {
+  return (await adminActor(authClient)).judge(reply, rubric)
+}
+
 // ----- usage metering (controller) ----------------------------------------
 export async function listUsage(authClient) {
   return (await adminActor(authClient)).listUsage()

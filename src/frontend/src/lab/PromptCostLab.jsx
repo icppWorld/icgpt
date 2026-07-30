@@ -13,7 +13,7 @@ import {
   getTemplateById,
 } from '../common/templates'
 import { lintTemplate, placementEstimate } from '../common/templateEngine'
-import { RULE_TYPES } from '../common/quality'
+import { RULE_TYPES, DEFAULT_JUDGE_THRESHOLD } from '../common/quality'
 import { runExperiment } from './labEngine'
 import { LabReport, RunCompareTable } from './LabReport'
 
@@ -381,8 +381,25 @@ export function PromptCostLab() {
                 <input
                   style={{ ...S.input, ...S.mono, flex: 1, minWidth: '160px' }}
                   value={r.arg || ''}
-                  placeholder="e.g. {{word}}"
+                  placeholder={
+                    r.type === 'judge'
+                      ? 'rubric, e.g. a good one-sentence hint about {{word}} that never says the word'
+                      : 'e.g. {{word}}'
+                  }
                   onChange={(e) => setRule(i, { arg: e.target.value })}
+                />
+              ) : null}
+              {def && def.needsThreshold ? (
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  style={{ ...S.input, width: '68px' }}
+                  value={r.threshold ?? DEFAULT_JUDGE_THRESHOLD}
+                  title="Pass threshold (score ≥ this passes)"
+                  onChange={(e) =>
+                    setRule(i, { threshold: Number(e.target.value) })
+                  }
                 />
               ) : null}
               <button

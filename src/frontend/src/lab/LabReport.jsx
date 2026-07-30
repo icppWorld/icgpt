@@ -154,6 +154,20 @@ export function LabReport({ report }) {
                         : '✗ fail'}
                     </span>
                   )}
+                  {b.meanJudgeScore !== null &&
+                  b.meanJudgeScore !== undefined ? (
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: '11px',
+                        color: C.accent,
+                        marginTop: '2px',
+                      }}
+                      title="Mean on-chain LLM-judge score"
+                    >
+                      ⚖ {b.meanJudgeScore}/100
+                    </span>
+                  ) : null}
                 </td>
                 <td
                   style={{ ...td, color: C.text, maxWidth: '340px' }}

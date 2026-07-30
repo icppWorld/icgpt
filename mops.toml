@@ -6,3 +6,7 @@ icgpt_admin = "src/backend/main.mo"
 
 [dependencies]
 base = "0.16.0"
+llm = "3.1.0"
+
+[dev-dependencies]
+test = "2.1.2"

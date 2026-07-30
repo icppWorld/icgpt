@@ -24,6 +24,17 @@ all-static-check: \
 	python-format-check python-lint-check python-type-check \
 	javascript-format-check javascript-lint-check
 
+# Backend (Motoko) unit tests: the pure LLM-as-judge logic (Judge.mo) + any others.
+.PHONY: test-backend
+test-backend:
+	@mops test
+
+# Live end-to-end smoketest of the LLM-as-judge against the real DFINITY LLM canister
+# on mainnet (Qwen3-32B, free). Asserts it discriminates a good hint from a leak.
+.PHONY: smoketest-judge-live
+smoketest-judge-live:
+	@bash scripts/smoketest_judge_live.sh
+
 git-no-unstaged-files:
 	@if [[ $$(git diff --name-only) ]]; then \
 		echo " "; \

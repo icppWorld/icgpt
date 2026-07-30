@@ -24,6 +24,11 @@ type RunOutputRecordX =
    prompt_remaining: text;
    status_code: nat16;
  };
+type Result_1 = 
+ variant {
+   err: text;
+   ok: JudgeOutput;
+ };
 type Result = 
  variant {
    err: text;
@@ -33,6 +38,12 @@ type OutputRecordResultX =
  variant {
    Err: RunOutputRecordX;
    Ok: RunOutputRecordX;
+ };
+type JudgeOutput = 
+ record {
+   note: text;
+   samples: vec nat;
+   score: nat;
  };
 type InputRecord = record {args: vec text;};
 type Info = 
@@ -85,6 +96,11 @@ service : {
                                 }) query;
   health: () -> (StatusCodeRecordResult) query;
   isCallerAdmin: () -> (bool) query;
+  /// Score how well `reply` satisfies `rubric` on 0..100, using the free on-chain
+  /// DFINITY LLM canister (Qwen3-32B). Gated on early-access (same as inference), not
+  /// admin-only, so any Lab user can grade. Averages JUDGE_SAMPLES runs; returns #err
+  /// if the model never produced a parseable score or the call failed.
+  judge: (reply: text, rubric: text) -> (Result_1);
   listAdmins: () ->
    (record {
       added: vec AdminInfo;
