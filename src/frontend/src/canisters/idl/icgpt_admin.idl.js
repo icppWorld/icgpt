@@ -42,14 +42,19 @@ export const idlFactory = ({ IDL }) => {
   });
   const InputRecord = IDL.Record({ 'args' : IDL.Vec(IDL.Text) });
   const RunOutputRecordX = IDL.Record({
+    'n_prompt_tokens' : IDL.Opt(IDL.Nat64),
     'output' : IDL.Text,
+    'n_tokens_generated' : IDL.Opt(IDL.Nat64),
     'conversation' : IDL.Text,
     'error' : IDL.Text,
+    'n_prompt_tokens_remaining' : IDL.Opt(IDL.Nat64),
+    'n_prompt_tokens_cached' : IDL.Opt(IDL.Nat64),
     'cycles_cost' : IDL.Nat,
     'status_code' : IDL.Nat16,
     'prompt_remaining' : IDL.Text,
     'duration_ns' : IDL.Nat,
     'generated_eog' : IDL.Bool,
+    'n_prompt_tokens_decoded' : IDL.Opt(IDL.Nat64),
   });
   const OutputRecordResultX = IDL.Variant({
     'Ok' : RunOutputRecordX,

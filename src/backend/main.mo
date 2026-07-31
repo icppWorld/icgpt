@@ -303,6 +303,11 @@ persistent actor {
       generated_eog = true;
       cycles_cost = 0;
       duration_ns = 0;
+      n_prompt_tokens = null;
+      n_prompt_tokens_cached = null;
+      n_prompt_tokens_decoded = null;
+      n_tokens_generated = null;
+      n_prompt_tokens_remaining = null;
     });
   };
 

@@ -74,7 +74,12 @@ export function LabReport({ report }) {
         <Hero
           label="One-time warm-up (fixed prefix)"
           big={`${formatCycles(report.oneTimeCyclesCost)} cyc`}
-          sub={`~$${usd(report.oneTimeCyclesCost).toFixed(4)} · paid once`}
+          sub={`~$${usd(report.oneTimeCyclesCost).toFixed(4)} · paid once${
+            report.oneTimeTokensExact !== null &&
+            report.oneTimeTokensExact !== undefined
+              ? ` · ${report.oneTimeTokensExact} prompt tok`
+              : ''
+          }`}
         />
         <Hero
           label="Steady-state per request"
@@ -90,7 +95,25 @@ export function LabReport({ report }) {
         />
       </div>
 
-      {report.placement ? (
+      {report.exact ? (
+        <div
+          style={{
+            marginTop: '12px',
+            fontSize: '12px',
+            color: C.dim,
+            lineHeight: 1.6,
+          }}
+        >
+          Analyzer (exact): cache reused through {report.exact.cachedTokens}{' '}
+          tokens · re-ingested {report.exact.reingestTokens} tokens/trial (
+          {report.exact.pctReingested}% of the prompt)
+          {report.exact.genTokens !== null &&
+          report.exact.genTokens !== undefined
+            ? ` + ~${report.exact.genTokens} generated`
+            : ' + generation'}
+          . Move swept variables later to shrink the re-ingested suffix.
+        </div>
+      ) : report.placement ? (
         <div
           style={{
             marginTop: '12px',
@@ -119,7 +142,7 @@ export function LabReport({ report }) {
           <tr style={{ color: C.dim, textAlign: 'left' }}>
             <th style={th}>Trial</th>
             <th style={th}>Cost / req</th>
-            <th style={th}>~gen tok</th>
+            <th style={th}>gen tok</th>
             <th style={th}>Quality</th>
             <th style={th}>Reply (first sample)</th>
           </tr>
@@ -139,7 +162,12 @@ export function LabReport({ report }) {
                     (~${usd(b.meanCyclesCost).toFixed(4)})
                   </span>
                 </td>
-                <td style={td}>{b.meanGenTokensEst}</td>
+                <td style={td}>
+                  {b.meanGenTokensExact !== null &&
+                  b.meanGenTokensExact !== undefined
+                    ? b.meanGenTokensExact
+                    : `~${b.meanGenTokensEst}`}
+                </td>
                 <td style={td}>
                   {b.empties === b.samples.length ? (
                     <span style={{ color: C.dim }}>empty (no answer)</span>

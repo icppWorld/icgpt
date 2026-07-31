@@ -20,6 +20,11 @@ type RunOutputRecordX =
    duration_ns: nat;
    error: text;
    generated_eog: bool;
+   n_prompt_tokens: opt nat64;
+   n_prompt_tokens_cached: opt nat64;
+   n_prompt_tokens_decoded: opt nat64;
+   n_prompt_tokens_remaining: opt nat64;
+   n_tokens_generated: opt nat64;
    output: text;
    prompt_remaining: text;
    status_code: nat16;

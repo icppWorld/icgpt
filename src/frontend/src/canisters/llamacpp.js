@@ -358,6 +358,31 @@ export function estimateTokens(text) {
   return Math.round(words * 1.35)
 }
 
+// Unwrap one candid `opt nat64` (JS: [] | [bigint]) to a Number, or null if absent.
+function optNat(v) {
+  return Array.isArray(v) && v.length ? Number(v[0]) : null
+}
+
+// Read the EXACT token accounting off a run_update/run_query Ok record
+// (llama_cpp_canister >= v0.15.0, flowed through the icgpt_admin controller). Every
+// field is `opt` — null when the canister/wasm predates v0.15.0 or on a non-success
+// record — so the Lab falls back to character estimates when any is null.
+//   total     = prompt tokens presented this call
+//   cached    = prompt-cache hit (reused free, NOT decoded) = the cache-break offset
+//   decoded   = prompt tokens actually decoded (ingested) this call
+//   generated = tokens generated this call
+//   remaining = prompt tokens not yet ingested (capped by max_tokens per call)
+export function tokenCounts(okRec) {
+  if (!okRec) return null
+  return {
+    total: optNat(okRec.n_prompt_tokens),
+    cached: optNat(okRec.n_prompt_tokens_cached),
+    decoded: optNat(okRec.n_prompt_tokens_decoded),
+    generated: optNat(okRec.n_tokens_generated),
+    remaining: optNat(okRec.n_prompt_tokens_remaining),
+  }
+}
+
 async function fetchInference({
   actor,
   chatNew,

@@ -18,6 +18,7 @@ import {
   runUpdateArgs,
   extractReply,
   estimateTokens,
+  tokenCounts,
 } from '../canisters/llamacpp'
 import {
   bindingSets,
@@ -55,6 +56,15 @@ async function runPrompt(
   let conversation = ''
   let response = null
 
+  // Exact token accounting (llama_cpp >= v0.15.0), aggregated across this prompt's
+  // calls. `exact` drops to false if any call omits the counts (older wasm) so callers
+  // fall back to character estimates.
+  let promptDecoded = 0 // prompt tokens actually (re)ingested this prompt
+  let generated = 0 // tokens generated this prompt
+  let cachedFirst = null // cache-break offset: prefix reused free on the FIRST call
+  let promptTotal = null // total prompt tokens presented
+  let exact = true
+
   for (let step = 0; step < SAFETY_CAP; step += 1) {
     const generating =
       response && 'Ok' in response && response.Ok.prompt_remaining === ''
@@ -73,6 +83,16 @@ async function runPrompt(
     }
     if (response.Ok.conversation) conversation = response.Ok.conversation
 
+    const tc = tokenCounts(response.Ok)
+    if (tc && tc.decoded !== null) {
+      if (cachedFirst === null) cachedFirst = tc.cached
+      if (promptTotal === null) promptTotal = tc.total
+      promptDecoded += tc.decoded
+      if (tc.generated !== null) generated += tc.generated
+    } else {
+      exact = false
+    }
+
     if (generating) {
       durationNs += Number(response.Ok.duration_ns || 0n)
       const replySoFar = extractReply(conversation, model)
@@ -88,6 +108,11 @@ async function runPrompt(
     calls,
     reply,
     genTokensEst: estimateTokens(reply),
+    // exact counts (null when the wasm predates v0.15.0)
+    reingestTokensExact: exact ? promptDecoded : null,
+    genTokensExact: exact ? generated : null,
+    cachedTokensExact: exact ? cachedFirst : null,
+    promptTotalExact: exact ? promptTotal : null,
   }
 }
 
@@ -241,9 +266,32 @@ export async function runExperiment({
     placement,
     oneTimeCyclesCost: oneTime.cyclesCost,
     oneTimeCalls: oneTime.calls,
+    // Exact one-time prefix ingestion tokens (null on pre-v0.15.0 wasm).
+    oneTimeTokensExact: oneTime.reingestTokensExact,
     steadyStateCyclesCost: steadyState,
     bindings: results,
+    // Exact cache-break attribution, aggregated across bindings; null if any is missing
+    // so the report falls back to the estimated analyzer line.
+    exact: exactAttribution(results),
     aborted: signal.aborted,
+  }
+}
+
+// Aggregate the per-binding exact token counts into one attribution for the report:
+// cached (reused free) + re-ingested (suffix) tokens/trial, and the % re-ingested.
+// Returns null when the exact counts aren't available (pre-v0.15.0 wasm).
+function exactAttribution(results) {
+  const reingest = meanNonNull(results.map((r) => r.meanReingestTokensExact))
+  const cached = meanNonNull(results.map((r) => r.cachedTokensExact))
+  const generated = meanNonNull(results.map((r) => r.meanGenTokensExact))
+  if (reingest === null || cached === null) return null
+  const total = cached + reingest
+  return {
+    cachedTokens: cached,
+    reingestTokens: reingest,
+    genTokens: generated,
+    totalTokens: total,
+    pctReingested: total > 0 ? Math.round((reingest / total) * 100) : 0,
   }
 }
 
@@ -262,6 +310,12 @@ function summarizeBinding(binding, samples, placement) {
   const meanJudgeScore = judgeScores.length
     ? Math.round(meanCost(judgeScores))
     : null
+  // Exact token attribution across this binding's samples (null when unavailable).
+  const meanReingestTokensExact = meanNonNull(
+    samples.map((s) => s.reingestTokensExact)
+  )
+  const meanGenTokensExact = meanNonNull(samples.map((s) => s.genTokensExact))
+  const cachedTokensExact = meanNonNull(samples.map((s) => s.cachedTokensExact))
   return {
     binding,
     samples,
@@ -271,6 +325,10 @@ function summarizeBinding(binding, samples, placement) {
     meanDurationNs: meanCost(samples.map((s) => s.durationNs)),
     meanGenTokensEst: Math.round(meanCost(samples.map((s) => s.genTokensEst))),
     estReingestTokens: placement ? placement.estReingestTokens : null,
+    // Exact (v0.15.0+): re-ingested prompt tokens / generated tokens / cache-break offset.
+    meanReingestTokensExact,
+    meanGenTokensExact,
+    cachedTokensExact,
     passes,
     fails,
     pending,
@@ -282,4 +340,11 @@ function summarizeBinding(binding, samples, placement) {
 function meanCost(nums) {
   if (!nums.length) return 0
   return nums.reduce((a, b) => a + b, 0) / nums.length
+}
+
+// Mean of the non-null entries, rounded; null if there are none (used for the exact
+// token counts, which are null on pre-v0.15.0 wasm).
+function meanNonNull(nums) {
+  const vals = nums.filter((n) => n !== null && n !== undefined)
+  return vals.length ? Math.round(meanCost(vals)) : null
 }

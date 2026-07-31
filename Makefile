@@ -35,6 +35,14 @@ test-backend:
 smoketest-judge-live:
 	@bash scripts/smoketest_judge_live.sh
 
+# Live smoketest of exact token accounting (llama_cpp >= v0.15.0) through icgpt_admin:
+# proves the 5 opt-nat64 counts decode + reconcile and shows the warm cache-break reuse.
+# Requires a local icgpt_admin with a registered, LOADED model (default: gemma).
+# make smoketest-token-counts [ENV=local] [MODEL_GGUF=gemma-3-270m-it-Q8_0.gguf]
+.PHONY: smoketest-token-counts
+smoketest-token-counts:
+	@bash scripts/smoketest_token_counts.sh $(ENV) $(MODEL_GGUF)
+
 git-no-unstaged-files:
 	@if [[ $$(git diff --name-only) ]]; then \
 		echo " "; \

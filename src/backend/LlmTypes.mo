@@ -15,6 +15,15 @@ module LlmTypes {
     error : Text;
     prompt_remaining : Text;
     generated_eog : Bool;
+    // Exact token accounting (llama_cpp_canister >= v0.15.0). `opt` because the LLM
+    // only populates them on a run_update/run_query success record; errors/new_chat
+    // omit them (decode as null). Kept `?Nat64` here too, so an older LLM wasm that
+    // doesn't emit them still decodes (backward/rolling-deploy safe both ways).
+    n_prompt_tokens : ?Nat64;
+    n_prompt_tokens_cached : ?Nat64;
+    n_prompt_tokens_decoded : ?Nat64;
+    n_tokens_generated : ?Nat64;
+    n_prompt_tokens_remaining : ?Nat64;
   };
 
   // Both arms are RunOutputRecord (matches llama_cpp): the frontend reads
@@ -38,6 +47,12 @@ module LlmTypes {
     generated_eog : Bool;
     cycles_cost : Nat;
     duration_ns : Nat;
+    // Exact token accounting, flowed through from the LLM's RunOutputRecord (see above).
+    n_prompt_tokens : ?Nat64;
+    n_prompt_tokens_cached : ?Nat64;
+    n_prompt_tokens_decoded : ?Nat64;
+    n_tokens_generated : ?Nat64;
+    n_prompt_tokens_remaining : ?Nat64;
   };
   public type OutputRecordResultX = {
     #Ok : RunOutputRecordX;

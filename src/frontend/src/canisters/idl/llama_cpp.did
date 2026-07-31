@@ -18,7 +18,14 @@ type RunOutputRecord = record {
   conversation : text;
   error : text;
   prompt_remaining : text;
-  generated_eog : bool
+  generated_eog : bool;
+  // Exact token accounting (llama_cpp_canister >= v0.15.0); opt because only a
+  // run_update/run_query success record populates them (errors/new_chat omit them).
+  n_prompt_tokens : opt nat64;
+  n_prompt_tokens_cached : opt nat64;
+  n_prompt_tokens_decoded : opt nat64;
+  n_tokens_generated : opt nat64;
+  n_prompt_tokens_remaining : opt nat64
 };
 type OutputRecordResult = variant {
   Ok : RunOutputRecord;
