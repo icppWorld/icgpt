@@ -7,6 +7,7 @@ import { Outlet } from 'react-router-dom'
 import { Login } from './routes/Login'
 import { EarlyAccessLockScreen } from './routes/EarlyAccessLockScreen'
 import { getMyAccess } from './canisters/admin'
+import { withRetry } from './canisters/retry'
 import { DEFAULT_MODEL_ID } from './common/models'
 import {
   loadCustomPrompts,
@@ -35,14 +36,28 @@ export function App() {
   // caller's status after login. access.allowed drives the chat-vs-lock-screen branch;
   // access.isAdmin drives the Admin panel button.
   const [access, setAccess] = React.useState(null)
+  // Message shown on the "checking access" screen; updated during auto-retries.
+  const [checkingMsg, setCheckingMsg] = React.useState('Checking access…')
 
   const recheckAccess = React.useCallback(async () => {
     if (!authClient) return
+    setCheckingMsg('Checking access…')
+    setAccess(null) // show the checking screen while we (re)verify
     try {
-      setAccess(await getMyAccess(authClient))
+      // myAccess only THROWS on infrastructure errors (a genuine "not allowed" comes
+      // back as allowed:false in the record), so any throw is a transient network/replica
+      // issue - retry with backoff before surfacing an error to the user.
+      const { result } = await withRetry(
+        () => getMyAccess(authClient),
+        'myAccess',
+        (attempt) =>
+          setCheckingMsg(`Connection hiccup — retrying (attempt ${attempt})…`)
+      )
+      setAccess(result)
     } catch (e) {
-      console.error('icgpt_admin myAccess failed', e)
-      // Fail closed (show the lock screen with a Retry) rather than silently opening.
+      console.error('icgpt_admin myAccess failed after retries', e)
+      // Fail closed with a connection-error screen (its Retry re-runs this), never
+      // silently open.
       setAccess({
         allowed: false,
         isAdmin: false,
@@ -206,7 +221,7 @@ export function App() {
             fontFamily: 'monospace',
           }}
         >
-          Checking access…
+          {checkingMsg}
         </div>
         <Footer />
       </div>

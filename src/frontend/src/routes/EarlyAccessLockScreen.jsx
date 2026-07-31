@@ -132,6 +132,65 @@ export function EarlyAccessLockScreen({
     fontWeight: 'bold',
   }
 
+  // A verification failure is ALWAYS a connection problem, never a real denial (a denial
+  // comes back as allowed:false in the record) - and App.jsx has already auto-retried with
+  // backoff before we get here. So show a calm, dedicated reconnect screen instead of
+  // crowding the access-request card with an alarming "couldn't verify your access".
+  if (access?.error) {
+    return (
+      <div>
+        <Helmet>
+          <title>ICGPT — On-chain Prompt Studio · reconnecting</title>
+        </Helmet>
+        <div style={wrap}>
+          <div style={card}>
+            <div style={{ fontSize: '38px', color: '#6272a4', lineHeight: 1 }}>
+              <i className="bi bi-wifi-off" />
+            </div>
+            <div
+              style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                marginTop: '10px',
+              }}
+            >
+              Connection interrupted
+            </div>
+            <p
+              style={{
+                fontSize: '13px',
+                color: '#6272a4',
+                lineHeight: 1.5,
+                marginTop: '8px',
+              }}
+            >
+              We couldn&apos;t reach ICGPT just now. This is usually a temporary
+              network issue — please try again.
+            </p>
+            <button
+              type="button"
+              onClick={onRetry}
+              style={{ ...btn('#bd93f9', '#21222c'), marginTop: '14px' }}
+            >
+              Try again
+            </button>
+            <div
+              style={{ borderTop: '1px solid #44475a', margin: '18px 0 12px' }}
+            />
+            <button
+              type="button"
+              onClick={onLogout}
+              style={{ ...btn('transparent', '#6272a4'), fontSize: '12px' }}
+            >
+              Sign out / switch identity
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
   return (
     <div>
       <Helmet>
@@ -153,20 +212,7 @@ export function EarlyAccessLockScreen({
             Early access
           </div>
 
-          {access?.error ? (
-            <div style={{ marginTop: '18px' }}>
-              <p style={{ fontSize: '13px', color: '#ff5555' }}>
-                Couldn&apos;t verify your access right now.
-              </p>
-              <button
-                type="button"
-                style={{ ...btn('#bd93f9', '#21222c'), marginTop: '10px' }}
-                onClick={onRetry}
-              >
-                Retry
-              </button>
-            </div>
-          ) : submitted ? (
+          {submitted ? (
             <div style={{ marginTop: '18px', textAlign: 'left' }}>
               <p style={{ fontSize: '13px', lineHeight: 1.5 }}>
                 Request received. To move forward, join our OpenChat channel and

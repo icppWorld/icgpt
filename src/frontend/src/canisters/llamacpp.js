@@ -11,6 +11,7 @@
 // conversation as the prompt; it prefix-matches the cache and only ingests the new
 // turn. new_chat (cache reset) fires ONLY on the first message of a fresh conversation.
 import { idlFactory as controllerIdlFactory } from './idl/icgpt_admin.idl.js'
+import { withRetry } from './retry'
 import { canisterIdFor, makeActor } from './agent'
 
 const CONTROLLER_CANISTER_ID = canisterIdFor('icgpt_admin')
@@ -103,10 +104,6 @@ export function extractReply(conversation, model) {
 }
 
 const DEBUG = true
-
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
 
 // -----------------------------------------------------------------------------
 // Prompt building
@@ -215,48 +212,8 @@ function firstStopIndex(text, stops) {
 }
 
 // -----------------------------------------------------------------------------
-// Retry transient failures of the on-chain calls.
-//
-// A call to the canister can fail at the transport level: a network blip, a
-// boundary-node 429/503, a request timeout, or - only on the local replica - the
-// fetchRootKey certificate race. These are transient: the canister was either
-// never reached or its reply was lost, so retrying is safe and usually succeeds.
-//
-// Application-level errors are NOT retried here: the canister returns those as
-// `{ Err }` in a SUCCESSFUL response (eg. access denied, model not loaded), not
-// as a thrown exception, so callers still handle those as final.
-const RETRY_MAX_ATTEMPTS = 4
-const RETRY_BASE_DELAY_MS = 500
-const RETRY_MAX_DELAY_MS = 8000
-
-// Returns { result, durationMs }, where durationMs times ONLY the successful
-// attempt (no backoff), which is what the streaming pace budget wants.
-async function withRetry(fn, label, onRetry) {
-  for (let attempt = 1; ; attempt += 1) {
-    const startedMs = performance.now()
-    try {
-      const result = await fn()
-      return { result, durationMs: performance.now() - startedMs }
-    } catch (error) {
-      if (attempt >= RETRY_MAX_ATTEMPTS) {
-        console.error(
-          `withRetry [${label}] gave up after ${attempt} attempts: ${error.message}`
-        )
-        throw error
-      }
-      const delayMs = Math.min(
-        RETRY_MAX_DELAY_MS,
-        RETRY_BASE_DELAY_MS * 2 ** (attempt - 1)
-      )
-      console.warn(
-        `withRetry [${label}] attempt ${attempt} failed (${error.message}); retrying in ${delayMs}ms`
-      )
-      if (onRetry) onRetry(attempt, delayMs)
-      await sleep(delayMs)
-    }
-  }
-}
-
+// Transient on-chain calls are retried with exponential backoff via the shared
+// `withRetry` (see ./retry). notifyRetry surfaces those retries in the chat UI.
 const notifyRetry = (setWaitAnimationMessage) => (attempt) =>
   setWaitAnimationMessage(
     `The in-canister LLM is busy, retrying (attempt ${attempt})...`
