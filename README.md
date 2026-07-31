@@ -191,7 +191,7 @@ models are:
 | ------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
 | `llama_cpp_qwen3_06b_q8`  (Qwen3-0.6B)      | `model.gguf`        | `--model model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 64 --ubatch-size 64 --ctx-size 16384` | 1 / 20                          |
 | `llama_cpp_qwen25_05b_q8` (Qwen2.5-0.5B)    | `model.gguf`        | identical to Qwen3-0.6B (line above)                                                                    | 1 / 20                          |
-| `llama_cpp_qwen3_17b_q4`  (Qwen3-1.7B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --batch-size 8 --ubatch-size 8 --ctx-size 16384`                            | 1 / 4                           |
+| `llama_cpp_qwen3_17b_q4`  (Qwen3-1.7B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 8 --ubatch-size 8 --ctx-size 16384` | 1 / 4                           |
 | `llama_cpp_gemma3_270m`   (Gemma-3-270M)      | `models/model.gguf` | `--model models/model.gguf -c 4096 --cache-type-k q8_0 --cache-type-v q8_0`                            | 1 / 44                          |
 
 Notes:
@@ -204,6 +204,9 @@ Notes:
   (60 traps `IC0522`); it uses a smaller 4K context and, being ~0.9 GiB, needs **no**
   `wasm_memory_limit` bump (unlike the Qwens' 3.75 GiB). Gemma uses a different chat template
   (no system role) — handled in `llamacpp.js` via `inference.promptFormat: 'gemma'`.
+- The 1.7B **requires** `--cache-type-k q8_0 --cache-type-v q8_0` (matching the frontend's request):
+  with the default f16 KV cache at `--ctx-size 16384` it exceeds the 3.75 GiB `wasm_memory_limit`
+  and `load_model` traps `IC0539` (~3.78 GiB peak). q8_0 KV halves the cache and fits.
 - After **every** install/upgrade also re-arm the in-memory timers
   (`cache_cleanup_start_timer`, `cycle_balance_start_timer`) and, under the hard gate, keep
   `set_access` at level 0 (controllers only). See the walkthrough below for the full call
