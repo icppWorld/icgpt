@@ -10,6 +10,9 @@
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
+  "globals": {
+    "__DEV_SIGN_IN__": "readonly"
+  },
   "plugins": ["@typescript-eslint", "react-hooks"],
   "rules": {
     "react-hooks/rules-of-hooks": "error",

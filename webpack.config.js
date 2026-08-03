@@ -228,6 +228,15 @@ module.exports = () => {
         Buffer: [require.resolve('buffer/'), 'Buffer'],
         process: require.resolve('process/browser'),
       }),
+      // Build-time flag for the LOCAL-DEV dev sign-in. WEBPACK_SERVE is set only by
+      // `webpack serve` (local dev) and never by the production `webpack` build (see the
+      // devServer note below at :244), so this literal is `true` locally and `false` in prod.
+      // Because it's a literal, the `__DEV_SIGN_IN__ ? require('./devSignIn') : null` guard in
+      // LoginWithInternetIdentity.jsx dead-code-eliminates the entire dev-sign-in module (and its
+      // Ed25519KeyIdentity import) from production bundles.
+      new webpack.DefinePlugin({
+        __DEV_SIGN_IN__: JSON.stringify(!!process.env.WEBPACK_SERVE),
+      }),
     ],
     output: {
       filename: '[name].[contenthash].js',

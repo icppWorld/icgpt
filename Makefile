@@ -164,6 +164,23 @@ icp-deploy:                  # deploy ALL canisters to ENV (respects MODE)
 icp-deploy-canister:         # make icp-deploy-canister CANISTER_NAME=icgpt_admin ENV=.. MODE=..
 	@icp deploy $(CANISTER_NAME) -e $(ENV) -m $(MODE) -y
 
+# Grant the LOCAL-DEV dev sign-in principal early-access on the LOCAL replica, so the one-click
+# "⚙ Dev sign-in" (webpack serve) lands INSIDE the gated app. The principal is derived from the
+# fixed seed in src/frontend/src/routes/devSignIn.js. It is deliberately NOT a Bootstrap.mo admin
+# (that seed is public in source; bootstrap principals are permanent admins) — this target grants
+# it via the admin `addToWhitelist` and is HARD-BLOCKED from ever touching production.
+# make icp-whitelist-dev [ENV=local]
+DEV_PRINCIPAL ?= u4erc-wu23y-oo5dh-sorei-yyceo-kzk6w-ejh2f-jzrbr-immca-i3vsa-pae
+DEV_WHITELIST_IDENTITY ?= icpp-llm
+.PHONY: icp-whitelist-dev
+icp-whitelist-dev:
+	@if [ "$(ENV)" = "production" ]; then \
+		echo "REFUSING: icp-whitelist-dev is LOCAL-ONLY (the dev seed is public in source)."; exit 1; fi
+	@echo "Whitelisting dev principal $(DEV_PRINCIPAL) on ENV=$(ENV) ..."
+	@icp canister call icgpt_admin addToWhitelist \
+		'(principal "$(DEV_PRINCIPAL)", "", "local dev sign-in")' \
+		-e $(ENV) --identity $(DEV_WHITELIST_IDENTITY)
+
 # Build the frontend for ENV and deploy the assets canister (asset-canister recipe).
 # Canister IDs + replica root key are resolved at RUNTIME from the `ic_env` cookie
 # (the asset canister serves it in production; the webpack dev server serves it

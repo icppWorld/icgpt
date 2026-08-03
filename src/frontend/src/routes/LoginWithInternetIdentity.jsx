@@ -5,8 +5,13 @@ import PropTypes from 'prop-types'
 import 'dracula-ui/styles/dracula-ui.css'
 
 import { AuthClient } from '@icp-sdk/auth/client'
-import { Ed25519KeyIdentity } from '@icp-sdk/core/identity'
 import { envValue } from '../canisters/agent'
+
+// LOCAL-DEV ONLY dev sign-in. `__DEV_SIGN_IN__` is a webpack build-time literal (true only under
+// `webpack serve`, false in the production build). Behind the literal, webpack dead-code-elimination
+// drops the require AND the ./devSignIn module (with its Ed25519KeyIdentity import) from prod bundles
+// entirely — the dev path is provably absent from production, not merely hidden at runtime.
+const dev = __DEV_SIGN_IN__ ? require('./devSignIn') : null
 
 // Internet Identity provider. @icp-sdk/auth 7.x uses this URL verbatim, so the
 // `/authorize` path is required (5.x appended it for you). In PRODUCTION this is
@@ -32,47 +37,18 @@ function makeAuthAdapter(client, identity) {
   }
 }
 
-// ---- LOCAL-DEV ONLY: sign in with a generated key identity, no Internet Identity ----
-// This exists solely so local development/testing (and headless automation) can get an
-// authenticated session with one click, skipping the II passkey ceremony. It is gated to
-// local dev — shown ONLY when the dev server injected a local `ii_url` cookie AND the host
-// is *.localhost. In production `ii_url` is absent, so this path never renders or runs.
-// The generated Ed25519 identity persists in localStorage (stable principal across reloads).
-const LS_DEV_IDENTITY = 'icgpt.dev.identity'
-
+// True only in a local-dev build (behind the build-time `__DEV_SIGN_IN__` literal, so it folds to
+// `false` and dead-code-eliminates in production) AND at runtime when the dev server injected a
+// local `ii_url` cookie on a *.localhost host — a double lock on the ⚙ dev-sign-in button.
 export function isLocalDev() {
   try {
     return (
-      !!envValue('ii_url') && /(^|\.)localhost$/.test(window.location.hostname)
+      __DEV_SIGN_IN__ &&
+      !!envValue('ii_url') &&
+      /(^|\.)localhost$/.test(window.location.hostname)
     )
   } catch (e) {
     return false
-  }
-}
-
-function loadOrCreateDevIdentity() {
-  try {
-    const raw = window.localStorage.getItem(LS_DEV_IDENTITY)
-    if (raw) return Ed25519KeyIdentity.fromJSON(raw)
-  } catch (e) {
-    // fall through to generate a fresh one
-  }
-  const id = Ed25519KeyIdentity.generate()
-  try {
-    window.localStorage.setItem(LS_DEV_IDENTITY, JSON.stringify(id.toJSON()))
-  } catch (e) {
-    // ignore storage failures — an in-memory identity still works this session
-  }
-  return id
-}
-
-// Same legacy surface as makeAuthAdapter, but backed by a local key identity (no II
-// client). logout() keeps the stored identity so the principal is stable across sessions.
-function makeDevAdapter(identity) {
-  return {
-    getIdentity: () => identity,
-    logout: () => {},
-    _dev: true,
   }
 }
 
@@ -93,7 +69,7 @@ export function LogInWithInternetIdentity({ setAuthClient, label }) {
   }
 
   function doDevLogIn() {
-    setAuthClient(makeDevAdapter(loadOrCreateDevIdentity()))
+    setAuthClient(dev.makeDevAdapter(dev.makeDevIdentity()))
   }
 
   return (
@@ -117,7 +93,10 @@ export function LogInWithInternetIdentity({ setAuthClient, label }) {
       <div style={{ marginTop: '10px', fontSize: '12px', color: '#6272a4' }}>
         Sign in with Internet Identity — approved users go straight in.
       </div>
-      {isLocalDev() ? (
+      {/* Gate on the `__DEV_SIGN_IN__` build-time literal directly: it folds to `false` in
+          production, so Terser dead-code-eliminates this whole branch (and doDevLogIn). The
+          runtime isLocalDev() is the second lock in a dev build. */}
+      {__DEV_SIGN_IN__ && isLocalDev() ? (
         <div style={{ marginTop: '14px' }}>
           <button
             type="button"
