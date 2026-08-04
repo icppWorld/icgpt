@@ -86,3 +86,16 @@ export async function getEarlyAccessCallCap(authClient) {
 export async function setEarlyAccessCallCap(authClient, n) {
   return (await adminActor(authClient)).setEarlyAccessCallCap(BigInt(n))
 }
+
+// ----- monitoring log -----------------------------------------------------
+// Admin-only: recent failure events (model not-ready/errors, trapped LLM calls, client
+// reports). limit 0 = all (bounded to LOG_CAP on-chain), else the most recent `limit`.
+export async function getLogs(authClient, limit = 0) {
+  return (await adminActor(authClient)).getLogs(BigInt(limit))
+}
+
+// Best-effort client-side event report (eg. inference that exhausted the frontend's retries).
+// Fire-and-forget: callers should not await it on the hot path, and should swallow errors.
+export async function logClientEvent(authClient, kind, detail) {
+  return (await adminActor(authClient)).logClientEvent(kind, detail)
+}

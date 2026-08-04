@@ -15,11 +15,24 @@ import {
   listUsage,
   getEarlyAccessCallCap,
   setEarlyAccessCallCap,
+  getLogs,
 } from '../canisters/admin'
 
 function fmtDate(at) {
   try {
     return new Date(Number(at / 1000000n)).toISOString().slice(0, 10)
+  } catch (e) {
+    return ''
+  }
+}
+
+// Date + time (UTC) for log events, which need finer granularity than fmtDate.
+function fmtTime(at) {
+  try {
+    return new Date(Number(at / 1000000n))
+      .toISOString()
+      .slice(0, 19)
+      .replace('T', ' ')
   } catch (e) {
     return ''
   }
@@ -34,6 +47,7 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
   const [whitelist, setWhitelist] = React.useState([])
   const [admins, setAdmins] = React.useState({ bootstrap: [], added: [] })
   const [usage, setUsage] = React.useState([])
+  const [logs, setLogs] = React.useState([])
   const [callCap, setCallCap] = React.useState(0)
   const [capInput, setCapInput] = React.useState('')
   const [err, setErr] = React.useState(null)
@@ -50,18 +64,20 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
   const reload = React.useCallback(async () => {
     setErr(null)
     try {
-      const [r, w, a, u, cap] = await Promise.all([
+      const [r, w, a, u, cap, lg] = await Promise.all([
         listRequests(authClient),
         listWhitelist(authClient),
         listAdmins(authClient),
         listUsage(authClient),
         getEarlyAccessCallCap(authClient),
+        getLogs(authClient, 0),
       ])
       setRequests(r)
       setWhitelist(w)
       setAdmins(a)
       setUsage(u)
       setCallCap(Number(cap))
+      setLogs(lg)
     } catch (e) {
       setErr(String(e))
     }
@@ -402,6 +418,32 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
                 </div>
                 <div style={{ color: '#6272a4' }}>
                   {u.principal.toText()} · {fmtDate(u.lastAt)}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+
+        {/* Monitoring log: failure events + client reports, newest first */}
+        <div style={h}>Logs ({logs.length})</div>
+        {logs.length === 0 ? (
+          <p style={{ color: '#6272a4', fontSize: '12px' }}>
+            No events logged.
+          </p>
+        ) : (
+          [...logs].reverse().map((l, i) => (
+            <div key={i} style={row}>
+              <div style={mono}>
+                <div>
+                  <span style={{ color: '#ff5555' }}>{l.kind}</span>
+                  {l.model ? ` · ${l.model}` : ''}
+                  {Number(l.statusCode)
+                    ? ` · status ${Number(l.statusCode)}`
+                    : ''}
+                </div>
+                <div style={{ wordBreak: 'break-word' }}>{l.detail}</div>
+                <div style={{ color: '#6272a4' }}>
+                  {l.principal.toText()} · {fmtTime(l.at)}
                 </div>
               </div>
             </div>

@@ -44,7 +44,16 @@ type OutputRecordResultX =
    Err: RunOutputRecordX;
    Ok: RunOutputRecordX;
  };
-type JudgeOutput = 
+type LogEntry =
+ record {
+   at: int;
+   detail: text;
+   kind: text;
+   model: text;
+   "principal": principal;
+   statusCode: nat16;
+ };
+type JudgeOutput =
  record {
    note: text;
    samples: vec nat;
@@ -90,6 +99,10 @@ service : {
   checkAccessToLLMs: () -> (Result);
   getEarlyAccess: () -> (bool) query;
   getEarlyAccessCallCap: () -> (nat) query;
+  /// Admin-only: review recent failure events (model not-ready/errors, trapped LLM calls,
+  /// client-reported events). limit == 0 returns all (bounded to LOG_CAP), else the most
+  /// recent `limit`, newest last. Non-admins get an empty list.
+  getLogs: (limit: nat) -> (vec LogEntry) query;
   /// The live cycle balance of each registered LLM (via the management canister's
   /// canister_status — this canister is a controller of each). Ops-only; also confirms
   /// the per-call cost measurement can read balances. (On a local replica cycles are
@@ -114,6 +127,9 @@ service : {
   listRequests: () -> (vec Info) query;
   listUsage: () -> (vec UsageInfo) query;
   listWhitelist: () -> (vec Info) query;
+  /// Any allowed (signed-in) user reports a client-side event the canister cannot otherwise
+  /// see (e.g. a transient network error that exhausted the frontend's retries). Bounded.
+  logClientEvent: (kind: text, detail: text) -> ();
   /// The single call the frontend gate needs. allowed = admin OR not earlyAccess OR
   /// whitelisted. Non-allowed users are shown the request-access screen.
   myAccess: () -> (Access) query;

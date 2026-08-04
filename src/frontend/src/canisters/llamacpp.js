@@ -11,10 +11,20 @@
 // conversation as the prompt; it prefix-matches the cache and only ingests the new
 // turn. new_chat (cache reset) fires ONLY on the first message of a fresh conversation.
 import { idlFactory as controllerIdlFactory } from './idl/icgpt_admin.idl.js'
-import { withRetry } from './retry'
+import { withRetry, classifyInferenceError } from './retry'
+import { logClientEvent } from './admin'
 import { canisterIdFor, makeActor } from './agent'
 
 const CONTROLLER_CANISTER_ID = canisterIdFor('icgpt_admin')
+
+// A new_chat/run_update response reports a TRANSIENT "not ready" failure as { Err } with a
+// status_code/error (the controller tags infra failures 503, permanent gate errors 403). Fed
+// to withRetry's shouldRetryResult so those are retried with backoff; permanent errors are not.
+function isRetryableInference(response) {
+  if (!response || 'Ok' in response) return false
+  const rec = response.Err
+  return rec ? classifyInferenceError(rec.status_code, rec.error) : false
+}
 
 // Build an actor for the controller canister (which exposes new_chat/run_update/
 // health). Built from the committed idlFactory + @icp-sdk/core (see ./agent.js);
@@ -378,7 +388,8 @@ async function fetchInference({
       () =>
         actor.new_chat(selectedModel.gguf, buildNewChatInput(selectedModel)),
       'new_chat',
-      notifyRetry(setWaitAnimationMessage)
+      notifyRetry(setWaitAnimationMessage),
+      isRetryableInference
     )
     const ncRec =
       'Ok' in responseNewChat ? responseNewChat.Ok : responseNewChat.Err
@@ -432,7 +443,8 @@ async function fetchInference({
           runUpdateArgs(turnPrompt, generating, selectedModel, params)
         ),
       'run_update',
-      notifyRetry(setWaitAnimationMessage)
+      notifyRetry(setWaitAnimationMessage),
+      isRetryableInference
     )
     responseUpdate = result
     // Exact per-call cycle cost, measured on-chain by the controller (both Ok and
@@ -621,6 +633,13 @@ export async function doSubmitLlamacpp({
     })
   } catch (error) {
     console.error(error)
+    // Best-effort: record the failed inference to the on-chain monitoring log for later
+    // review (fire-and-forget; a failure here must not mask the original error).
+    logClientEvent(
+      authClient,
+      'chat_inference_failed',
+      `${selectedModel?.gguf || '?'}: ${error.message}`
+    ).catch(() => {})
     setChatDone(true)
     setChatDisplay('CanisterError')
   } finally {

@@ -10,6 +10,7 @@ import Bootstrap "Bootstrap";
 import LlmTypes "LlmTypes";
 import LLM "mo:llm";
 import Judge "Judge";
+import LogStore "LogStore";
 
 // ICGPT admin & CONTROLLER canister.
 //
@@ -293,9 +294,9 @@ persistent actor {
     out;
   };
 
-  func errOut(msg : Text) : LlmTypes.OutputRecordResultX {
+  func errOutCode(msg : Text, status : Nat16) : LlmTypes.OutputRecordResultX {
     #Err({
-      status_code = 403;
+      status_code = status;
       output = "";
       conversation = "";
       error = msg;
@@ -310,6 +311,9 @@ persistent actor {
       n_prompt_tokens_remaining = null;
     });
   };
+  // Gate/config rejections use 403 (surface immediately); transient infra failures use 503 so the
+  // frontend classifier can tell them apart and retry the 503s with backoff.
+  func errOut(msg : Text) : LlmTypes.OutputRecordResultX { errOutCode(msg, 403) };
 
   // Cost = the LLM's live-balance drop across the call (excludes the controller's own
   // cost). Guard against 0 (unknown balance) and non-decreasing balance.
@@ -351,6 +355,28 @@ persistent actor {
     var words = 0;
     for (w in Text.split(text, #char ' ')) { if (Text.size(w) > 0) { words += 1 } };
     words * 135 / 100;
+  };
+
+  // ----- monitoring log -----------------------------------------------------
+  // A bounded ring buffer of failure events (model "not ready"/errors, trapped LLM calls, and
+  // client-reported events), for admins to review after the fact. Pure buffer logic lives in
+  // LogStore.mo (unit-tested); this actor only appends and serves them.
+  let LOG_CAP : Nat = 1000; // oldest evicted beyond this
+  var logs : [LogStore.LogEntry] = [];
+
+  func logEvent(kind : Text, model : Text, p : Principal, status : Nat16, detail : Text) {
+    logs := LogStore.pushBounded(
+      logs,
+      {
+        at = Time.now();
+        kind;
+        model;
+        principal = p;
+        statusCode = status;
+        detail = LogStore.truncate(detail, 500);
+      },
+      LOG_CAP,
+    );
   };
 
   // ----- admin: LLM registry ------------------------------------------------
@@ -439,9 +465,16 @@ persistent actor {
     let t0 = Time.now();
     let raw = try {
       await llmActor(idx).new_chat({ args = rewriteCachePath(input.args, caller) });
-    } catch (e) { return errOut("LLM call failed: " # Error.message(e)) };
+    } catch (e) {
+      logEvent("call_failed", model, caller, 503, Error.message(e));
+      return errOutCode("LLM call failed: " # Error.message(e), 503);
+    };
     let t1 = Time.now();
     let balAfter = await llmBalance(idx);
+    switch (raw) {
+      case (#Err(o)) { logEvent("llm_err", model, caller, o.status_code, o.error) };
+      case (#Ok(_)) {};
+    };
     xify(raw, costOf(balBefore, balAfter), durOf(t0, t1));
   };
 
@@ -457,7 +490,10 @@ persistent actor {
     let t0 = Time.now();
     let raw = try {
       await llmActor(idx).run_update({ args = rewriteCachePath(input.args, caller) });
-    } catch (e) { return errOut("LLM call failed: " # Error.message(e)) };
+    } catch (e) {
+      logEvent("call_failed", llmCanisters[idx].0, caller, 503, Error.message(e));
+      return errOutCode("LLM call failed: " # Error.message(e), 503);
+    };
     let t1 = Time.now();
     let balAfter = await llmBalance(idx);
     let cost = costOf(balBefore, balAfter);
@@ -466,7 +502,10 @@ persistent actor {
     let u = getUsage(caller);
     let tok = switch (raw) {
       case (#Ok(o)) { estTokens(o.output) };
-      case (#Err(_)) { 0 };
+      case (#Err(o)) {
+        logEvent("llm_err", llmCanisters[idx].0, caller, o.status_code, o.error);
+        0;
+      };
     };
     setUsage(
       caller,
@@ -557,5 +596,21 @@ persistent actor {
   public shared ({ caller }) func setEarlyAccessCallCap(n : Nat) : async () {
     requireAdmin(caller);
     earlyAccessCallCap := n;
+  };
+
+  // ----- monitoring log: review + client report -----------------------------
+  /// Admins review recent failure events. `limit == 0` returns all (bounded to LOG_CAP);
+  /// otherwise the most recent `limit`, newest last. Non-admins get an empty list.
+  public query ({ caller }) func getLogs(limit : Nat) : async [LogStore.LogEntry] {
+    if (Principal.isAnonymous(caller) or not isAdmin(caller)) { return [] };
+    LogStore.lastN(logs, limit);
+  };
+
+  /// Any allowed (signed-in) user reports a client-side event the canister cannot otherwise see
+  /// (e.g. a transient network error that exhausted the frontend's retries and never reached a
+  /// method here). Bounded: the ring buffer caps total entries; kind/detail are truncated.
+  public shared ({ caller }) func logClientEvent(kind : Text, detail : Text) : async () {
+    if (not isAllowed(caller)) { return };
+    logEvent("client:" # LogStore.truncate(kind, 64), "", caller, 0, detail);
   };
 };

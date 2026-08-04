@@ -33,11 +33,33 @@ import {
   DEFAULT_JUDGE_THRESHOLD,
 } from '../common/quality'
 import { judge as judgeCall } from '../canisters/admin'
+import { withRetry, classifyInferenceError } from '../canisters/retry'
 
 const SAFETY_CAP = 2000 // max run_update calls per prompt (guard against runaways)
 
 function recOf(res) {
   return 'Ok' in res ? res.Ok : res.Err
+}
+
+// A new_chat/run_update response reports a TRANSIENT "not ready" failure as { Err } (controller
+// tags infra failures 503, permanent gate errors 403); permanent errors are surfaced as-is.
+function isRetryableInference(response) {
+  if (!response || 'Ok' in response) return false
+  const rec = response.Err
+  return rec ? classifyInferenceError(rec.status_code, rec.error) : false
+}
+
+// Run an actor call with transient/"not ready" retry+backoff (same policy as the chat path),
+// but stop retrying once the experiment is cancelled. Returns the response (last one on
+// exhaustion, like withRetry) so the caller still surfaces a genuine failure.
+async function callWithRetry(fn, label, signal) {
+  const { result } = await withRetry(
+    fn,
+    label,
+    undefined,
+    (response) => !signal.aborted && isRetryableInference(response)
+  )
+  return result
 }
 
 // Run one prompt through the controller: ingest it, and (if generate) keep generating
@@ -48,7 +70,7 @@ async function runPrompt(
   model,
   params,
   promptText,
-  { generate, maxTokens }
+  { generate, maxTokens, signal = { aborted: false } }
 ) {
   let cyclesCost = 0
   let durationNs = 0
@@ -70,8 +92,11 @@ async function runPrompt(
       response && 'Ok' in response && response.Ok.prompt_remaining === ''
     if (!generate && generating) break // warm-up: prompt fully ingested, stop
 
-    response = await actor.run_update(
-      runUpdateArgs(promptText, generating, model, params)
+    response = await callWithRetry(
+      () =>
+        actor.run_update(runUpdateArgs(promptText, generating, model, params)),
+      'lab run_update',
+      signal
     )
     calls += 1
     const rec = recOf(response)
@@ -176,7 +201,11 @@ export async function runExperiment({
 
   // Reset the on-chain prompt cache for a clean, cold start.
   onProgress({ done: 0, total, label: 'Starting a fresh in-canister cache…' })
-  const nc = await actor.new_chat(model.gguf, buildNewChatInput(model))
+  const nc = await callWithRetry(
+    () => actor.new_chat(model.gguf, buildNewChatInput(model)),
+    'lab new_chat',
+    signal
+  )
   if (!('Ok' in nc)) {
     throw new Error('new_chat failed: ' + (recOf(nc)?.error || 'unknown'))
   }
@@ -200,6 +229,7 @@ export async function runExperiment({
     oneTime = await runPrompt(actor, model, params, prefix, {
       generate: false,
       maxTokens,
+      signal,
     })
   }
 
@@ -230,6 +260,7 @@ export async function runExperiment({
       const run = await runPrompt(actor, model, runParams, prompt, {
         generate: true,
         maxTokens,
+        signal,
       })
       const quality = evalRules(template.quality, run.reply, binding)
       // Resolve any LLM-judge rules on-chain and fold their verdicts into the trial's.
