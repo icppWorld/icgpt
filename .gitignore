@@ -152,3 +152,11 @@ deps
 # Scratch / task-todo notes for AI agents & humans. Deliberately local-only:
 # they capture in-flight plans and findings, not repo state.
 TMP-*
+
+# claude code — ignore .claude/ EXCEPT this project's own skill(s). git can't re-include a path
+# under an excluded dir, so each parent is un-excluded step by step. The ic-* skills are installed
+# from dfinity/icskills and deliberately NOT committed (a committed copy drifts from upstream).
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/icgpt-local-e2e/
