@@ -191,7 +191,7 @@ models are:
 | ------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
 | `llama_cpp_qwen3_06b_q8`  (Qwen3-0.6B)      | `model.gguf`        | `--model model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 64 --ubatch-size 64 --ctx-size 16384` | 1 / 20                          |
 | `llama_cpp_qwen25_05b_q8` (Qwen2.5-0.5B)    | `model.gguf`        | identical to Qwen3-0.6B (line above)                                                                    | 1 / 20                          |
-| `llama_cpp_qwen3_17b_q4`  (Qwen3-1.7B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 8 --ubatch-size 8 --ctx-size 16384` | 1 / 4                           |
+| `llama_cpp_qwen3_17b_q4`  (Qwen3-1.7B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 8 --ubatch-size 8 --ctx-size 4096` | 1 / 4                           |
 | `llama_cpp_gemma3_270m`   (Gemma-3-270M)      | `models/model.gguf` | `--model models/model.gguf -c 4096 --cache-type-k q8_0 --cache-type-v q8_0`                            | 1 / 44                          |
 
 Notes:
@@ -205,8 +205,22 @@ Notes:
   `wasm_memory_limit` bump (unlike the Qwens' 3.75 GiB). Gemma uses a different chat template
   (no system role) — handled in `llamacpp.js` via `inference.promptFormat: 'gemma'`.
 - The 1.7B **requires** `--cache-type-k q8_0 --cache-type-v q8_0` (matching the frontend's request):
-  with the default f16 KV cache at `--ctx-size 16384` it exceeds the 3.75 GiB `wasm_memory_limit`
-  and `load_model` traps `IC0539` (~3.78 GiB peak). q8_0 KV halves the cache and fits.
+  with the default f16 KV cache it exceeds the 3.75 GiB `wasm_memory_limit` and `load_model` traps
+  `IC0539`. q8_0 KV halves the cache.
+- The 1.7B uses **`--ctx-size 4096`** (not 16384 like the small Qwens). **16384 is no longer
+  loadable:** pre-allocating the KV cache for 16384 is a single large memory op (~4.06B instructions)
+  that exceeds the IC's 2B-instruction slice limit → `load_model` rejects with `IC0522` (slice
+  overrun). 4096 loads fine (~1.34 GiB heap-after-load). Whatever loaded the 1.7B at 16384 originally
+  predates that IC memory-op slice limit. 4096 is ample for chat + the Lab (a word-game trial is
+  ~600 tokens).
+- **KNOWN BUG (llama_cpp_canister side):** even at 4096, a **long generation (>~100 tokens)** on the
+  1.7B still traps `IC0502` "heap out of bounds" mid-`run_update` under the `--prompt-cache-all`
+  pattern — and the wasm heap high-water stays ~1.34 GiB (far under the 3.75 GiB limit), so it is NOT
+  a memory OOM but a genuine out-of-bounds access in the model/prompt-cache path. Short replies (the
+  common chat/Lab case) work; long ones trap and are surfaced gracefully by `icgpt_admin` (503 +
+  monitoring log). Root-cause + fix belong in the `llama_cpp_canister` repo (see its `TMP-*` bug
+  report). NOTE: after any IC0502/IC0522 the wasm heap is wedged and `load_model` alone re-traps — do
+  a plain `-m upgrade` first (fresh heap, gguf preserved), *then* `load_model`.
 - After **every** install/upgrade also re-arm the in-memory timers
   (`cache_cleanup_start_timer`, `cycle_balance_start_timer`) and, under the hard gate, keep
   `set_access` at level 0 (controllers only). See the walkthrough below for the full call
@@ -220,7 +234,7 @@ Once the model gguf is in place, as described in the previous step, you can depl
 # ICGPT serves FOUR models, each in its own canister (same llama_cpp v0.14.0 wasm):
 #   llama_cpp_qwen3_06b_q8  (Qwen3-0.6B, the default)   16K ctx, max_tokens_update 20
 #   llama_cpp_qwen25_05b_q8 (Qwen2.5-0.5B)              16K ctx, max_tokens_update 20
-#   llama_cpp_qwen3_17b_q4  (Qwen3-1.7B, Q4_K_M)         16K ctx, max_tokens_update 4,
+#   llama_cpp_qwen3_17b_q4  (Qwen3-1.7B, Q4_K_M)         4K ctx, max_tokens_update 4,
 #                                                        loaded from models/model.gguf, batch 8
 #   llama_cpp_gemma3_270m   (Gemma-3-270M)               4K ctx,  max_tokens_update 44,
 #                                                        models/model.gguf; NO 3.75GiB bump
