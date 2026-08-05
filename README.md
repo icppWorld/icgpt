@@ -207,12 +207,16 @@ Notes:
 - The 1.7B **requires** `--cache-type-k q8_0 --cache-type-v q8_0` (matching the frontend's request):
   with the default f16 KV cache it exceeds the 3.75 GiB `wasm_memory_limit` and `load_model` traps
   `IC0539`. q8_0 KV halves the cache.
-- The 1.7B uses **`--ctx-size 4096`** (not 16384 like the small Qwens). **16384 is no longer
-  loadable:** pre-allocating the KV cache for 16384 is a single large memory op (~4.06B instructions)
-  that exceeds the IC's 2B-instruction slice limit → `load_model` rejects with `IC0522` (slice
-  overrun). 4096 loads fine (~1.34 GiB heap-after-load). Whatever loaded the 1.7B at 16384 originally
-  predates that IC memory-op slice limit. 4096 is ample for chat + the Lab (a word-game trial is
-  ~600 tokens).
+- The 1.7B is currently loaded at **`--ctx-size 4096`** as a STOPGAP. Its documented/tested config is
+  `-c 16384` (see `llama_cpp_canister/README-qwen3-1.7B.md`, "Load the model" — "Model successfully
+  loaded", ~2.07 GiB heap), and the mainnet 1.7B ran on 16384 for ~5 days on the same v0.16.0 wasm.
+  But as of 2026-08-05 a fresh reload at 16384 REPRODUCIBLY rejects with `IC0522` "large memory
+  operation … exceeded the slice limit 2_000_000_000" — the IC's cap on a single non-sliceable bulk
+  memory op (the KV zero/alloc), *distinct* from the 40 B decode limit the llama README's IC0522 note
+  refers to. Same wasm loaded 16384 five days ago → this looks like an IC platform change, NOT an
+  inherent limit; cause UNCONFIRMED (flagged in the llama repo's `TMP-*` report). `-c 4096` loads
+  fine (~1.34 GiB heap) and is ample for chat + the Lab (a word-game trial is ~600 tokens), so it's
+  the interim config until the 16384 regression is understood.
 - **KNOWN BUG (llama_cpp_canister side):** even at 4096, a **long generation (>~100 tokens)** on the
   1.7B still traps `IC0502` "heap out of bounds" mid-`run_update` under the `--prompt-cache-all`
   pattern — and the wasm heap high-water stays ~1.34 GiB (far under the 3.75 GiB limit), so it is NOT
