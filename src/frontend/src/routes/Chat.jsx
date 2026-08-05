@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-use-before-define
 import React from 'react'
 import { Helmet } from 'react-helmet'
-import { useOutletContext, Link } from 'react-router-dom'
+import { useOutletContext } from 'react-router-dom'
 import 'dracula-ui/styles/dracula-ui.css'
 
 import { StatsBar } from '../common/StatsBar'
@@ -15,15 +15,12 @@ import { Chats } from './Chats'
 import { ChatInput } from './ChatInput'
 import { SystemPromptModal } from './SystemPromptModal'
 import { ParametersModal } from './ParametersModal'
-import { AdminPanel } from './AdminPanel'
 import { doNewChatLlamacpp } from '../canisters/llamacpp'
 
 const DEBUG = true
 
 export function Chat() {
   const { authClient, setAuthClient } = useOutletContext()
-  const { access } = useOutletContext()
-  const { doLogout } = useOutletContext()
   const { actorRef, setActorRef } = useOutletContext()
   const { chatNew, setChatNew } = useOutletContext()
   const { chatDone, setChatDone } = useOutletContext()
@@ -83,7 +80,6 @@ export function Chat() {
   const [showSystemPromptModal, setShowSystemPromptModal] =
     React.useState(false)
   const [showParametersModal, setShowParametersModal] = React.useState(false)
-  const [showAdminPanel, setShowAdminPanel] = React.useState(false)
 
   let DisplayComponent
 
@@ -136,130 +132,6 @@ export function Chat() {
               onOpenSystemPrompt={() => setShowSystemPromptModal(true)}
               onOpenParams={() => setShowParametersModal(true)}
             />
-            <div
-              style={{
-                position: 'fixed',
-                top: '8px',
-                right: '14px',
-                zIndex: 960,
-                display: 'flex',
-                gap: '8px',
-              }}
-            >
-              <Link
-                to="/lab"
-                title="Prompt Cost Lab — design & cost out a repeating AI task"
-                style={{
-                  backgroundColor: '#21222c',
-                  color: '#bd93f9',
-                  border: '1px solid #44475a',
-                  borderRadius: '6px',
-                  padding: '4px 8px',
-                  fontFamily: 'monospace',
-                  fontSize: '13px',
-                  lineHeight: 1,
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                }}
-              >
-                <i
-                  className="bi bi-graph-up"
-                  style={{ marginRight: '5px' }}
-                ></i>
-                Lab
-              </Link>
-              <a
-                href="/docs"
-                target="_blank"
-                rel="noreferrer"
-                title="Open the ICGPT docs in a new tab"
-                style={{
-                  backgroundColor: '#21222c',
-                  color: '#8be9fd',
-                  border: '1px solid #44475a',
-                  borderRadius: '6px',
-                  padding: '4px 8px',
-                  fontFamily: 'monospace',
-                  fontSize: '13px',
-                  lineHeight: 1,
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                }}
-              >
-                <i className="bi bi-book" style={{ marginRight: '5px' }}></i>
-                Docs
-              </a>
-              <Link
-                to="/canisters"
-                title="Canister cycle balances"
-                style={{
-                  backgroundColor: '#21222c',
-                  color: '#50fa7b',
-                  border: '1px solid #44475a',
-                  borderRadius: '6px',
-                  padding: '4px 8px',
-                  fontFamily: 'monospace',
-                  fontSize: '13px',
-                  lineHeight: 1,
-                  cursor: 'pointer',
-                  textDecoration: 'none',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                }}
-              >
-                <i
-                  className="bi bi-hdd-stack"
-                  style={{ marginRight: '5px' }}
-                ></i>
-                Canisters
-              </Link>
-              {access?.isAdmin ? (
-                <button
-                  type="button"
-                  onClick={() => setShowAdminPanel(true)}
-                  title="Admin panel"
-                  style={{
-                    backgroundColor: '#21222c',
-                    color: '#ff79c6',
-                    border: '1px solid #44475a',
-                    borderRadius: '6px',
-                    padding: '4px 8px',
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                    cursor: 'pointer',
-                  }}
-                >
-                  <i
-                    className="bi bi-shield-lock"
-                    style={{ marginRight: '5px' }}
-                  ></i>
-                  Admin
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={doLogout}
-                title="Log out"
-                aria-label="Log out"
-                style={{
-                  backgroundColor: '#21222c',
-                  color: '#ff5555',
-                  border: '1px solid #44475a',
-                  borderRadius: '6px',
-                  padding: '4px 8px',
-                  fontFamily: 'monospace',
-                  fontSize: '13px',
-                  lineHeight: 1,
-                  cursor: 'pointer',
-                }}
-              >
-                <i className="bi bi-box-arrow-right"></i>
-              </button>
-            </div>
             {DisplayComponent}
             <StatsBar
               turns={turns}
@@ -389,13 +261,6 @@ export function Chat() {
           setParams={setParams}
           selectedModel={selectedModel}
           onClose={() => setShowParametersModal(false)}
-        />
-      ) : null}
-      {showAdminPanel ? (
-        <AdminPanel
-          authClient={authClient}
-          initialEarlyAccess={access?.earlyAccess}
-          onClose={() => setShowAdminPanel(false)}
         />
       ) : null}
     </div>

@@ -6,6 +6,8 @@ import { StagingBanner } from './common/StagingBanner'
 import { Outlet, useLocation } from 'react-router-dom'
 import { Login } from './routes/Login'
 import { EarlyAccessLockScreen } from './routes/EarlyAccessLockScreen'
+import { TopNav, TOPNAV_HEIGHT } from './common/TopNav'
+import { AdminPanel } from './routes/AdminPanel'
 import { getMyAccess } from './canisters/admin'
 import { withRetry } from './canisters/retry'
 import { DEFAULT_MODEL_ID } from './common/models'
@@ -35,6 +37,9 @@ export function App() {
   // The /canisters status page is viewable by ANY signed-in user (not just early-access),
   // so we skip the early-access gate for it (it shows only public cycle balances).
   const location = useLocation()
+
+  // Admin panel modal, opened from the shared TopNav (any signed-in admin, any page).
+  const [showAdminPanel, setShowAdminPanel] = React.useState(false)
 
   // Early-access gate (icgpt_admin canister). access === null while we query the
   // caller's status after login. access.allowed drives the chat-vs-lock-screen branch;
@@ -253,54 +258,68 @@ export function App() {
   return (
     <div>
       <Head />
-      <Outlet
-        context={{
-          authClient,
-          setAuthClient,
-          access,
-          recheckAccess,
-          doLogout,
-          actorRef,
-          setActorRef,
-          chatNew,
-          setChatNew,
-          chatDone,
-          setChatDone,
-          selectedModelId,
-          setSelectedModelId,
-          customPrompts,
-          setCustomPrompts,
-          activeSystemPromptId,
-          setActiveSystemPromptId,
-          activeSystemPromptText,
-          params,
-          setParams,
-          widthChatInput,
-          setWidthChatInput,
-          heightChatInput,
-          setHeightChatInput,
-          inputString,
-          setInputString,
-          inputPlaceholder,
-          setInputPlaceholder,
-          isSubmitting,
-          setIsSubmitting,
-          chatOutputText,
-          setChatOutputText,
-          messages,
-          setMessages,
-          conversationBaseRef,
-          setConversationBase,
-          stats,
-          setStats,
-          chatDisplay,
-          setChatDisplay,
-          waitAnimationMessage,
-          setWaitAnimationMessage,
-          chats,
-          setChats,
-        }}
+      <TopNav
+        access={access}
+        onOpenAdmin={() => setShowAdminPanel(true)}
+        onLogout={doLogout}
       />
+      <div style={{ paddingTop: `${TOPNAV_HEIGHT}px` }}>
+        <Outlet
+          context={{
+            authClient,
+            setAuthClient,
+            access,
+            recheckAccess,
+            doLogout,
+            actorRef,
+            setActorRef,
+            chatNew,
+            setChatNew,
+            chatDone,
+            setChatDone,
+            selectedModelId,
+            setSelectedModelId,
+            customPrompts,
+            setCustomPrompts,
+            activeSystemPromptId,
+            setActiveSystemPromptId,
+            activeSystemPromptText,
+            params,
+            setParams,
+            widthChatInput,
+            setWidthChatInput,
+            heightChatInput,
+            setHeightChatInput,
+            inputString,
+            setInputString,
+            inputPlaceholder,
+            setInputPlaceholder,
+            isSubmitting,
+            setIsSubmitting,
+            chatOutputText,
+            setChatOutputText,
+            messages,
+            setMessages,
+            conversationBaseRef,
+            setConversationBase,
+            stats,
+            setStats,
+            chatDisplay,
+            setChatDisplay,
+            waitAnimationMessage,
+            setWaitAnimationMessage,
+            chats,
+            setChats,
+          }}
+        />
+      </div>
+      {showAdminPanel ? (
+        <AdminPanel
+          authClient={authClient}
+          initialEarlyAccess={access?.earlyAccess}
+          onClose={() => setShowAdminPanel(false)}
+        />
+      ) : null}
       {/* <StagingBanner /> */}
       <Footer fixed />
     </div>

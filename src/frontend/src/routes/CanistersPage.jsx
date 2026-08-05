@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-use-before-define
 import React from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { useOutletContext } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
 import { getCyclesReport } from '../canisters/admin'
 import { canisterIdFor } from '../canisters/agent'
@@ -157,27 +157,19 @@ export function CanistersPage() {
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={load}
-            style={{
-              ...C.link,
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            ↻ Refresh
-          </button>
-          <a href="/docs" style={C.link}>
-            Docs
-          </a>
-          <Link to="/" style={C.link}>
-            ← ICGPT
-          </Link>
-        </div>
+        <button
+          type="button"
+          onClick={load}
+          style={{
+            ...C.link,
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            padding: 0,
+          }}
+        >
+          ↻ Refresh
+        </button>
       </div>
 
       {/* Low-cycles banner */}

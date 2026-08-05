@@ -22,15 +22,14 @@ export function ModelSelector({
   const selected = getModelById(selectedModelId)
   const isMobile = useIsMobile()
 
-  // Mobile: drop the bar below the top-right Admin/Log-out cluster (which stays at
-  // top:8) and let the controls wrap onto multiple rows instead of overflowing off
-  // the right edge. Desktop: a single centered row pinned to the very top.
+  // A centered toolbar row sitting just BELOW the shared TopNav (48px). On mobile the controls
+  // wrap onto multiple rows instead of overflowing off the right edge.
   const barStyle = {
     position: 'fixed',
-    top: isMobile ? '46px' : '6px',
+    top: '52px', // just below the shared TopNav (TOPNAV_HEIGHT = 48)
     left: 0,
     right: 0,
-    zIndex: 950, // above the conversation view (900)
+    zIndex: 950, // above the conversation view (900), below the TopNav (1000)
     display: 'flex',
     justifyContent: 'center',
     alignItems: 'center',

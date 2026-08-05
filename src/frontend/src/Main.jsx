@@ -24,9 +24,11 @@ ReactDOM.render(
           <Route path=":slug" element={<DocsPage />} />
         </Route>
         <Route path="/" element={<App />}>
-          <Route index element={<Chat />} />
-          {/* Prompt Cost Lab — nested under <App>, so it inherits the early-access
-              gate automatically and is reachable by any allowed user. */}
+          {/* The Prompt Cost Lab is the default landing page for signed-in users; Chat is a
+              separate destination at /chat. Both are gated under <App> (early-access). */}
+          <Route index element={<PromptCostLab />} />
+          <Route path="chat" element={<Chat />} />
+          {/* /lab kept as an alias for the Lab so old links/bookmarks still resolve. */}
           <Route path="lab" element={<PromptCostLab />} />
           {/* Canisters & cycles status — nested under <App> for auth, but <App> lets ANY
               signed-in user view it (not just early-access; see App.jsx openWhenSignedIn). */}

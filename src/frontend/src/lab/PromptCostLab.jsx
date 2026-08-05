@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-use-before-define
 import React from 'react'
-import { useOutletContext, Link } from 'react-router-dom'
+import { useOutletContext } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
 import { MODELS, getModelById, DEFAULT_MODEL_ID } from '../common/models'
 import { RECOMMENDED_PARAMS } from '../common/params'
@@ -202,18 +202,12 @@ export function PromptCostLab() {
       <Helmet>
         <title>Prompt Cost Lab — ICGPT</title>
       </Helmet>
-      <div style={{ ...S.row, justifyContent: 'space-between' }}>
-        <div>
-          <h1 style={S.h1}>Prompt Cost Lab</h1>
-          <p style={S.lead}>
-            Design a repeating on-chain AI task, sweep its variables, and see
-            the exact cost per request — and the quality — so you can optimize
-            it.
-          </p>
-        </div>
-        <Link to="/" style={S.btnGhost}>
-          ← Chat
-        </Link>
+      <div>
+        <h1 style={S.h1}>Prompt Cost Lab</h1>
+        <p style={S.lead}>
+          Design a repeating on-chain AI task, sweep its variables, and see the
+          exact cost per request — and the quality — so you can optimize it.
+        </p>
       </div>
 
       {/* Template picker + save */}
