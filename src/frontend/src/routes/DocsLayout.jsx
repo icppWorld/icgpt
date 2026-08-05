@@ -111,9 +111,21 @@ export function DocsLayout() {
             ICGPT Docs
           </span>
         </Link>
-        <a href="/" style={cta}>
-          Request early access →
-        </a>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+          <Link
+            to="/canisters"
+            style={{
+              color: '#8be9fd',
+              textDecoration: 'none',
+              fontSize: '14px',
+            }}
+          >
+            Canisters
+          </Link>
+          <a href="/" style={cta}>
+            Request early access →
+          </a>
+        </div>
       </div>
 
       <div style={container}>

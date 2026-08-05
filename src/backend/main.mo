@@ -11,6 +11,8 @@ import LlmTypes "LlmTypes";
 import LLM "mo:llm";
 import Judge "Judge";
 import LogStore "LogStore";
+import Cycles "mo:base/ExperimentalCycles";
+import Timer "mo:base/Timer";
 
 // ICGPT admin & CONTROLLER canister.
 //
@@ -253,6 +255,53 @@ persistent actor {
       });
       s.cycles;
     } catch (_) { 0 };
+  };
+
+  // ----- cycles monitoring (public /canisters status page) ------------------
+  // A snapshot of each canister's cycle balance, refreshed by a timer every 10 min so the
+  // read is a cheap query (no per-load management-canister calls, no anonymous drain vector).
+  // Self balance is read directly; the LLMs via canister_status (this canister controls them).
+  type CanisterCycles = { name : Text; canisterId : Text; cycles : Nat };
+  type CyclesReport = { canisters : [CanisterCycles]; updatedAt : Int };
+  var cyclesSnapshot : [CanisterCycles] = [];
+  var cyclesSnapshotAt : Int = 0;
+
+  func refreshCyclesSnapshot() : async () {
+    // icgpt_admin itself first (id "" - the frontend fills its own known id), then each LLM.
+    var out : [CanisterCycles] = [{
+      name = "icgpt_admin";
+      canisterId = "";
+      cycles = Cycles.balance();
+    }];
+    var i = 0;
+    while (i < llmCanisters.size()) {
+      let bal = await llmBalance(i);
+      out := Array.append(
+        out,
+        [{ name = llmCanisters[i].0; canisterId = llmCanisters[i].1; cycles = bal }],
+      );
+      i += 1;
+    };
+    cyclesSnapshot := out;
+    cyclesSnapshotAt := Time.now();
+  };
+
+  // Arm the refresh timers: a one-shot to populate ~immediately after (re)install, plus a
+  // recurring 10-minute refresh. Timers do NOT survive an upgrade, so this is called at init
+  // AND from postupgrade to re-arm.
+  func armCyclesTimer<system>() {
+    ignore Timer.setTimer<system>(#seconds 2, refreshCyclesSnapshot);
+    ignore Timer.recurringTimer<system>(#seconds 600, refreshCyclesSnapshot);
+  };
+  armCyclesTimer<system>();
+  system func postupgrade() { armCyclesTimer<system>() };
+
+  // Public, non-anonymous: the cached cycle-balance snapshot for the /canisters page.
+  public query ({ caller }) func getCyclesReport() : async CyclesReport {
+    if (Principal.isAnonymous(caller)) {
+      return { canisters = []; updatedAt = 0 };
+    };
+    { canisters = cyclesSnapshot; updatedAt = cyclesSnapshotAt };
   };
 
   // Attach the measured per-call cost + on-chain duration to the LLM's response.

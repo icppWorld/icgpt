@@ -99,3 +99,11 @@ export async function getLogs(authClient, limit = 0) {
 export async function logClientEvent(authClient, kind, detail) {
   return (await adminActor(authClient)).logClientEvent(kind, detail)
 }
+
+// ----- cycles monitoring (public /canisters page) -------------------------
+// Cached cycle-balance snapshot for icgpt_admin + each LLM (refreshed on-chain by a 10-min
+// timer). Non-anonymous query, so a signed-in authClient is required. Returns
+// { canisters: [{ name, canisterId, cycles }], updatedAt } (empty for anonymous callers).
+export async function getCyclesReport(authClient) {
+  return (await adminActor(authClient)).getCyclesReport()
+}

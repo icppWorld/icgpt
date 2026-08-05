@@ -68,12 +68,22 @@ export const idlFactory = ({ IDL }) => {
     statusCode: IDL.Nat16,
     detail: IDL.Text,
   })
+  const CanisterCycles = IDL.Record({
+    name: IDL.Text,
+    canisterId: IDL.Text,
+    cycles: IDL.Nat,
+  })
+  const CyclesReport = IDL.Record({
+    canisters: IDL.Vec(CanisterCycles),
+    updatedAt: IDL.Int,
+  })
   return IDL.Service({
     addAdmin: IDL.Func([IDL.Principal, IDL.Text], [], []),
     addToWhitelist: IDL.Func([IDL.Principal, IDL.Text, IDL.Text], [], []),
     add_llm_canister: IDL.Func([IDL.Text, IDL.Text], [Result], []),
     approve: IDL.Func([IDL.Principal], [Result], []),
     checkAccessToLLMs: IDL.Func([], [Result], []),
+    getCyclesReport: IDL.Func([], [CyclesReport], ['query']),
     getEarlyAccess: IDL.Func([], [IDL.Bool], ['query']),
     getEarlyAccessCallCap: IDL.Func([], [IDL.Nat], ['query']),
     getLogs: IDL.Func([IDL.Nat], [IDL.Vec(LogEntry)], ['query']),

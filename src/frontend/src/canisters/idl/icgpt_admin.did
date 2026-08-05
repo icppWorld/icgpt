@@ -60,12 +60,23 @@ type JudgeOutput =
    score: nat;
  };
 type InputRecord = record {args: vec text;};
-type Info = 
+type Info =
  record {
    at: int;
    email: text;
    note: text;
    "principal": principal;
+ };
+type CyclesReport =
+ record {
+   canisters: vec CanisterCycles;
+   updatedAt: int;
+ };
+type CanisterCycles =
+ record {
+   canisterId: text;
+   cycles: nat;
+   name: text;
  };
 type ApiError = 
  variant {
@@ -97,6 +108,9 @@ service : {
   /// Verify the controller can reach every registered LLM (it is a controller of
   /// each, so check_access should return Ok). Admin-only.
   checkAccessToLLMs: () -> (Result);
+  /// Cached cycle-balance snapshot for the public /canisters page (refreshed by a 10-min
+  /// timer). Non-anonymous callers only; anonymous gets an empty report.
+  getCyclesReport: () -> (CyclesReport) query;
   getEarlyAccess: () -> (bool) query;
   getEarlyAccessCallCap: () -> (nat) query;
   /// Admin-only: review recent failure events (model not-ready/errors, trapped LLM calls,

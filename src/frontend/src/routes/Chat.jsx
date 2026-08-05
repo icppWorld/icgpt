@@ -193,6 +193,30 @@ export function Chat() {
                 <i className="bi bi-book" style={{ marginRight: '5px' }}></i>
                 Docs
               </a>
+              <Link
+                to="/canisters"
+                title="Canister cycle balances"
+                style={{
+                  backgroundColor: '#21222c',
+                  color: '#50fa7b',
+                  border: '1px solid #44475a',
+                  borderRadius: '6px',
+                  padding: '4px 8px',
+                  fontFamily: 'monospace',
+                  fontSize: '13px',
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  textDecoration: 'none',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}
+              >
+                <i
+                  className="bi bi-hdd-stack"
+                  style={{ marginRight: '5px' }}
+                ></i>
+                Canisters
+              </Link>
               {access?.isAdmin ? (
                 <button
                   type="button"

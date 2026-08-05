@@ -3,7 +3,7 @@ import React from 'react'
 import { Head } from './common/Head'
 import { Footer } from './common/Footer'
 import { StagingBanner } from './common/StagingBanner'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { Login } from './routes/Login'
 import { EarlyAccessLockScreen } from './routes/EarlyAccessLockScreen'
 import { getMyAccess } from './canisters/admin'
@@ -31,6 +31,10 @@ export function App() {
 
   // Authentication with internet identity
   const [authClient, setAuthClient] = React.useState()
+
+  // The /canisters status page is viewable by ANY signed-in user (not just early-access),
+  // so we skip the early-access gate for it (it shows only public cycle balances).
+  const location = useLocation()
 
   // Early-access gate (icgpt_admin canister). access === null while we query the
   // caller's status after login. access.allowed drives the chat-vs-lock-screen branch;
@@ -206,8 +210,11 @@ export function App() {
     )
   }
 
+  // /canisters bypasses the early-access checks below (any signed-in user may view it).
+  const openWhenSignedIn = location.pathname === '/canisters'
+
   // Signed in, but still checking early-access status.
-  if (access === null) {
+  if (!openWhenSignedIn && access === null) {
     return (
       <div>
         <Head />
@@ -229,7 +236,7 @@ export function App() {
   }
 
   // Signed in but not allowed during early access → request-access lock screen.
-  if (!access.allowed) {
+  if (!openWhenSignedIn && !access.allowed) {
     return (
       <div>
         <Head />

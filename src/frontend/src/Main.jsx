@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { App } from './App'
 import { Chat } from './routes/Chat'
 import { PromptCostLab } from './lab/PromptCostLab'
+import { CanistersPage } from './routes/CanistersPage'
 import { NothingHere } from './common/NothingHere'
 import { DocsLayout } from './routes/DocsLayout'
 import { DocsHome } from './routes/DocsHome'
@@ -27,6 +28,9 @@ ReactDOM.render(
           {/* Prompt Cost Lab — nested under <App>, so it inherits the early-access
               gate automatically and is reachable by any allowed user. */}
           <Route path="lab" element={<PromptCostLab />} />
+          {/* Canisters & cycles status — nested under <App> for auth, but <App> lets ANY
+              signed-in user view it (not just early-access; see App.jsx openWhenSignedIn). */}
+          <Route path="canisters" element={<CanistersPage />} />
           <Route path="*" element={<NothingHere />} />
         </Route>
       </Routes>

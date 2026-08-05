@@ -111,6 +111,9 @@ export function Login({ setAuthClient }) {
               <Link to="/docs" style={linkStyle}>
                 Docs →
               </Link>
+              <Link to="/canisters" style={linkStyle}>
+                Canisters →
+              </Link>
               <a
                 href={OPENCHAT_URL}
                 target="_blank"
