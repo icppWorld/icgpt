@@ -8,8 +8,9 @@ import { Login } from './routes/Login'
 import { EarlyAccessLockScreen } from './routes/EarlyAccessLockScreen'
 import { TopNav, TOPNAV_HEIGHT } from './common/TopNav'
 import { AdminPanel } from './routes/AdminPanel'
-import { getMyAccess } from './canisters/admin'
+import { getMyAccess, logClientEvent } from './canisters/admin'
 import { withRetry } from './canisters/retry'
+import { runExperiment } from './lab/labEngine'
 import { DEFAULT_MODEL_ID } from './common/models'
 import {
   loadCustomPrompts,
@@ -101,6 +102,80 @@ export function App() {
   const actorRef = React.useRef()
   const setActorRef = (value) => {
     actorRef.current = value
+  }
+
+  // ---------------------------------------------------------
+  // Prompt Cost Lab run state — hoisted here (not in PromptCostLab) so a running
+  // experiment SURVIVES navigating between the Lab, Chat and Canisters routes. Those
+  // are child routes of <App>, so <App> stays mounted while its <Outlet> swaps;
+  // keeping the run + its report/history here means leaving the Lab page no longer
+  // unmounts (and orphans) the in-flight runExperiment. Exposed to the Lab via the
+  // Outlet context as `labRun`, and to the TopNav as a live "running" indicator.
+  const [labRunning, setLabRunning] = React.useState(false)
+  const [labProgress, setLabProgress] = React.useState(null)
+  const [labReport, setLabReport] = React.useState(null)
+  const [labRuns, setLabRuns] = React.useState([])
+  const [labError, setLabError] = React.useState(null)
+  // A stable {aborted} holder the Cancel button mutates mid-run (same non-rerender
+  // ref convention as actorRef above); replaced fresh on each start.
+  const labCancelRef = React.useRef({ aborted: false })
+
+  // Start an experiment. The Lab passes a snapshot of its editor state
+  // ({template, model, params, kSamples}); authClient is taken from here. Body
+  // mirrors the old in-component run(): reset, run, store the report + append to
+  // history, log a failure that survived retries, and always clear the running flag.
+  const startLabRun = React.useCallback(
+    async ({ template, model, params: runParams, kSamples }) => {
+      setLabError(null)
+      setLabReport(null)
+      setLabRunning(true)
+      setLabProgress({ done: 0, total: 0, label: 'Starting…' })
+      labCancelRef.current = { aborted: false }
+      try {
+        const rep = await runExperiment({
+          authClient,
+          template,
+          model,
+          params: runParams,
+          kSamples: Number(kSamples) || 1,
+          onProgress: setLabProgress,
+          signal: labCancelRef.current,
+        })
+        setLabReport(rep)
+        setLabRuns((rs) => [...rs, rep])
+      } catch (e) {
+        const msg = e && e.message ? e.message : String(e)
+        setLabError(msg)
+        // Best-effort: record a Lab failure (that survived retries) to the on-chain
+        // monitoring log. Skip user-initiated cancels. Fire-and-forget.
+        if (!labCancelRef.current.aborted) {
+          logClientEvent(
+            authClient,
+            'lab_inference_failed',
+            `${model.gguf}: ${msg}`
+          ).catch(() => {})
+        }
+      } finally {
+        setLabRunning(false)
+        setLabProgress(null)
+      }
+    },
+    [authClient]
+  )
+  const cancelLabRun = () => {
+    labCancelRef.current.aborted = true
+  }
+  const clearLabRuns = () => setLabRuns([])
+  // Grouped API handed to the Lab (via Outlet context) and the TopNav indicator.
+  const labRun = {
+    running: labRunning,
+    progress: labProgress,
+    report: labReport,
+    runs: labRuns,
+    error: labError,
+    start: startLabRun,
+    cancel: cancelLabRun,
+    clearRuns: clearLabRuns,
   }
 
   // Chat - opens straight into the conversation view (no model-select screen).
@@ -260,6 +335,7 @@ export function App() {
       <Head />
       <TopNav
         access={access}
+        labRun={labRun}
         onOpenAdmin={() => setShowAdminPanel(true)}
         onLogout={doLogout}
       />
@@ -273,6 +349,7 @@ export function App() {
             doLogout,
             actorRef,
             setActorRef,
+            labRun,
             chatNew,
             setChatNew,
             chatDone,

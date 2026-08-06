@@ -14,8 +14,6 @@ import {
 } from '../common/templates'
 import { lintTemplate, placementEstimate } from '../common/templateEngine'
 import { RULE_TYPES, DEFAULT_JUDGE_THRESHOLD } from '../common/quality'
-import { runExperiment } from './labEngine'
-import { logClientEvent } from '../canisters/admin'
 import { LabReport, RunCompareTable } from './LabReport'
 
 // The Prompt Cost Lab: author templated prompts, sweep variable bindings, and read the
@@ -95,7 +93,10 @@ function cloneTemplate(t) {
 }
 
 export function PromptCostLab() {
-  const { authClient } = useOutletContext()
+  // The experiment run (running/progress/report/runs/error + start/cancel) lives in
+  // <App> so it survives navigating away from the Lab; see App.jsx `labRun`. This
+  // component owns only the editor/workbench state below.
+  const { labRun } = useOutletContext()
   const [custom, setCustom] = React.useState(loadCustomTemplates)
   const [draft, setDraft] = React.useState(() =>
     cloneTemplate(getTemplateById(loadCustomTemplates(), loadActiveId()))
@@ -104,12 +105,6 @@ export function PromptCostLab() {
   const [modelId, setModelId] = React.useState(DEFAULT_MODEL_ID)
   const [params, setParams] = React.useState(() => ({ ...RECOMMENDED_PARAMS }))
   const [kSamples, setKSamples] = React.useState(1)
-  const [running, setRunning] = React.useState(false)
-  const [progress, setProgress] = React.useState(null)
-  const [report, setReport] = React.useState(null)
-  const [runs, setRuns] = React.useState([])
-  const [error, setError] = React.useState(null)
-  const cancelRef = React.useRef({ aborted: false })
 
   const model = getModelById(modelId)
   const warnings = lintTemplate(draft)
@@ -160,42 +155,6 @@ export function PromptCostLab() {
     }))
   const delRule = (i) =>
     setDraft((d) => ({ ...d, quality: d.quality.filter((_, j) => j !== i) }))
-
-  async function run() {
-    setError(null)
-    setReport(null)
-    setRunning(true)
-    setProgress({ done: 0, total: 0, label: 'Starting…' })
-    cancelRef.current = { aborted: false }
-    try {
-      const rep = await runExperiment({
-        authClient,
-        template: draft,
-        model,
-        params,
-        kSamples: Number(kSamples) || 1,
-        onProgress: setProgress,
-        signal: cancelRef.current,
-      })
-      setReport(rep)
-      setRuns((rs) => [...rs, rep])
-    } catch (e) {
-      const msg = e && e.message ? e.message : String(e)
-      setError(msg)
-      // Best-effort: record a Lab failure (that survived retries) to the on-chain monitoring
-      // log for later review. Skip user-initiated cancels. Fire-and-forget.
-      if (!cancelRef.current.aborted) {
-        logClientEvent(
-          authClient,
-          'lab_inference_failed',
-          `${model.gguf}: ${msg}`
-        ).catch(() => {})
-      }
-    } finally {
-      setRunning(false)
-      setProgress(null)
-    }
-  }
 
   return (
     <div style={S.page}>
@@ -519,30 +478,43 @@ export function PromptCostLab() {
 
       {/* Run */}
       <div style={{ ...S.row, marginTop: '4px', marginBottom: '18px' }}>
-        {running ? (
+        {labRun.running ? (
           <button
             type="button"
             style={{ ...S.btn, background: '#ff5555' }}
             onClick={() => {
-              cancelRef.current.aborted = true
+              labRun.cancel()
             }}
           >
             Cancel
           </button>
         ) : (
-          <button type="button" style={S.btn} onClick={run}>
+          <button
+            type="button"
+            style={S.btn}
+            onClick={() =>
+              labRun.start({
+                template: draft,
+                model,
+                params,
+                kSamples: Number(kSamples) || 1,
+              })
+            }
+          >
             ▶ Run experiment
           </button>
         )}
-        {progress ? (
+        {labRun.progress ? (
           <span style={{ color: '#6272a4', fontSize: '13px' }}>
-            {progress.label}
-            {progress.total ? ` — ${progress.done}/${progress.total}` : ''}
+            {labRun.progress.label}
+            {labRun.progress.total
+              ? ` — ${labRun.progress.done}/${labRun.progress.total}`
+              : ''}
           </span>
         ) : null}
       </div>
 
-      {error ? (
+      {labRun.error ? (
         <div
           style={{
             ...S.section,
@@ -550,17 +522,17 @@ export function PromptCostLab() {
             color: '#ff8888',
           }}
         >
-          {error}
+          {labRun.error}
         </div>
       ) : null}
 
-      {report ? (
+      {labRun.report ? (
         <div style={S.section}>
-          <LabReport report={report} />
+          <LabReport report={labRun.report} />
         </div>
       ) : null}
 
-      <RunCompareTable runs={runs} onClear={() => setRuns([])} />
+      <RunCompareTable runs={labRun.runs} onClear={labRun.clearRuns} />
     </div>
   )
 }

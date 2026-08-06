@@ -38,7 +38,7 @@ const TABS = [
 
 export const TOPNAV_HEIGHT = 48
 
-export function TopNav({ access, onOpenAdmin, onLogout }) {
+export function TopNav({ access, labRun, onOpenAdmin, onLogout }) {
   const isMobile = useIsMobile()
   const path = useLocation().pathname
 
@@ -80,6 +80,9 @@ export function TopNav({ access, onOpenAdmin, onLogout }) {
 
   return (
     <div style={bar}>
+      {/* keyframes for the "Lab running" spinner (a <style> in the body renders
+          nothing — UA stylesheet sets display:none — so it does not affect layout) */}
+      <style>{`@keyframes icgpt-spin { to { transform: rotate(360deg); } }`}</style>
       {/* Brand → home (the Lab) */}
       <Link
         to="/"
@@ -116,6 +119,29 @@ export function TopNav({ access, onOpenAdmin, onLogout }) {
           overflowX: 'auto',
         }}
       >
+        {/* Live "Lab running" indicator — shown on EVERY page while an experiment
+            is in flight (the run lives in <App>, so it keeps going as you navigate).
+            Click to jump back to the Lab. */}
+        {labRun?.running ? (
+          <Link
+            to="/"
+            title="A Lab experiment is running — click to view"
+            style={{ ...pill('#bd93f9', true), flexShrink: 0 }}
+          >
+            <i
+              className="bi bi-arrow-repeat"
+              style={{ animation: 'icgpt-spin 0.9s linear infinite' }}
+            ></i>
+            {isMobile ? null : (
+              <span>
+                Lab running
+                {labRun.progress?.total
+                  ? ` ${labRun.progress.done}/${labRun.progress.total}`
+                  : ''}
+              </span>
+            )}
+          </Link>
+        ) : null}
         {TABS.map((t) => {
           const active = t.isActive(path)
           return (
@@ -167,6 +193,7 @@ export function TopNav({ access, onOpenAdmin, onLogout }) {
 
 TopNav.propTypes = {
   access: PropTypes.object,
+  labRun: PropTypes.object,
   onOpenAdmin: PropTypes.func.isRequired,
   onLogout: PropTypes.func.isRequired,
 }
