@@ -30,19 +30,26 @@ all-static-check: \
 test-backend:
 	@mops test
 
+# Live smoketests run on the icpp-pro pytest harness (test/*.py). They need an icp
+# identity (icpp-pro never uses the machine-wide active one). TEST_IDENTITY is a
+# throwaway; create it once with: icp identity new icgpt-testing --storage plaintext
+TEST_IDENTITY ?= icgpt-testing
+MODEL_GGUF ?= gemma-3-270m-it-Q8_0.gguf
+
 # Live end-to-end smoketest of the LLM-as-judge against the real DFINITY LLM canister
 # on mainnet (Qwen3-32B, free). Asserts it discriminates a good hint from a leak.
 .PHONY: smoketest-judge-live
 smoketest-judge-live:
-	@bash scripts/smoketest_judge_live.sh
+	@pytest -vv --network ic --identity $(TEST_IDENTITY) test/test_judge_live.py
 
 # Live smoketest of exact token accounting (llama_cpp >= v0.15.0) through icgpt_admin:
 # proves the 5 opt-nat64 counts decode + reconcile and shows the warm cache-break reuse.
-# Requires a local icgpt_admin with a registered, LOADED model (default: gemma).
-# make smoketest-token-counts [ENV=local] [MODEL_GGUF=gemma-3-270m-it-Q8_0.gguf]
+# Requires an icgpt_admin (ENV) with a registered, LOADED model (default: gemma).
+#   make smoketest-token-counts [ENV=local] [MODEL_GGUF=..] [TEST_IDENTITY=..]
+# Against mainnet, run as an admin: make smoketest-token-counts ENV=production TEST_IDENTITY=icpp-llm
 .PHONY: smoketest-token-counts
 smoketest-token-counts:
-	@bash scripts/smoketest_token_counts.sh $(ENV) $(MODEL_GGUF)
+	@ICGPT_TEST_MODEL_GGUF=$(MODEL_GGUF) pytest -vv --network $(ENV) --identity $(TEST_IDENTITY) test/test_token_counts.py
 
 git-no-unstaged-files:
 	@if [[ $$(git diff --name-only) ]]; then \
