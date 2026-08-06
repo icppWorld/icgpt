@@ -238,8 +238,11 @@ You can just grab the latest [release](https://github.com/onicai/llama_cpp_canis
 - Optional: You can now run a pytest based QA, using the icpp-pro smoketesting framework:
 
   ```bash
-  pytest -vv --network local test/test_qwen3.py
+  pytest -vv --network local --identity "$(icp identity default)" test/test_qwen3.py
   ```
+
+  See [Smoke testing the deployed LLM](#smoke-testing-the-deployed-llm) for what
+  `--identity` is and why it is required.
 
 - Load the gguf file into Orthogonal Persisted (OP) working memory
 
@@ -388,6 +391,27 @@ You can just grab the latest [release](https://github.com/onicai/llama_cpp_canis
 
     ***
 
+    **Exact token accounting.** Every `run_update` / `run_query` **success** record
+    also carries five `opt nat64` fields with the exact token counts for that call
+    (they decode to `null` on non-run records such as `new_chat` / `load_model`):
+
+    | Field                       | Meaning                                                    |
+    | --------------------------- | ---------------------------------------------------------- |
+    | `n_prompt_tokens`           | total prompt tokens presented this call                    |
+    | `n_prompt_tokens_cached`    | prompt-cache prefix reused for free (the cache-break offset)|
+    | `n_prompt_tokens_decoded`   | prompt tokens actually decoded this call                   |
+    | `n_tokens_generated`        | tokens generated this call                                 |
+    | `n_prompt_tokens_remaining` | prompt suffix left for the next call                       |
+
+    They always reconcile: `cached + decoded + remaining == n_prompt_tokens`, and
+    `n_tokens_generated` is `0` until the prompt is fully ingested
+    (`n_prompt_tokens_remaining == 0`). This lets a caller measure the exact
+    ingest-vs-generate split and the prompt-cache break offset per call. Being
+    `opt`, they are upgrade-safe: a client built against the older `.did` simply
+    ignores them.
+
+    ***
+
     **Multi-turn conversation.** Qwen3 handles back-and-forth conversations well. To
     continue a chat, send the **full accumulated conversation** as the prompt each
     turn — the prompt-cache reuses the shared prefix, so only the new turn is
@@ -510,17 +534,50 @@ You can run a smoketest on the deployed LLM:
 
 - Deploy the Qwen3-0.6B model as described above
 
+- Tell pytest which icp identity to run as. Since icpp-pro 6.0.0 this is
+  required: the tests never pick up the machine-wide active identity by
+  themselves, because any other process can change it mid-run. Most endpoints
+  are controller-only, so it must be **the identity you deployed the canister
+  with** — if you followed the steps above, that is your active identity:
+
+  ```bash
+  icp identity default    # prints the name to pass as --identity
+  ```
+
+  It must not be password protected: icpp-pro exports the key to sign the calls
+  locally, which a password-protected identity cannot do non-interactively.
+
+  Pass the name as `--identity <name>` (as below), or export
+  `ICPP_PRO_TEST_IDENTITY=<name>` once per shell.
+
 - Run the smoketests for the Qwen3-0.6B LLM deployed to your local IC network:
 
   ```
   # First test the canister functions, like 'health'
-  pytest -vv --network local test/test_canister_functions.py
+  pytest -vv --network local --identity "$(icp identity default)" test/test_canister_functions.py
 
   # Then run the inference tests (multi-turn, non-thinking)
-  pytest -vv --network local test/test_qwen3.py
+  pytest -vv --network local --identity "$(icp identity default)" test/test_qwen3.py
   ```
 
   _(The previous default, Qwen2.5-0.5B, is still covered by `test/test_qwen2.py`.)_
+
+  `test/test_files.py` additionally needs a SECOND identity that is *not* a
+  controller, to verify that the filesystem endpoints deny an authenticated but
+  unauthorized caller. It defaults to `llama-cpp-other-user` and is overridden
+  with `$ICPP_PRO_TEST_IDENTITY_NON_CONTROLLER`:
+
+  ```bash
+  icp identity new llama-cpp-other-user --storage plaintext
+  ```
+
+- Or let the full QA do all of it for you — it creates the two identities
+  (`llama-cpp-testing` and `llama-cpp-other-user`), deploys as the first, and
+  runs every suite, without ever changing your active identity:
+
+  ```bash
+  make test-llm-wasm
+  ```
 
 # Prompt Caching
 
@@ -873,6 +930,7 @@ We tested several LLM models available on HuggingFace:
 | ----------------------------------------------------------------------------------------- | --------- | --------- | ------------ | -------------- | ----------------------------- | ------------------------------ |
 | [Qwen3-0.6B-Q8_0.gguf](https://huggingface.co/Qwen/Qwen3-0.6B-GGUF) (default)             | 600 M     | 0.64 GB   | q8_0         | q8_0           | -                             | 25                             |
 | [qwen2.5-0.5b-instruct-q8_0.gguf](https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF) | 630 M     | 0.68 GB   | q8_0         | q8_0           | -                             | 25                             |
+| [gemma-3-270m-it-Q8_0.gguf](https://huggingface.co/unsloth/gemma-3-270m-it-GGUF) (tiniest) | 270 M     | 0.29 GB   | q8_0         | q8_0           | -                             | 44                             |
 
 _(We have benchmarked other models too — SmolLM2, Llama-3.2, DeepSeek-R1 1.5B, and other Qwen2.5 quants — but their pre-b10076 numbers must be re-measured before we list them here.)_
 
@@ -880,6 +938,7 @@ NOTEs:
 
 - **`Qwen3-0.6B-Q8_0` is the current default** (top row): ~25 tokens/call generation, first-call ceiling ~25-29. It needs `--cache-type-k q8_0 --cache-type-v q8_0 --batch-size 64 --ubatch-size 64 --ctx-size 16384` and a `wasm_memory_limit` of 3.75 GiB; the small batch shrinks the compute buffers so a 16K context fits with ~2 GiB headroom — see [Context size & memory](#appendix-b-context-size--memory) for the mechanism, levers, and risks.
 - **`qwen2.5-0.5b-instruct-q8_0` was re-measured on b10076**: 25 tokens/call sustained, 28 first-call ceiling — up ~2.8x from ~10, thanks to the hand-written WASM SIMD q8_0 kernel.
+- **`gemma-3-270m-it-Q8_0` is the smallest model we run on-chain** — the b10076 fork loads the `gemma3` architecture. With a **q8_0 KV cache** the measured **generation ceiling is ~55 tokens/call** (55 OK / 60 traps at short context, on a local replica whose instruction limit is the same 40 B as mainnet; ~50 with the default f16 cache), so `max_tokens_update = 44` is a safe value. Use `--temp 0.7` — greedy decoding can end a turn immediately. Its heap peaks at only ~0.9 GiB after load, so the **default `wasm_memory_limit` is enough** (no 3.75 GiB bump). See [README-gemma-3.md](README-gemma-3.md) for the full recipe.
 - During prompt ingestion phase, the max_tokens before hitting the instruction limit is higher as during the generation phase.
 - We use `"--temp"; "0.6"; "--repeat-penalty"; "1.1";`, as recommended on several model cards
 - For each model, we selected a `--cache-type-k` that gives the highest max_tokens while still providing good results.

@@ -3,7 +3,7 @@
 This folder holds an unzipped official release of
 https://github.com/onicai/llama_cpp_canister
 
-Currently: **v0.14.0** (see version.txt)
+Currently: **v0.16.2** (see version.txt)
 
 Note that `build/` and `*.wasm` are gitignored, so after a fresh clone of ICGPT
 you must unzip the release here yourself, using the steps below.

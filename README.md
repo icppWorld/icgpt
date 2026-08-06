@@ -154,7 +154,7 @@ ICGPT's LLM backend runs on [llama_cpp_canister](https://github.com/onicai/llama
 
 The `llms/llama_cpp_canister` folder contains an unzipped official release of
 [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister), currently
-**v0.14.0** (see `llms/llama_cpp_canister/version.txt`). v0.14.0 is dfx-free: it ships
+**v0.16.2** (see `llms/llama_cpp_canister/version.txt`). It is dfx-free: it ships
 its own `icp.yaml` and an icp-native gguf uploader (`scripts/`).
 
 The wasm & did are not committed (see .gitignore), so after a fresh clone you must
@@ -209,7 +209,7 @@ Notes:
   `IC0539`. q8_0 KV halves the cache.
 - The 1.7B is currently loaded at **`--ctx-size 4096`** as a STOPGAP. Its documented config is
   `-c 16384` (see `llama_cpp_canister/README-qwen3-1.7B.md`), which the mainnet 1.7B ran on for ~5
-  days on this same v0.16.0 wasm. As of 2026-08-05 a fresh reload at 16384 rejects with `IC0522`
+  days on the earlier v0.16.0 wasm. As of 2026-08-05 a fresh reload at 16384 rejects with `IC0522`
   "large memory operation … exceeded the slice limit 2_000_000_000". **CONFIRMED root cause = an IC
   platform change, not this canister:** `dfinity/ic` `#10789` "Switch to deterministic memory tracker"
   (merged 2026-07-30) raised memory-op charging to **5000 instructions/4KiB page** (heap-write was
@@ -218,15 +218,15 @@ Notes:
   the 40 B decode limit and NOT heap corruption (deterministic ~4.058 B on a provably fresh
   post-`upgrade` heap; a reinstall would fail identically). `-c 4096` keeps the KV-zero under 2 B and
   loads fine (~1.34 GiB heap) — ample for chat + the Lab. The real fix (chunk the KV allocation so it
-  loads at 16384 again under DMT) belongs in `llama_cpp_canister` (see its `TMP-*` report).
-- **KNOWN BUG (llama_cpp_canister side):** even at 4096, a **long generation (>~100 tokens)** on the
-  1.7B still traps `IC0502` "heap out of bounds" mid-`run_update` under the `--prompt-cache-all`
-  pattern — and the wasm heap high-water stays ~1.34 GiB (far under the 3.75 GiB limit), so it is NOT
-  a memory OOM but a genuine out-of-bounds access in the model/prompt-cache path. Short replies (the
-  common chat/Lab case) work; long ones trap and are surfaced gracefully by `icgpt_admin` (503 +
-  monitoring log). Root-cause + fix belong in the `llama_cpp_canister` repo (see its `TMP-*` bug
-  report). NOTE: after any IC0502/IC0522 the wasm heap is wedged and `load_model` alone re-traps — do
-  a plain `-m upgrade` first (fresh heap, gguf preserved), *then* `load_model`.
+  loads at 16384 again under DMT) belongs in `llama_cpp_canister` — **still open as of v0.16.2**
+  (under investigation upstream); keep loading the 1.7B at `--ctx-size 4096`.
+- **FIXED in llama_cpp_canister v0.16.2:** earlier (v0.16.0), even at 4096 a **long generation
+  (>~100 tokens)** on the 1.7B trapped `IC0502` "heap out of bounds" mid-`run_update` under the
+  `--prompt-cache-all` pattern — a prompt-cache bug, not a memory OOM (the wasm heap high-water stayed
+  ~1.34 GiB, far under the 3.75 GiB limit). v0.16.2 fixes the caching bug, so full-length replies now
+  complete at 4096. (`icgpt_admin` still catches any inference trap and surfaces it as a 503 +
+  monitoring-log entry.) NOTE: after any IC0502/IC0522 the wasm heap is wedged and `load_model` alone
+  re-traps — do a plain `-m upgrade` first (fresh heap, gguf preserved), *then* `load_model`.
 - After **every** install/upgrade also re-arm the in-memory timers
   (`cache_cleanup_start_timer`, `cycle_balance_start_timer`) and, under the hard gate, keep
   `set_access` at level 0 (controllers only). See the walkthrough below for the full call
@@ -237,7 +237,7 @@ Notes:
 Once the model gguf is in place, as described in the previous step, you can deploy everything with:
 
 ```bash
-# ICGPT serves FOUR models, each in its own canister (same llama_cpp v0.14.0 wasm):
+# ICGPT serves FOUR models, each in its own canister (same llama_cpp v0.16.2 wasm):
 #   llama_cpp_qwen3_06b_q8  (Qwen3-0.6B, the default)   16K ctx, max_tokens_update 20
 #   llama_cpp_qwen25_05b_q8 (Qwen2.5-0.5B)              16K ctx, max_tokens_update 20
 #   llama_cpp_qwen3_17b_q4  (Qwen3-1.7B, Q4_K_M)         4K ctx, max_tokens_update 4,

@@ -5,7 +5,7 @@
 # Canisters:
 #   - icgpt_admin            : Motoko controller / early-access gate (mops build).
 #   - llama_cpp_qwen*_*      : the three LLM canisters, all installing the SAME prebuilt
-#                              llama_cpp_canister v0.16.0 wasm (models differ by the gguf
+#                              llama_cpp_canister v0.16.2 wasm (models differ by the gguf
 #                              uploaded + load_model args, not the wasm).
 #   - canister_frontend      : the React studio, served by the official IC assets canister
 #                              (honors src/frontend/src/.ic-assets.json5 — CSP + SPA fallback).
@@ -18,7 +18,7 @@
 # NOTE: existing canister IDs (local + the live mainnet IDs) are imported into icp's ID
 # store with `icp canister link <name> <principal> -e <env>` — see the Makefile / README.
 # The gguf upload runs through `make upload-*`, which uses the icp-native uploader vendored
-# with llama_cpp_canister v0.16.0 (reads `icp network status` + `icp identity export`).
+# with llama_cpp_canister v0.16.2 (reads `icp network status` + `icp identity export`).
 
 canisters:
   - name: icgpt_admin
@@ -32,23 +32,23 @@ canisters:
       type: '@dfinity/prebuilt@v2.0.0'
       configuration:
         path: llms/llama_cpp_canister/build/llama_cpp.wasm
-        sha256: 3fd9704fd99688536527f866dad8532e2bc26f0b453de94a92bc0f3213dedec1
+        sha256: e11514fb02ae9d993ec30974882bf798820d6b38e97d0ebae1fadbf06b6c9753
 
   - name: llama_cpp_qwen3_06b_q8
     recipe:
       type: '@dfinity/prebuilt@v2.0.0'
       configuration:
         path: llms/llama_cpp_canister/build/llama_cpp.wasm
-        sha256: 3fd9704fd99688536527f866dad8532e2bc26f0b453de94a92bc0f3213dedec1
+        sha256: e11514fb02ae9d993ec30974882bf798820d6b38e97d0ebae1fadbf06b6c9753
 
   - name: llama_cpp_qwen3_17b_q4
     recipe:
       type: '@dfinity/prebuilt@v2.0.0'
       configuration:
         path: llms/llama_cpp_canister/build/llama_cpp.wasm
-        sha256: 3fd9704fd99688536527f866dad8532e2bc26f0b453de94a92bc0f3213dedec1
+        sha256: e11514fb02ae9d993ec30974882bf798820d6b38e97d0ebae1fadbf06b6c9753
 
-  # Gemma-3-270M — the smallest on-chain model (same llama_cpp v0.16.0 wasm; the
+  # Gemma-3-270M — the smallest on-chain model (same llama_cpp v0.16.2 wasm; the
   # b10076 fork is required to load the gemma3 arch). ~0.9 GiB heap after load, so it
   # does NOT get the 3.75 GiB wasm_memory_limit bump (see settings below).
   - name: llama_cpp_gemma3_270m
@@ -56,7 +56,7 @@ canisters:
       type: '@dfinity/prebuilt@v2.0.0'
       configuration:
         path: llms/llama_cpp_canister/build/llama_cpp.wasm
-        sha256: 3fd9704fd99688536527f866dad8532e2bc26f0b453de94a92bc0f3213dedec1
+        sha256: e11514fb02ae9d993ec30974882bf798820d6b38e97d0ebae1fadbf06b6c9753
 
   - name: canister_frontend
     recipe:

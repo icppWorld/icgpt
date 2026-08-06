@@ -5,9 +5,10 @@ MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-builtin-variables
 
 # icp-cli is the deploy/test tool (dfx is fully retired). Identity is selected
-# per-command with `--identity <name>` where needed; the icp targets below default
-# to the active identity (`icp identity default`).
-IDENTITY ?= $(shell icp identity default)
+# per-command with `--identity <name>` where needed. IDENTITY is a pinned,
+# overridable default (NOT the machine-wide active identity) so `make` never
+# silently inherits whatever another terminal/agent/project last set as default.
+IDENTITY ?= icgpt-deploy
 
 ###########################################################################
 # Some constants

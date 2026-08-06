@@ -8,7 +8,7 @@ Then upload the model:
 $ python -m scripts.upload --network local --canister llama_cpp --canister-filename models/tiny.gguf --filetype gguf models/stories260Ktok512.gguf
 
 Then run the tests for this model::
-$ pytest -vv --network local test/test_tiny_stories.py
+$ pytest -vv --network local --identity "$(icp identity default)" test/test_tiny_stories.py
 
 To run it against a deployment to the IC, just replace `local` with `production` in the commands above.
 
@@ -18,7 +18,12 @@ To run it against a deployment to the IC, just replace `local` with `production`
 from pathlib import Path
 from typing import Dict
 import pytest
-from .candid_compat import call_canister_api, dict_to_candid_text, norm
+from .candid_compat import (
+    call_canister_api,
+    dict_to_candid_text,
+    norm,
+    strip_token_accounting,
+)
 import inspect
 
 # Path to the icp.yaml file
@@ -194,7 +199,7 @@ def test__run_update_1(network: str) -> None:
     if PRINT_RESPONSE:
         print(f"{current_func_name()}: response: {response}")
     expected_response = '(variant { Ok = record { output = ""; conversation = " Joe"; error = ""; status_code = 200 : nat16; prompt_remaining = " loves writing stories"; generated_eog = false;} })'
-    assert response == norm(expected_response)
+    assert strip_token_accounting(response) == norm(expected_response)
 
 def test__copy_prompt_cache_save(network: str) -> None:
     response = call_canister_api(
@@ -219,7 +224,7 @@ def test__run_update_2(network: str) -> None:
     if PRINT_RESPONSE:
         print(f"{current_func_name()}: response: {response}")
     expected_response = '(variant { Ok = record { output = ""; conversation = " Joe loves wr"; error = ""; status_code = 200 : nat16; prompt_remaining = "iting stories"; generated_eog = false;} })'
-    assert response == norm(expected_response)
+    assert strip_token_accounting(response) == norm(expected_response)
 
 def test__run_update_3(network: str) -> None:
     response = call_canister_api(
@@ -232,7 +237,7 @@ def test__run_update_3(network: str) -> None:
     if PRINT_RESPONSE:
         print(f"{current_func_name()}: response: {response}")
     expected_response = '(variant { Ok = record { output = ""; conversation = " Joe loves writing stori"; error = ""; status_code = 200 : nat16; prompt_remaining = "es"; generated_eog = false;} })'
-    assert response == norm(expected_response)
+    assert strip_token_accounting(response) == norm(expected_response)
 
 def test__run_update_4(network: str) -> None:
     response = call_canister_api(
@@ -245,7 +250,7 @@ def test__run_update_4(network: str) -> None:
     if PRINT_RESPONSE:
         print(f"{current_func_name()}: response: {response}")
     expected_response = '(variant { Ok = record { output = ". He li"; conversation = " Joe loves writing stories. He"; error = ""; status_code = 200 : nat16; prompt_remaining = ""; generated_eog = false;} })'
-    assert response == norm(expected_response)
+    assert strip_token_accounting(response) == norm(expected_response)
 
 def test__run_update_5(network: str) -> None:
     response = call_canister_api(
@@ -258,7 +263,7 @@ def test__run_update_5(network: str) -> None:
     if PRINT_RESPONSE:
         print(f"{current_func_name()}: response: {response}")
     expected_response = '(variant { Ok = record { output = " liked to"; conversation = " Joe loves writing stories. He liked"; error = ""; status_code = 200 : nat16; prompt_remaining = ""; generated_eog = false;} })'
-    assert response == norm(expected_response)
+    assert strip_token_accounting(response) == norm(expected_response)
 
 def test__get_chats_ok(network: str) -> None:
     response = call_canister_api(
@@ -393,7 +398,7 @@ def test__run_update_2_2(network: str) -> None:
     if PRINT_RESPONSE:
         print(f"{current_func_name()}: response: {response}")
     expected_response = '(variant { Ok = record { output = ""; conversation = " Joe loves wr"; error = ""; status_code = 200 : nat16; prompt_remaining = "iting stories"; generated_eog = false;} })'
-    assert response == norm(expected_response)
+    assert strip_token_accounting(response) == norm(expected_response)
 
 def test__run_update_2_3(network: str) -> None:
     response = call_canister_api(
@@ -406,7 +411,7 @@ def test__run_update_2_3(network: str) -> None:
     if PRINT_RESPONSE:
         print(f"{current_func_name()}: response: {response}")
     expected_response = '(variant { Ok = record { output = ""; conversation = " Joe loves writing stori"; error = ""; status_code = 200 : nat16; prompt_remaining = "es"; generated_eog = false;} })'
-    assert response == norm(expected_response)
+    assert strip_token_accounting(response) == norm(expected_response)
 
 def test__run_update_2_4(network: str) -> None:
     response = call_canister_api(
@@ -419,7 +424,7 @@ def test__run_update_2_4(network: str) -> None:
     if PRINT_RESPONSE:
         print(f"{current_func_name()}: response: {response}")
     expected_response = '(variant { Ok = record { output = ". He li"; conversation = " Joe loves writing stories. He"; error = ""; status_code = 200 : nat16; prompt_remaining = ""; generated_eog = false;} })'
-    assert response == norm(expected_response)
+    assert strip_token_accounting(response) == norm(expected_response)
 
 def test__run_update_2_5(network: str) -> None:
     response = call_canister_api(
@@ -432,7 +437,7 @@ def test__run_update_2_5(network: str) -> None:
     if PRINT_RESPONSE:
         print(f"{current_func_name()}: response: {response}")
     expected_response = '(variant { Ok = record { output = " liked to"; conversation = " Joe loves writing stories. He liked"; error = ""; status_code = 200 : nat16; prompt_remaining = ""; generated_eog = false;} })'
-    assert response == norm(expected_response)
+    assert strip_token_accounting(response) == norm(expected_response)
 
 def test__remove_prompt_cache_cleanup(network: str) -> None:
     response = call_canister_api(
