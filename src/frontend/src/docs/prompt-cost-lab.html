@@ -1,0 +1,140 @@
+<section>
+  <h1>Prompt Cost Lab</h1>
+  <p class="lead">
+    The studio's default view — design a repeating on-chain AI task, sweep its
+    variables, and read the <strong>exact cost per request</strong> and the
+    <strong>quality</strong>, so you can optimize model, prompt, and parameters
+    together.
+  </p>
+
+  <p>
+    Chat is great for exploring one conversation. The
+    <strong>Prompt Cost Lab</strong>
+    is for the real engineering question behind a production on-chain task:
+    <em
+      >what does it cost to run this prompt a thousand times, and does it stay
+      correct?</em
+    >
+    The Lab answers both, measured on-chain, with no guesswork.
+  </p>
+
+  <h2>Templated prompts &amp; variable sweeps</h2>
+  <p>
+    A task is a <strong>template</strong> with two parts and any number of
+    variables:
+  </p>
+  <ul>
+    <li>
+      <strong>System template</strong> — the fixed instructions. This is the
+      cached prefix: it is ingested once and reused for free on every following
+      request, so keep the swept <code>{{variables}}</code> <em>out</em> of it.
+    </li>
+    <li>
+      <strong>User template</strong> — the per-request prompt. Put the swept
+      <code>{{variables}}</code> here, as late as possible.
+    </li>
+    <li>
+      <strong>Variables</strong> — each is either a <strong>sweep</strong> (a
+      list of values, one trial per value) or a <strong>constant</strong>. Every
+      combination of sweep values becomes one trial, and the Lab runs them all.
+    </li>
+  </ul>
+  <p>
+    So a word-guessing template with a <code>{{word}}</code> sweep of
+    <em>HOUSE, TREE, CAR, OCEAN, GUITAR</em> runs the same task five times and
+    reports the cost and quality of each.
+  </p>
+
+  <h2>Exact cost, split the way it actually bills</h2>
+  <p>
+    The Lab separates the two costs that matter for a repeating task, both
+    measured exactly on-chain:
+  </p>
+  <ul>
+    <li>
+      <strong>One-time warm-up</strong> — ingesting the fixed system prefix. You
+      pay this <strong>once</strong>; afterwards it is served from the model
+      canister's prompt cache.
+    </li>
+    <li>
+      <strong>Steady-state per request</strong> — the recurring cost of one call
+      after the prefix is warm: the re-ingested suffix plus the generated
+      tokens. This is the number that multiplies when your task runs at scale
+      (the Lab also shows it as <strong>$ / 1k requests</strong>).
+    </li>
+  </ul>
+  <p>
+    The <strong>cache-break analyzer</strong> uses the model's exact token
+    accounting to show how many prompt tokens are
+    <strong>reused from the cache for free</strong> versus
+    <strong>re-ingested</strong> on every call. The guidance is concrete: move
+    swept variables later in the prompt to shrink the re-ingested suffix, and
+    watch the steady-state cost drop.
+  </p>
+
+  <h2>Quality rules — is it still correct?</h2>
+  <p>
+    Cheap is worthless if the answer is wrong, so each trial is scored against
+    the rules you define, and the Lab reports a <strong>pass-rate</strong>:
+  </p>
+  <ul>
+    <li>
+      <strong>Reply must / must not contain</strong> a string (great for
+      negation tasks — e.g. the hint must not contain the secret word).
+    </li>
+    <li><strong>Reply must match a regex</strong> (case-insensitive).</li>
+    <li>
+      <strong>LLM judge</strong> — a rubric is scored 0–100 by an on-chain judge
+      model (DFINITY's Qwen3-32B), and the trial passes if the score clears your
+      threshold.
+    </li>
+    <li><strong>Manual</strong> — you rate each reply pass/fail yourself.</li>
+  </ul>
+
+  <h2>Compare runs (A/B)</h2>
+  <p>
+    Change one thing — a different model, a sharper system prompt, a lower
+    temperature — run it again, and the <strong>Compare runs</strong> table
+    lines the runs up side by side: one-time cost, steady $/req, $/1k, and
+    pass-rate. This is how you find the cheapest configuration that still
+    passes: often a smaller model with a better prompt beats a bigger one.
+  </p>
+
+  <h2>Everything you can vary</h2>
+  <ul>
+    <li>
+      <strong>Model</strong> — any of the
+      <a href="/docs/models">five on-chain models</a>, from Gemma-3-270M to
+      Qwen3-1.7B.
+    </li>
+    <li>
+      <strong>Parameters</strong> — temperature, sampling cut-offs, penalties,
+      response length, thinking, seed. See
+      <a href="/docs/parameters">Parameters</a>.
+    </li>
+    <li>
+      <strong>Samples per trial</strong> — run each trial several times and
+      average, so a noisy result doesn't fool you.
+    </li>
+    <li>
+      <strong>Custom templates</strong> — save your task into one of three
+      Custom slots (kept per browser) and load it back later.
+    </li>
+  </ul>
+
+  <div class="callout">
+    <strong>Runs keep going while you look around.</strong> An experiment lives
+    at the app level, not on the page — so you can switch to
+    <a href="/docs/models">Chat</a> or the Canisters page mid-run and come back
+    to find it still going (a <em>Lab running</em> indicator shows in the top
+    nav). Only a full page reload stops it.
+  </div>
+
+  <p>
+    Every cost figure is measured by the <code>icgpt_admin</code> controller
+    reading the model canister's live cycle balance around each call — see
+    <a href="/docs/how-it-works">How it works</a>.
+  </p>
+
+  <p><a href="/">Request early access →</a></p>
+</section>

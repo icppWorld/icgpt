@@ -10,7 +10,10 @@
     <strong>Parameters</strong> panel exposes the model's sampling and inference
     settings — temperature, sampling cut-offs, penalties, response length, a
     thinking toggle and a seed. Every setting is applied to your very next
-    generation, so you can change one knob and immediately see the effect.
+    generation, so you can change one knob and immediately see the effect. The
+    same settings drive every trial in the
+    <a href="/docs/prompt-cost-lab">Prompt Cost Lab</a>, so you can sweep a task
+    and watch a parameter change move both quality and cost.
   </p>
 
   <h2>Opening the panel</h2>
@@ -49,10 +52,10 @@
   <h3>Max response length</h3>
   <p>
     A cap on how many tokens the reply may use. Because the reply is generated
-    across a sequence of on-chain update calls, a larger cap means more calls —
-    and therefore more time and cycles. The cap is approximate: the canister
-    does not report an exact token count, so ICGPT estimates it and stops the
-    reply once the estimate is reached.
+    across a sequence of on-chain update calls — each producing a batch of
+    tokens — a larger cap means more calls, and therefore more time and cycles.
+    The cap is enforced between batches, so a reply may overshoot it by up to
+    one batch before it stops.
   </p>
 
   <h3>Thinking mode <span class="tag">Qwen3 only</span></h3>

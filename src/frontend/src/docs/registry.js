@@ -10,6 +10,7 @@
 // routing and meta update automatically.
 
 import overview from './overview.html'
+import promptCostLab from './prompt-cost-lab.html'
 import howItWorks from './how-it-works.html'
 import models from './models.html'
 import parameters from './parameters.html'
@@ -24,6 +25,13 @@ export const DOCS = [
     html: overview,
   },
   {
+    slug: 'prompt-cost-lab',
+    title: 'Prompt Cost Lab',
+    description:
+      'Design a repeating on-chain task, sweep its variables, and measure the exact per-request cost and quality — then compare configurations to optimize it.',
+    html: promptCostLab,
+  },
+  {
     slug: 'how-it-works',
     title: 'How it works',
     description:
@@ -34,7 +42,7 @@ export const DOCS = [
     slug: 'models',
     title: 'Models',
     description:
-      'The on-chain models ICGPT serves — Qwen3-0.6B (default) and Qwen2.5-0.5B, each in its own Internet Computer canister.',
+      'The five on-chain models ICGPT serves — from Gemma-3-270M to Qwen3-1.7B (plus LFM2.5-1.2B) — each in its own Internet Computer canister, listed lightest to largest.',
     html: models,
   },
   {

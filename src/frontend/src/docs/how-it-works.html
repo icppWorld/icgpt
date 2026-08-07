@@ -24,6 +24,12 @@
   <h2>The studio</h2>
   <ul>
     <li>
+      <strong>Prompt Cost Lab.</strong> The default view — design a repeating
+      task, sweep its variables, and measure the exact per-request cost and
+      quality across models. See
+      <a href="/docs/prompt-cost-lab">Prompt Cost Lab</a>.
+    </li>
+    <li>
       <strong>Model switch.</strong> Pick a model from the dropdown; each is a
       separate on-chain canister. Switching starts a fresh conversation.
     </li>
@@ -124,12 +130,13 @@
     steady-state cost per hint is <strong>much lower</strong> than this first
     turn suggests.
   </p>
-  <div class="callout warn">
-    ICGPT's stats today report the cost of a whole turn. We are extending the
-    metrics collection to break out
+  <div class="callout">
+    This is exactly what the <a href="/docs/prompt-cost-lab">Prompt Cost Lab</a>
+    now does automatically: it breaks out the
     <strong>one-time prompt ingestion</strong> from the
-    <strong>recurring per-request cost</strong>, so you can investigate the true
-    steady-state cycles cost of a repeating task like this one.
+    <strong>recurring per-request cost</strong>, sweeps a task's variables, and
+    scores each reply's quality — so you can measure the true steady-state
+    cycles cost of a repeating task like this word game and optimize it.
   </div>
 
   <h3>Qwen3-0.6B — leaks the secret, but is cheaper</h3>

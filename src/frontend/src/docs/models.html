@@ -1,15 +1,47 @@
 <section>
   <h1>Models</h1>
   <p class="lead">
-    Four on-chain models, each served from its own Internet Computer canister.
-    Switch between them from the dropdown at the top of the studio.
+    Five on-chain models, each served from its own Internet Computer canister.
+    Switch between them from the dropdown at the top of the studio. They are
+    listed here <strong>lightest to largest</strong> — the same order as the
+    <a href="/canisters">Canisters</a> page — which is roughly cheapest/fastest
+    to most capable.
   </p>
+
+  <h2>Gemma-3-270M <span class="tag">Smallest</span></h2>
+  <p>
+    Google's Gemma-3-270M — the <strong>smallest and cheapest</strong> model
+    that runs on-chain, and the fastest (the most tokens-per-call and lowest
+    cycle cost of any ICGPT model). Great for quick, simple tasks and demos. As
+    a 270M model it is <strong>unreliable</strong> for precise
+    instruction-following, negation, or secret-keeping — for those, prefer a
+    Qwen3 model or LFM2.5. It uses Gemma's own chat template (no system role, no
+    thinking block).
+  </p>
+  <ul>
+    <li>
+      <strong>File:</strong> <code>gemma-3-270m-it-Q8_0.gguf</code> (q8_0
+      quantized)
+    </li>
+    <li><strong>Context:</strong> 4K tokens (~3K words)</li>
+    <li>
+      <strong>Model card:</strong>
+      <a
+        href="https://huggingface.co/unsloth/gemma-3-270m-it-GGUF"
+        target="_blank"
+        rel="noreferrer"
+        >unsloth/gemma-3-270m-it-GGUF on HuggingFace</a
+      >
+    </li>
+  </ul>
 
   <h2>Qwen3-0.6B <span class="tag">Default</span></h2>
   <p>
     Our recommended default — a state-of-the-art small model run in
     <strong>non-thinking mode</strong> for clean, direct answers over multi-turn
-    conversations. It runs with a large ~12,000-word context window entirely
+    conversations. A hybrid thinking model, so you can turn
+    <a href="/docs/parameters">thinking</a> on when a task needs step-by-step
+    reasoning. It runs with a large ~12,000-word context window entirely
     in-canister.
   </p>
   <ul>
@@ -24,30 +56,6 @@
         target="_blank"
         rel="noreferrer"
         >Qwen/Qwen3-0.6B-GGUF on HuggingFace</a
-      >
-    </li>
-  </ul>
-
-  <h2>Qwen3-1.7B</h2>
-  <p>
-    The largest, most capable model here — best for tasks needing precise
-    instruction-following, negation, or keeping a secret. Also a hybrid thinking
-    model. Being bigger, it generates fewer tokens per update call, so replies
-    cost more cycles and stream a little slower.
-  </p>
-  <ul>
-    <li>
-      <strong>File:</strong> <code>Qwen3-1.7B-Q4_K_M.gguf</code> (Q4_K_M
-      quantized)
-    </li>
-    <li><strong>Context:</strong> 16K tokens (~12K words)</li>
-    <li>
-      <strong>Model card:</strong>
-      <a
-        href="https://huggingface.co/unsloth/Qwen3-1.7B-GGUF"
-        target="_blank"
-        rel="noreferrer"
-        >unsloth/Qwen3-1.7B-GGUF on HuggingFace</a
       >
     </li>
   </ul>
@@ -75,40 +83,69 @@
     </li>
   </ul>
 
-  <h2>Gemma-3-270M <span class="tag">Smallest</span></h2>
+  <h2>LFM2.5-1.2B <span class="tag">New</span></h2>
   <p>
-    Google's Gemma-3-270M — the <strong>smallest and cheapest</strong> model
-    that runs on-chain, and the fastest (the highest tokens-per-call and lowest
-    cycle cost of any ICGPT model). Great for quick, simple tasks and demos. As
-    a 270M model it is <strong>unreliable</strong> for precise
-    instruction-following, negation, or secret-keeping — for those, prefer
-    Qwen3-0.6B or Qwen3-1.7B. It uses Gemma's own chat template (no system role,
-    no thinking block).
+    Liquid AI's LFM2.5-1.2B — a
+    <strong>faster, cheaper alternative to Qwen3-1.7B</strong> at similar
+    quality. It is a hybrid architecture (a mix of grouped-query attention and
+    short-convolution blocks), so it keeps a small KV cache and generates
+    <strong>more tokens per call at about half the cycles</strong> of the 1.7B —
+    while still passing tasks that need precise instruction-following and
+    negation. Uses the ChatML template.
   </p>
   <ul>
     <li>
-      <strong>File:</strong> <code>gemma-3-270m-it-Q8_0.gguf</code> (q8_0
-      quantized)
+      <strong>File:</strong> <code>LFM2.5-1.2B-Instruct-Q4_K_M.gguf</code>
+      (Q4_K_M quantized)
     </li>
     <li><strong>Context:</strong> 4K tokens (~3K words)</li>
     <li>
       <strong>Model card:</strong>
       <a
-        href="https://huggingface.co/unsloth/gemma-3-270m-it-GGUF"
+        href="https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF"
         target="_blank"
         rel="noreferrer"
-        >unsloth/gemma-3-270m-it-GGUF on HuggingFace</a
+        >LiquidAI/LFM2.5-1.2B-Instruct-GGUF on HuggingFace</a
+      >
+    </li>
+  </ul>
+
+  <h2>Qwen3-1.7B <span class="tag">Most capable</span></h2>
+  <p>
+    The largest, most capable model here — best for tasks needing precise
+    instruction-following, negation, or keeping a secret. Also a hybrid thinking
+    model. Being bigger, it generates fewer tokens per update call, so replies
+    cost more cycles and stream a little slower — often LFM2.5 gets you the same
+    quality for less.
+  </p>
+  <ul>
+    <li>
+      <strong>File:</strong> <code>Qwen3-1.7B-Q4_K_M.gguf</code> (Q4_K_M
+      quantized)
+    </li>
+    <li><strong>Context:</strong> 16K tokens (~12K words)</li>
+    <li>
+      <strong>Model card:</strong>
+      <a
+        href="https://huggingface.co/unsloth/Qwen3-1.7B-GGUF"
+        target="_blank"
+        rel="noreferrer"
+        >unsloth/Qwen3-1.7B-GGUF on HuggingFace</a
       >
     </li>
   </ul>
 
   <h2>How they're tuned</h2>
   <p>
-    Both models are quantized to q8_0 with a quantized KV cache and a small
-    batch size, which keeps a large context inside the canister's memory budget.
-    The Internet Computer's per-message instruction limit caps how many tokens a
-    single call generates, so replies are produced across several update calls —
-    which is why generation streams in batches.
+    Each model is quantized (q8_0, or Q4_K_M for the larger two) with a
+    quantized KV cache and a small batch size, which keeps its context inside
+    the canister's memory budget. The Internet Computer's per-message
+    instruction limit caps how many tokens a single call generates, so replies
+    are produced across several update calls — which is why generation streams
+    in batches, and why a bigger model (fewer tokens per call) costs more per
+    reply. The
+    <a href="/docs/prompt-cost-lab">Prompt Cost Lab</a> lets you measure that
+    trade-off exactly and pick the cheapest model that still passes your task.
   </p>
 
   <div class="callout">
