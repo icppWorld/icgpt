@@ -154,7 +154,7 @@ ICGPT's LLM backend runs on [llama_cpp_canister](https://github.com/onicai/llama
 
 The `llms/llama_cpp_canister` folder contains an unzipped official release of
 [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister), currently
-**v0.16.3** (see `llms/llama_cpp_canister/version.txt`). It is dfx-free: it ships
+**v0.16.4** (see `llms/llama_cpp_canister/version.txt`). It is dfx-free: it ships
 its own `icp.yaml` and an icp-native gguf uploader (`scripts/`).
 
 The wasm & did are not committed (see .gitignore), so after a fresh clone you must
@@ -191,7 +191,7 @@ models are:
 | ------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
 | `llama_cpp_qwen3_06b_q8`  (Qwen3-0.6B)      | `model.gguf`        | `--model model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 64 --ubatch-size 64 --ctx-size 16384` | 1 / 20                          |
 | `llama_cpp_qwen25_05b_q8` (Qwen2.5-0.5B)    | `model.gguf`        | identical to Qwen3-0.6B (line above)                                                                    | 1 / 20                          |
-| `llama_cpp_qwen3_17b_q4`  (Qwen3-1.7B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 8 --ubatch-size 8 --ctx-size 4096` | 1 / 4                           |
+| `llama_cpp_qwen3_17b_q4`  (Qwen3-1.7B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 8 --ubatch-size 8 --ctx-size 16384` | 1 / 4                           |
 | `llama_cpp_gemma3_270m`   (Gemma-3-270M)      | `models/model.gguf` | `--model models/model.gguf -c 4096 --cache-type-k q8_0 --cache-type-v q8_0`                            | 1 / 44                          |
 
 Notes:
@@ -207,19 +207,17 @@ Notes:
 - The 1.7B **requires** `--cache-type-k q8_0 --cache-type-v q8_0` (matching the frontend's request):
   with the default f16 KV cache it exceeds the 3.75 GiB `wasm_memory_limit` and `load_model` traps
   `IC0539`. q8_0 KV halves the cache.
-- The 1.7B is currently loaded at **`--ctx-size 4096`** as a STOPGAP. Its documented config is
-  `-c 16384` (see `llama_cpp_canister/README-qwen3-1.7B.md`), which the mainnet 1.7B ran on for ~5
-  days on the earlier v0.16.0 wasm. As of 2026-08-05 a fresh reload at 16384 rejects with `IC0522`
-  "large memory operation … exceeded the slice limit 2_000_000_000". **CONFIRMED root cause = an IC
-  platform change, not this canister:** `dfinity/ic` `#10789` "Switch to deterministic memory tracker"
-  (merged 2026-07-30) raised memory-op charging to **5000 instructions/4KiB page** (heap-write was
-  1000, heap-read was 0), so zeroing the full-ctx KV cache now costs ~5× more — the 16384 KV-zero
-  went from <2 B to ~4.058 B instructions, over the (unchanged, 2022-era) 2 B per-slice cap. It is NOT
-  the 40 B decode limit and NOT heap corruption (deterministic ~4.058 B on a provably fresh
-  post-`upgrade` heap; a reinstall would fail identically). `-c 4096` keeps the KV-zero under 2 B and
-  loads fine (~1.34 GiB heap) — ample for chat + the Lab. The real fix (chunk the KV allocation so it
-  loads at 16384 again under DMT) belongs in `llama_cpp_canister` — **still open as of v0.16.3**
-  (under investigation upstream); keep loading the 1.7B at `--ctx-size 4096`.
+- The 1.7B is loaded at **`--ctx-size 16384`** (4× the context). This was blocked for a while:
+  allocating the full-ctx KV cache in one shot tripped `IC0522` "large memory operation … exceeded
+  the slice limit" — not a bug in this canister but an IC platform change (`dfinity/ic` `#10789`, the
+  deterministic memory tracker, merged 2026-07-30) that raised memory-op charging so a single
+  full-ctx KV `memset` overran one DTS slice. **Fixed in `llama_cpp_canister` v0.16.4**, which lets
+  llama.cpp split the KV cache into ≤128 MiB sub-buffers (one `memset` each, with a slice pause point
+  between them) — so 16384 loads again (~2.04 GiB heap, ~1.7 GiB headroom). CAVEAT: at 16384 the
+  per-call KV clear costs ~2.44 B of the 40 B per-`run_update` budget (vs ~0.61 B at 4096), which
+  lowers the generation ceiling — `max_tokens_update` was re-measured after the upgrade by walking
+  4/5/6… until a clean `IC0522` "exceeded 40000000000 instructions" rejection (safe: rejected + rolled
+  back, cache intact).
 - **FIXED in llama_cpp_canister v0.16.2:** earlier (v0.16.0), even at 4096 a **long generation
   (>~100 tokens)** on the 1.7B trapped `IC0502` "heap out of bounds" mid-`run_update` under the
   `--prompt-cache-all` pattern — a prompt-cache bug, not a memory OOM (the wasm heap high-water stayed
@@ -237,7 +235,7 @@ Notes:
 Once the model gguf is in place, as described in the previous step, you can deploy everything with:
 
 ```bash
-# ICGPT serves FOUR models, each in its own canister (same llama_cpp v0.16.3 wasm):
+# ICGPT serves FOUR models, each in its own canister (same llama_cpp v0.16.4 wasm):
 #   llama_cpp_qwen3_06b_q8  (Qwen3-0.6B, the default)   16K ctx, max_tokens_update 20
 #   llama_cpp_qwen25_05b_q8 (Qwen2.5-0.5B)              16K ctx, max_tokens_update 20
 #   llama_cpp_qwen3_17b_q4  (Qwen3-1.7B, Q4_K_M)         4K ctx, max_tokens_update 4,
