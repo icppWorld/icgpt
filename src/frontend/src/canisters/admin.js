@@ -107,3 +107,21 @@ export async function logClientEvent(authClient, kind, detail) {
 export async function getCyclesReport(authClient) {
   return (await adminActor(authClient)).getCyclesReport()
 }
+
+// ----- Prompt Cost Lab: on-chain per-principal persistence ----------------
+// The Lab's run history + current report + editor setup, stored per-caller in
+// icgpt_admin as one opaque JSON blob (shape owned by common/labState.js), so the
+// Lab survives logout / reload / a new device. Non-anonymous.
+export async function getLabState(authClient) {
+  return (await adminActor(authClient)).getLabState()
+}
+
+// Save the JSON blob. Returns { ok } | { err: text } (oversize -> err). Callers
+// fire-and-forget and swallow errors — in-memory state still works this session.
+export async function saveLabState(authClient, json) {
+  return (await adminActor(authClient)).saveLabState(json)
+}
+
+export async function clearLabState(authClient) {
+  return (await adminActor(authClient)).clearLabState()
+}

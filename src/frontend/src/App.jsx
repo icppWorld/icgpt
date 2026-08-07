@@ -8,7 +8,13 @@ import { Login } from './routes/Login'
 import { EarlyAccessLockScreen } from './routes/EarlyAccessLockScreen'
 import { TopNav, TOPNAV_HEIGHT } from './common/TopNav'
 import { AdminPanel } from './routes/AdminPanel'
-import { getMyAccess, logClientEvent } from './canisters/admin'
+import {
+  getMyAccess,
+  logClientEvent,
+  getLabState,
+  saveLabState,
+} from './canisters/admin'
+import { serializeLabState, deserializeLabState } from './common/labState'
 import { withRetry } from './canisters/retry'
 import { runExperiment } from './lab/labEngine'
 import { DEFAULT_MODEL_ID } from './common/models'
@@ -120,6 +126,73 @@ export function App() {
   // ref convention as actorRef above); replaced fresh on each start.
   const labCancelRef = React.useRef({ aborted: false })
 
+  // ---------------------------------------------------------
+  // On-chain durability for the Lab (per principal, in icgpt_admin): the run history,
+  // the current report and the editor setup (selected model, samples/trial, in-progress
+  // template) survive logout / reload / a new device. The editor snapshot lives in a
+  // ref — App must NOT re-render on every keystroke — and is loaded before the Outlet
+  // mounts so PromptCostLab hydrates from it with no race. runs/report are mirrored into
+  // refs so the save helpers always see the latest without re-creating on every change.
+  const labEditorRef = React.useRef(null)
+  const labRunsRef = React.useRef([])
+  const labReportRef = React.useRef(null)
+  const labSaveTimer = React.useRef(null)
+  // Gates the Outlet render until the initial getLabState resolves (see below).
+  const [labLoaded, setLabLoaded] = React.useState(false)
+  React.useEffect(() => {
+    labRunsRef.current = labRuns
+  }, [labRuns])
+  React.useEffect(() => {
+    labReportRef.current = labReport
+  }, [labReport])
+
+  // Persist the whole Lab blob (runs + report + editor) to icgpt_admin. Fire-and-forget:
+  // the session's in-memory state is the source of truth this turn, so a failed write
+  // never blocks the UI. No-op until the initial load is done and while signed out.
+  const persistLabState = React.useCallback(
+    (runs, report, editor) => {
+      if (!authClient) return
+      saveLabState(
+        authClient,
+        serializeLabState({ runs, report, editor })
+      ).catch(() => {})
+    },
+    [authClient]
+  )
+
+  // Load the Lab blob on sign-in (and reset it on sign-out). getLabState is an `opt text`
+  // query → normalize the [] / [json] Candid shape before deserializing.
+  React.useEffect(() => {
+    if (!authClient) {
+      clearTimeout(labSaveTimer.current)
+      labEditorRef.current = null
+      setLabRuns([])
+      setLabReport(null)
+      setLabLoaded(false)
+      return
+    }
+    let cancelled = false
+    setLabLoaded(false)
+    ;(async () => {
+      let json = null
+      try {
+        const res = await getLabState(authClient)
+        json = Array.isArray(res) ? (res.length ? res[0] : null) : res
+      } catch (e) {
+        console.error('icgpt_admin getLabState failed', e)
+      }
+      if (cancelled) return
+      const { runs, report, editor } = deserializeLabState(json)
+      setLabRuns(runs)
+      setLabReport(report)
+      labEditorRef.current = editor
+      setLabLoaded(true)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [authClient])
+
   // Start an experiment. The Lab passes a snapshot of its editor state
   // ({template, model, params, kSamples}); authClient is taken from here. Body
   // mirrors the old in-component run(): reset, run, store the report + append to
@@ -142,7 +215,11 @@ export function App() {
           signal: labCancelRef.current,
         })
         setLabReport(rep)
-        setLabRuns((rs) => [...rs, rep])
+        const nextRuns = [...labRunsRef.current, rep]
+        setLabRuns(nextRuns)
+        // A completed run is durable data — persist immediately (runs are infrequent,
+        // so an update call each is fine).
+        persistLabState(nextRuns, rep, labEditorRef.current)
       } catch (e) {
         const msg = e && e.message ? e.message : String(e)
         setLabError(msg)
@@ -160,12 +237,30 @@ export function App() {
         setLabProgress(null)
       }
     },
-    [authClient]
+    [authClient, persistLabState]
   )
   const cancelLabRun = () => {
     labCancelRef.current.aborted = true
   }
-  const clearLabRuns = () => setLabRuns([])
+  const clearLabRuns = () => {
+    setLabRuns([])
+    labRunsRef.current = []
+    // Wipe the server copy too, else the next save re-materializes the history.
+    persistLabState([], labReportRef.current, labEditorRef.current)
+  }
+  // The Lab reports editor edits here (selected model, samples/trial, in-progress
+  // template). Held in a ref so App never re-renders per keystroke; the on-chain save
+  // is debounced ~4 s so a burst of edits collapses into a single update call.
+  const onLabEditorChange = React.useCallback(
+    (snapshot) => {
+      labEditorRef.current = snapshot
+      clearTimeout(labSaveTimer.current)
+      labSaveTimer.current = setTimeout(() => {
+        persistLabState(labRunsRef.current, labReportRef.current, snapshot)
+      }, 4000)
+    },
+    [persistLabState]
+  )
   // Grouped API handed to the Lab (via Outlet context) and the TopNav indicator.
   const labRun = {
     running: labRunning,
@@ -176,6 +271,8 @@ export function App() {
     start: startLabRun,
     cancel: cancelLabRun,
     clearRuns: clearLabRuns,
+    editor: labEditorRef.current,
+    onEditorChange: onLabEditorChange,
   }
 
   // Chat - opens straight into the conversation view (no model-select screen).
@@ -293,8 +390,10 @@ export function App() {
   // /canisters bypasses the early-access checks below (any signed-in user may view it).
   const openWhenSignedIn = location.pathname === '/canisters'
 
-  // Signed in, but still checking early-access status.
-  if (!openWhenSignedIn && access === null) {
+  // Signed in, but still checking early-access status OR loading the Lab state (both
+  // run in parallel after sign-in). Gating the Outlet on labLoaded means PromptCostLab
+  // mounts with labRun.editor already hydrated — no in-component hydration race.
+  if (!openWhenSignedIn && (access === null || !labLoaded)) {
     return (
       <div>
         <Head />

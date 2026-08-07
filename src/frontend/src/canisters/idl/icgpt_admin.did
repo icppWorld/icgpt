@@ -44,7 +44,7 @@ type OutputRecordResultX =
    Err: RunOutputRecordX;
    Ok: RunOutputRecordX;
  };
-type LogEntry =
+type LogEntry = 
  record {
    at: int;
    detail: text;
@@ -53,26 +53,26 @@ type LogEntry =
    "principal": principal;
    statusCode: nat16;
  };
-type JudgeOutput =
+type JudgeOutput = 
  record {
    note: text;
    samples: vec nat;
    score: nat;
  };
 type InputRecord = record {args: vec text;};
-type Info =
+type Info = 
  record {
    at: int;
    email: text;
    note: text;
    "principal": principal;
  };
-type CyclesReport =
+type CyclesReport = 
  record {
    canisters: vec CanisterCycles;
    updatedAt: int;
  };
-type CanisterCycles =
+type CanisterCycles = 
  record {
    canisterId: text;
    cycles: nat;
@@ -108,14 +108,15 @@ service : {
   /// Verify the controller can reach every registered LLM (it is a controller of
   /// each, so check_access should return Ok). Admin-only.
   checkAccessToLLMs: () -> (Result);
-  /// Cached cycle-balance snapshot for the public /canisters page (refreshed by a 10-min
-  /// timer). Non-anonymous callers only; anonymous gets an empty report.
+  /// Drop the caller's saved Lab state (the Compare-table "Clear" also clears the server copy).
+  clearLabState: () -> ();
   getCyclesReport: () -> (CyclesReport) query;
   getEarlyAccess: () -> (bool) query;
   getEarlyAccessCallCap: () -> (nat) query;
-  /// Admin-only: review recent failure events (model not-ready/errors, trapped LLM calls,
-  /// client-reported events). limit == 0 returns all (bounded to LOG_CAP), else the most
-  /// recent `limit`, newest last. Non-admins get an empty list.
+  /// The caller's saved Lab state, or null if none. Non-anonymous only (own state).
+  getLabState: () -> (opt text) query;
+  /// Admins review recent failure events. `limit == 0` returns all (bounded to LOG_CAP);
+  /// otherwise the most recent `limit`, newest last. Non-admins get an empty list.
   getLogs: (limit: nat) -> (vec LogEntry) query;
   /// The live cycle balance of each registered LLM (via the management canister's
   /// canister_status — this canister is a controller of each). Ops-only; also confirms
@@ -141,8 +142,9 @@ service : {
   listRequests: () -> (vec Info) query;
   listUsage: () -> (vec UsageInfo) query;
   listWhitelist: () -> (vec Info) query;
-  /// Any allowed (signed-in) user reports a client-side event the canister cannot otherwise
-  /// see (e.g. a transient network error that exhausted the frontend's retries). Bounded.
+  /// Any allowed (signed-in) user reports a client-side event the canister cannot otherwise see
+  /// (e.g. a transient network error that exhausted the frontend's retries and never reached a
+  /// method here). Bounded: the ring buffer caps total entries; kind/detail are truncated.
   logClientEvent: (kind: text, detail: text) -> ();
   /// The single call the frontend gate needs. allowed = admin OR not earlyAccess OR
   /// whitelisted. Non-allowed users are shown the request-access screen.
@@ -158,6 +160,9 @@ service : {
   /// The use case is stored in the `note` field. Bounded to protect stable memory.
   requestAccess: (useCase: text) -> (Result);
   run_update: (input: InputRecord) -> (OutputRecordResultX);
+  /// Save the caller's Lab state (opaque JSON). Allowed (signed-in early-access) users
+  /// only - the same gate as running the Lab. Oversize returns a clean #err (never traps).
+  saveLabState: (state: text) -> (Result);
   setEarlyAccess: (e: bool) -> ();
   setEarlyAccessCallCap: (n: nat) -> ();
   /// The caller's principal - handy for the access screen and for capturing a

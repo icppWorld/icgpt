@@ -1,5 +1,22 @@
 export const idlFactory = ({ IDL }) => {
   const Result = IDL.Variant({ ok: IDL.Null, err: IDL.Text })
+  const CanisterCycles = IDL.Record({
+    name: IDL.Text,
+    cycles: IDL.Nat,
+    canisterId: IDL.Text,
+  })
+  const CyclesReport = IDL.Record({
+    updatedAt: IDL.Int,
+    canisters: IDL.Vec(CanisterCycles),
+  })
+  const LogEntry = IDL.Record({
+    at: IDL.Int,
+    model: IDL.Text,
+    principal: IDL.Principal,
+    kind: IDL.Text,
+    detail: IDL.Text,
+    statusCode: IDL.Nat16,
+  })
   const StatusCodeRecord = IDL.Record({ status_code: IDL.Nat16 })
   const ApiError = IDL.Variant({
     StatusCode: IDL.Nat16,
@@ -60,32 +77,17 @@ export const idlFactory = ({ IDL }) => {
     Ok: RunOutputRecordX,
     Err: RunOutputRecordX,
   })
-  const LogEntry = IDL.Record({
-    at: IDL.Int,
-    kind: IDL.Text,
-    model: IDL.Text,
-    principal: IDL.Principal,
-    statusCode: IDL.Nat16,
-    detail: IDL.Text,
-  })
-  const CanisterCycles = IDL.Record({
-    name: IDL.Text,
-    canisterId: IDL.Text,
-    cycles: IDL.Nat,
-  })
-  const CyclesReport = IDL.Record({
-    canisters: IDL.Vec(CanisterCycles),
-    updatedAt: IDL.Int,
-  })
   return IDL.Service({
     addAdmin: IDL.Func([IDL.Principal, IDL.Text], [], []),
     addToWhitelist: IDL.Func([IDL.Principal, IDL.Text, IDL.Text], [], []),
     add_llm_canister: IDL.Func([IDL.Text, IDL.Text], [Result], []),
     approve: IDL.Func([IDL.Principal], [Result], []),
     checkAccessToLLMs: IDL.Func([], [Result], []),
+    clearLabState: IDL.Func([], [], []),
     getCyclesReport: IDL.Func([], [CyclesReport], ['query']),
     getEarlyAccess: IDL.Func([], [IDL.Bool], ['query']),
     getEarlyAccessCallCap: IDL.Func([], [IDL.Nat], ['query']),
+    getLabState: IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
     getLogs: IDL.Func([IDL.Nat], [IDL.Vec(LogEntry)], ['query']),
     get_llm_balances: IDL.Func([], [IDL.Vec(IDL.Nat)], []),
     get_llm_canisters: IDL.Func(
@@ -118,6 +120,7 @@ export const idlFactory = ({ IDL }) => {
     remove_llm_canister: IDL.Func([IDL.Text], [], []),
     requestAccess: IDL.Func([IDL.Text], [Result], []),
     run_update: IDL.Func([InputRecord], [OutputRecordResultX], []),
+    saveLabState: IDL.Func([IDL.Text], [Result], []),
     setEarlyAccess: IDL.Func([IDL.Bool], [], []),
     setEarlyAccessCallCap: IDL.Func([IDL.Nat], [], []),
     whoami: IDL.Func([], [IDL.Principal], ['query']),

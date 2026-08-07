@@ -662,4 +662,40 @@ persistent actor {
     if (not isAllowed(caller)) { return };
     logEvent("client:" # LogStore.truncate(kind, 64), "", caller, 0, detail);
   };
+
+  // ----- Prompt Cost Lab: per-principal persisted state ---------------------
+  // The Lab's run history + current report + editor setup, stored on-chain per caller as
+  // one opaque JSON blob (the frontend owns the shape - see common/labState.js). Makes the
+  // Lab durable across logout / reload / new device, keyed by principal (no cross-user leak).
+  // Bounded per user (the frontend also caps the stored run history); linear array like the
+  // other per-principal state above (whitelist/usage), stable in this persistent actor.
+  let MAX_LAB_STATE_CHARS : Nat = 200_000;
+  var labState : [(Principal, Text)] = []; // (principal, JSON blob)
+
+  func findLabState(caller : Principal) : ?Text {
+    for ((k, v) in labState.vals()) { if (k == caller) { return ?v } };
+    null;
+  };
+
+  /// Save the caller's Lab state (opaque JSON). Allowed (signed-in early-access) users
+  /// only - the same gate as running the Lab. Oversize returns a clean #err (never traps).
+  public shared ({ caller }) func saveLabState(state : Text) : async Result.Result<(), Text> {
+    if (not isAllowed(caller)) { return #err("Access denied - request early access") };
+    if (Text.size(state) > MAX_LAB_STATE_CHARS) { return #err("lab state too large") };
+    let without = Array.filter<(Principal, Text)>(labState, func((k, _)) { k != caller });
+    labState := Array.append(without, [(caller, state)]);
+    #ok;
+  };
+
+  /// The caller's saved Lab state, or null if none. Non-anonymous only (own state).
+  public query ({ caller }) func getLabState() : async ?Text {
+    if (Principal.isAnonymous(caller)) { return null };
+    findLabState(caller);
+  };
+
+  /// Drop the caller's saved Lab state (the Compare-table "Clear" also clears the server copy).
+  public shared ({ caller }) func clearLabState() : async () {
+    if (Principal.isAnonymous(caller)) { return };
+    labState := Array.filter<(Principal, Text)>(labState, func((k, _)) { k != caller });
+  };
 };

@@ -21,8 +21,12 @@ const dev = __DEV_SIGN_IN__ ? require('./devSignIn') : null
 // principal is derived from THIS app's origin, not the II domain.
 const II_URL = envValue('ii_url') || 'https://id.ai/authorize'
 
-// Delegation lifetime: 8 hours, in nanoseconds.
-const MAX_TIME_TO_LIVE = BigInt(8) * BigInt(3_600_000_000_000)
+// Delegation lifetime: 30 days, in nanoseconds. Prompt Cost Lab experiments can run
+// for a long time, so we keep the session alive far longer than a work session (this is
+// a low-risk app). 30 days is the practical Internet Identity cap — a delegation can't be
+// truly infinite. Even when it eventually expires, the on-chain Lab state restores on the
+// next sign-in, so no work is lost either way.
+const MAX_TIME_TO_LIVE = BigInt(30) * BigInt(24) * BigInt(3_600_000_000_000)
 
 // The rest of the app was written against the old @dfinity/auth-client object: a
 // SYNC getIdentity() and logout(). @icp-sdk/auth's getIdentity() is async and it uses
@@ -57,7 +61,13 @@ export function isLocalDev() {
 // button serves approved users, who the access gate then routes straight into the app.
 export function LogInWithInternetIdentity({ setAuthClient, label }) {
   async function doLogIn() {
-    const client = new AuthClient({ identityProvider: II_URL })
+    // disableIdle + disableDefaultIdleCallback turn OFF the idle manager, which otherwise
+    // logs the user out AND reloads the page after a period of no interaction — driving a
+    // multi-minute Lab experiment with no clicks reads as "idle" and would wipe the session.
+    const client = new AuthClient({
+      identityProvider: II_URL,
+      idleOptions: { disableIdle: true, disableDefaultIdleCallback: true },
+    })
     try {
       // signIn() resolves with the new Identity and rejects if the user closes the
       // popup or auth fails.

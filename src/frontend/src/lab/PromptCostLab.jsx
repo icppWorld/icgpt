@@ -97,14 +97,39 @@ export function PromptCostLab() {
   // <App> so it survives navigating away from the Lab; see App.jsx `labRun`. This
   // component owns only the editor/workbench state below.
   const { labRun } = useOutletContext()
+  // Editor setup is hydrated from the on-chain snapshot (labRun.editor, loaded by <App>
+  // before this mounts) when present, else from today's per-browser defaults. The saved
+  // snapshot carries the selected model, samples/trial, and the in-progress template.
+  const savedEditor = labRun.editor
   const [custom, setCustom] = React.useState(loadCustomTemplates)
   const [draft, setDraft] = React.useState(() =>
-    cloneTemplate(getTemplateById(loadCustomTemplates(), loadActiveId()))
+    cloneTemplate(
+      savedEditor && savedEditor.draft
+        ? savedEditor.draft
+        : getTemplateById(loadCustomTemplates(), loadActiveId())
+    )
   )
   const [pickId, setPickId] = React.useState(loadActiveId)
-  const [modelId, setModelId] = React.useState(DEFAULT_MODEL_ID)
+  const [modelId, setModelId] = React.useState(
+    savedEditor && savedEditor.modelId ? savedEditor.modelId : DEFAULT_MODEL_ID
+  )
   const [params, setParams] = React.useState(() => ({ ...RECOMMENDED_PARAMS }))
-  const [kSamples, setKSamples] = React.useState(1)
+  const [kSamples, setKSamples] = React.useState(
+    savedEditor && savedEditor.kSamples ? savedEditor.kSamples : 1
+  )
+
+  // Report editor edits up to <App>, which stores them in a ref and debounces the
+  // on-chain save. Skip the initial mount fire: the state above was just hydrated from
+  // labRun.editor, so there is nothing new to persist yet.
+  const editorReported = React.useRef(false)
+  React.useEffect(() => {
+    if (!editorReported.current) {
+      editorReported.current = true
+      return
+    }
+    labRun.onEditorChange({ modelId, kSamples, draft })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, modelId, kSamples])
 
   const model = getModelById(modelId)
   const warnings = lintTemplate(draft)
