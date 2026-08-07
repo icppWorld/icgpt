@@ -239,11 +239,12 @@ export function CanistersPage() {
                   </span>
                 </div>
               </div>
-              <p style={C.role}>
+              <div style={C.role}>
                 {meta.role}
                 {meta.link ? (
-                  <>
-                    {' '}
+                  // Always on its OWN line (a block below the role text), so it lays
+                  // out consistently regardless of how long the model name is.
+                  <div style={{ marginTop: '2px' }}>
                     <a
                       href={meta.link}
                       target="_blank"
@@ -252,9 +253,9 @@ export function CanistersPage() {
                     >
                       model card →
                     </a>
-                  </>
+                  </div>
                 ) : null}
-              </p>
+              </div>
               {id ? (
                 <a
                   href={`${DASH}${id}`}
