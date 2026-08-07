@@ -18,6 +18,98 @@
     The Lab answers both, measured on-chain, with no guesswork.
   </p>
 
+  <h2 id="worked-example">
+    A worked example: the cheapest model that stays correct<a
+      href="#worked-example"
+      class="anchor"
+      aria-label="Link to this section"
+      >#</a
+    >
+  </h2>
+  <p>
+    Here is the Lab used end to end on one real task. We want an on-chain
+    <strong>word-guessing game</strong>: given a secret word, the model returns
+    <strong>one short hint</strong> that describes the thing
+    <em>without ever writing the word itself</em>. Keeping the secret is the
+    whole game, so this task has a hard quality bar — and the engineering
+    question is:
+    <strong>which model is the cheapest that still clears it?</strong>
+  </p>
+
+  <h3>The setup</h3>
+  <p>
+    The task is one template. The <strong>system template</strong> states the
+    rule (the cached prefix — no variables in it); the
+    <strong>user template</strong> puts the swept <code>{{word}}</code> last;
+    the <code>word</code> variable sweeps five secrets —
+    <em>HOUSE, TREE, CAR, OCEAN, GUITAR</em>; and a single quality rule,
+    <strong>reply must NOT contain <code>{{word}}</code></strong
+    >, scores whether the secret leaked:
+  </p>
+  <p>
+    <img
+      src="/docs-img/lab-wordgame-setup.png"
+      alt="The Prompt Cost Lab set up for the word-guessing game: system and user templates, a five-value word sweep, and a must-not-contain quality rule"
+    />
+  </p>
+
+  <h3>Run it across three models</h3>
+  <p>
+    Pick a model, hit <strong>▶ Run experiment</strong>, and the Lab runs all
+    five trials on-chain and measures each one. Do that for three of the
+    <a href="/docs/models">on-chain models</a> — Qwen3-0.6B, LFM2.5-1.2B and
+    Qwen3-1.7B — and the <strong>Compare runs</strong> table lines them up:
+  </p>
+  <p>
+    <img
+      src="/docs-img/lab-wordgame-compare.png"
+      alt="The Compare runs table: Qwen3-0.6B at 20% pass, LFM2.5 and Qwen3-1.7B at 100%, with each model's one-time, per-request and per-1k on-chain cost"
+    />
+  </p>
+
+  <h3>Read the result</h3>
+  <ul>
+    <li>
+      <strong>Qwen3-0.6B — cheapest, but fails.</strong> At
+      <strong>~$0.0527 / request</strong> it is the cheapest to run, but it
+      <strong>leaks the secret</strong> in four of five hints (&ldquo;The secret
+      word is &lsquo;house.&rsquo;&rdquo;, &ldquo;The tree is tall and
+      green&rdquo;, …) — only <strong>20% pass</strong>. Small models are weak
+      at following a negation and keeping a secret.
+    </li>
+    <li>
+      <strong>Qwen3-1.7B — correct, but most expensive.</strong> It keeps the
+      secret every time (<strong>100% pass</strong>) but at
+      <strong>~$0.2212 / request</strong> — the priciest of the three. The
+      bigger model is capped at fewer tokens per update call, so each hint takes
+      many more on-chain calls (see
+      <a href="/docs/chat#worked-example">Chat</a>).
+    </li>
+    <li>
+      <strong>LFM2.5-1.2B — correct AND cheaper.</strong> Also
+      <strong>100% pass</strong>, and at <strong>~$0.0896 / request</strong> it
+      is <strong>~2.5&times; cheaper than the 1.7B</strong> while matching its
+      quality. For this task, <strong>LFM2.5 is the best choice</strong> — the
+      lowest cost among the models that actually stay correct.
+    </li>
+  </ul>
+  <p>
+    That is the whole point of the Lab. The cheapest model on paper (0.6B) is
+    the wrong answer because it fails the task; the biggest (1.7B) is correct
+    but overpays 2.5&times;; the Lab surfaces the one that is
+    <strong>correct at the lowest on-chain cost</strong> — and shows it as
+    <strong>$ / 1k requests</strong> ($52.74, $89.62, $221.25) so the gap at
+    scale is obvious. The leak is plain in a single 0.6B run, where the model
+    writes the secret straight into its hint:
+  </p>
+  <p>
+    <img
+      src="/docs-img/lab-wordgame-qwen3-06b.png"
+      alt="A single Qwen3-0.6B run: the per-trial table shows the model leaking the secret word in four of five hints, for a 20% pass-rate"
+    />
+  </p>
+  <p>The rest of this page explains how each part of the Lab works.</p>
+
   <h2>Templated prompts &amp; variable sweeps</h2>
   <p>
     A task is a <strong>template</strong> with two parts and any number of
