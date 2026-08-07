@@ -23,52 +23,12 @@
 //   note          - optional one-line quality/use-case hint shown under the dropdown.
 
 export const MODELS = [
-  {
-    id: 'qwen3-06b-q8',
-    gguf: 'Qwen3-0.6B-Q8_0.gguf',
-    hfUrl: 'https://huggingface.co/Qwen/Qwen3-0.6B-GGUF',
-    hfDownloadUrl:
-      'https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q8_0.gguf',
-    finetuneType: 'Instruct',
-    available: true,
-    inference: {
-      cacheTypeK: 'q8_0',
-      cacheTypeV: 'q8_0',
-      supportsThinking: true,
-      promptFormat: 'chatml',
-    },
-  },
-  {
-    id: 'qwen3-17b-q4',
-    gguf: 'Qwen3-1.7B-Q4_K_M.gguf',
-    hfUrl: 'https://huggingface.co/unsloth/Qwen3-1.7B-GGUF',
-    hfDownloadUrl:
-      'https://huggingface.co/unsloth/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q4_K_M.gguf',
-    finetuneType: 'Instruct',
-    available: true,
-    inference: {
-      cacheTypeK: 'q8_0',
-      cacheTypeV: 'q8_0',
-      supportsThinking: true,
-      promptFormat: 'chatml',
-    },
-  },
-  {
-    id: 'qwen25-05b-instruct-q8',
-    gguf: 'qwen2.5-0.5b-instruct-q8_0.gguf',
-    hfUrl: 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF',
-    finetuneType: 'Instruct',
-    available: true,
-    inference: {
-      cacheTypeK: 'q8_0',
-      cacheTypeV: 'q8_0',
-      supportsThinking: false,
-      promptFormat: 'chatml',
-    },
-  },
+  // Ordered by model size (# weights), lightest → heaviest — matches Appendix A of the
+  // llama_cpp_canister README. The dropdown renders them in this order; the DEFAULT model
+  // is pinned separately (below) so it does NOT follow the array order.
   {
     id: 'gemma-3-270m-it-q8',
-    gguf: 'gemma-3-270m-it-Q8_0.gguf',
+    gguf: 'gemma-3-270m-it-Q8_0.gguf', // 270 M
     hfUrl: 'https://huggingface.co/unsloth/gemma-3-270m-it-GGUF',
     hfDownloadUrl:
       'https://huggingface.co/unsloth/gemma-3-270m-it-GGUF/resolve/main/gemma-3-270m-it-Q8_0.gguf',
@@ -82,9 +42,72 @@ export const MODELS = [
       promptFormat: 'gemma', // NEW template — no system role (see llamacpp.js TEMPLATES)
     },
   },
+  {
+    id: 'qwen3-06b-q8',
+    gguf: 'Qwen3-0.6B-Q8_0.gguf', // 600 M — the default
+    hfUrl: 'https://huggingface.co/Qwen/Qwen3-0.6B-GGUF',
+    hfDownloadUrl:
+      'https://huggingface.co/Qwen/Qwen3-0.6B-GGUF/resolve/main/Qwen3-0.6B-Q8_0.gguf',
+    finetuneType: 'Instruct',
+    available: true,
+    inference: {
+      cacheTypeK: 'q8_0',
+      cacheTypeV: 'q8_0',
+      supportsThinking: true,
+      promptFormat: 'chatml',
+    },
+  },
+  {
+    id: 'qwen25-05b-instruct-q8',
+    gguf: 'qwen2.5-0.5b-instruct-q8_0.gguf', // 630 M
+    hfUrl: 'https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF',
+    finetuneType: 'Instruct',
+    available: true,
+    inference: {
+      cacheTypeK: 'q8_0',
+      cacheTypeV: 'q8_0',
+      supportsThinking: false,
+      promptFormat: 'chatml',
+    },
+  },
+  {
+    id: 'lfm2-1p2b-q4',
+    gguf: 'LFM2.5-1.2B-Instruct-Q4_K_M.gguf', // 1.2 B
+    hfUrl: 'https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF',
+    hfDownloadUrl:
+      'https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/resolve/main/LFM2.5-1.2B-Instruct-Q4_K_M.gguf',
+    finetuneType: 'Instruct',
+    available: true,
+    note: 'Liquid AI hybrid model — a faster, cheaper alternative to Qwen3-1.7B (about half the cycles per call and more tokens per call) at similar quality.',
+    inference: {
+      cacheTypeK: 'q8_0',
+      cacheTypeV: 'q8_0',
+      supportsThinking: false,
+      // LFM2 uses ChatML. The canister applies no chat template, so the frontend sends the
+      // fully-rendered prompt — exactly what the 'chatml' template already does for Qwen.
+      promptFormat: 'chatml',
+    },
+  },
+  {
+    id: 'qwen3-17b-q4',
+    gguf: 'Qwen3-1.7B-Q4_K_M.gguf', // 1.7 B
+    hfUrl: 'https://huggingface.co/unsloth/Qwen3-1.7B-GGUF',
+    hfDownloadUrl:
+      'https://huggingface.co/unsloth/Qwen3-1.7B-GGUF/resolve/main/Qwen3-1.7B-Q4_K_M.gguf',
+    finetuneType: 'Instruct',
+    available: true,
+    inference: {
+      cacheTypeK: 'q8_0',
+      cacheTypeV: 'q8_0',
+      supportsThinking: true,
+      promptFormat: 'chatml',
+    },
+  },
 ]
 
-export const DEFAULT_MODEL_ID = MODELS[0].id
+// Default selected model — pinned to Qwen3-0.6B (a solid quality/speed balance),
+// independent of the weight-sorted array order above.
+export const DEFAULT_MODEL_ID = 'qwen3-06b-q8'
 
 export function getModelById(id) {
   return MODELS.find((m) => m.id === id) || MODELS[0]

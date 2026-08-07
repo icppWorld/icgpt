@@ -193,6 +193,7 @@ models are:
 | `llama_cpp_qwen25_05b_q8` (Qwen2.5-0.5B)    | `model.gguf`        | identical to Qwen3-0.6B (line above)                                                                    | 1 / 20                          |
 | `llama_cpp_qwen3_17b_q4`  (Qwen3-1.7B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 8 --ubatch-size 8 --ctx-size 16384` | 1 / 4                           |
 | `llama_cpp_gemma3_270m`   (Gemma-3-270M)      | `models/model.gguf` | `--model models/model.gguf -c 4096 --cache-type-k q8_0 --cache-type-v q8_0`                            | 1 / 44                          |
+| `llama_cpp_lfm2_1p2b_q4`  (LFM2.5-1.2B Q4_K_M) | `models/model.gguf` | `--model models/model.gguf --cache-type-k q8_0 --cache-type-v q8_0 --batch-size 8 --ubatch-size 8 --ctx-size 4096` | 1 / 8                           |
 
 Notes:
 
@@ -215,9 +216,10 @@ Notes:
   llama.cpp split the KV cache into ≤128 MiB sub-buffers (one `memset` each, with a slice pause point
   between them) — so 16384 loads again (~2.04 GiB heap, ~1.7 GiB headroom). CAVEAT: at 16384 the
   per-call KV clear costs ~2.44 B of the 40 B per-`run_update` budget (vs ~0.61 B at 4096), which
-  lowers the generation ceiling — `max_tokens_update` was re-measured after the upgrade by walking
-  4/5/6… until a clean `IC0522` "exceeded 40000000000 instructions" rejection (safe: rejected + rolled
-  back, cache intact).
+  lowers the generation ceiling — so `max_tokens_update` stays at the conservative **4** (safe at both
+  4096 and 16384; the 16384 ceiling is ~5 per Appendix A of the llama_cpp_canister README). To raise
+  it, walk 4/5/6… watching for a clean `IC0522` "exceeded 40000000000 instructions" rejection (safe:
+  rejected + rolled back, cache intact).
 - **FIXED in llama_cpp_canister v0.16.2:** earlier (v0.16.0), even at 4096 a **long generation
   (>~100 tokens)** on the 1.7B trapped `IC0502` "heap out of bounds" mid-`run_update` under the
   `--prompt-cache-all` pattern — a prompt-cache bug, not a memory OOM (the wasm heap high-water stayed
@@ -235,11 +237,13 @@ Notes:
 Once the model gguf is in place, as described in the previous step, you can deploy everything with:
 
 ```bash
-# ICGPT serves FOUR models, each in its own canister (same llama_cpp v0.16.4 wasm):
+# ICGPT serves FIVE models, each in its own canister (same llama_cpp v0.16.4 wasm):
 #   llama_cpp_qwen3_06b_q8  (Qwen3-0.6B, the default)   16K ctx, max_tokens_update 20
 #   llama_cpp_qwen25_05b_q8 (Qwen2.5-0.5B)              16K ctx, max_tokens_update 20
-#   llama_cpp_qwen3_17b_q4  (Qwen3-1.7B, Q4_K_M)         4K ctx, max_tokens_update 4,
+#   llama_cpp_qwen3_17b_q4  (Qwen3-1.7B, Q4_K_M)        16K ctx, max_tokens_update 4,
 #                                                        loaded from models/model.gguf, batch 8
+#   llama_cpp_lfm2_1p2b_q4  (LFM2.5-1.2B, Q4_K_M)        4K ctx, max_tokens_update 8,
+#                                                        models/model.gguf, batch 8; 3.75GiB bump
 #   llama_cpp_gemma3_270m   (Gemma-3-270M)               4K ctx,  max_tokens_update 44,
 #                                                        models/model.gguf; NO 3.75GiB bump
 # See the "LLM model configuration" table above for exact load_model args per model.

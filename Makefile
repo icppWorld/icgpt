@@ -422,3 +422,25 @@ download-log-llama-cpp-gemma3-270m-ic:
 	@echo "---"
 	@echo "download-log-llama-cpp-gemma3-270m-ic"
 	python -m llms.llama_cpp_canister.scripts.download --network production --canister llama_cpp_gemma3_270m --local-filename main-llama-cpp-gemma3-270m.log main.log
+
+# LFM2.5-1.2B-Instruct (Q4_K_M) from LiquidAI. Uploaded as "models/model.gguf" (load_model must match).
+LFM2_1P2B_Q4_SHA256 ?= b1b3de114215d9507409a662a501a631095a479a419584e8a2ded6304b19b4f5
+LFM2_1P2B_Q4_GGUF ?= $(CURDIR)/llms/models/LiquidAI/LFM2.5-1.2B-Instruct-GGUF/LFM2.5-1.2B-Instruct-Q4_K_M.gguf
+
+.PHONY: upload-llama-cpp-lfm2-1p2b-q4-local
+upload-llama-cpp-lfm2-1p2b-q4-local:
+	@echo "---"
+	@echo "upload-llama-cpp-lfm2-1p2b-q4-local"
+	python -m llms.llama_cpp_canister.scripts.upload --network local --canister llama_cpp_lfm2_1p2b_q4 --canister-filename models/model.gguf --filetype gguf --hf-sha256 "$(LFM2_1P2B_Q4_SHA256)" $(LFM2_1P2B_Q4_GGUF)
+
+.PHONY: upload-llama-cpp-lfm2-1p2b-q4-ic
+upload-llama-cpp-lfm2-1p2b-q4-ic:
+	@echo "---"
+	@echo "upload-llama-cpp-lfm2-1p2b-q4-ic"
+	python -m llms.llama_cpp_canister.scripts.upload --network production --canister llama_cpp_lfm2_1p2b_q4 --canister-filename models/model.gguf --filetype gguf --hf-sha256 "$(LFM2_1P2B_Q4_SHA256)" $(LFM2_1P2B_Q4_GGUF)
+
+.PHONY: download-log-llama-cpp-lfm2-1p2b-q4-ic
+download-log-llama-cpp-lfm2-1p2b-q4-ic:
+	@echo "---"
+	@echo "download-log-llama-cpp-lfm2-1p2b-q4-ic"
+	python -m llms.llama_cpp_canister.scripts.download --network production --canister llama_cpp_lfm2_1p2b_q4 --local-filename main-llama-cpp-lfm2-1p2b-q4.log main.log

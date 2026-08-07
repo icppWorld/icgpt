@@ -58,6 +58,17 @@ canisters:
         path: llms/llama_cpp_canister/build/llama_cpp.wasm
         sha256: 826455dd5253860882140b6a9ad693dec5df25fa4f72d9c903d4732a1326813c
 
+  # LFM2.5-1.2B-Instruct (Q4_K_M) — a faster/cheaper alternative to the 1.7B (Liquid AI's
+  # hybrid attention+short-conv arch; loaded via the b10076 fork's `lfm2` support). ~2.06 GiB
+  # heap after load, so it DOES get the 3.75 GiB bump (see settings). Loaded at -c 4096, dual
+  # q8_0 KV, max_tokens_update 8. Same llama_cpp v0.16.4 wasm.
+  - name: llama_cpp_lfm2_1p2b_q4
+    recipe:
+      type: '@dfinity/prebuilt@v2.0.0'
+      configuration:
+        path: llms/llama_cpp_canister/build/llama_cpp.wasm
+        sha256: 826455dd5253860882140b6a9ad693dec5df25fa4f72d9c903d4732a1326813c
+
   - name: canister_frontend
     recipe:
       type: '@dfinity/asset-canister@v2.2.1'
@@ -107,6 +118,11 @@ environments:
       llama_cpp_gemma3_270m:
         # No wasm_memory_limit bump — 270M uses ~0.9 GiB (the default limit is enough).
         # Only the hard-gate controllers are set (chfec deployer + icgpt_admin).
+        controllers:
+          - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
+          - icgpt_admin
+      llama_cpp_lfm2_1p2b_q4:
+        wasm_memory_limit: 3.75gib
         controllers:
           - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
           - icgpt_admin
