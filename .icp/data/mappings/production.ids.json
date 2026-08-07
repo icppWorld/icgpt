@@ -2,6 +2,7 @@
   "canister_frontend": "4v3v2-lyaaa-aaaag-abzna-cai",
   "icgpt_admin": "4jtrg-qqaaa-aaaag-ay5iq-cai",
   "llama_cpp_gemma3_270m": "zvild-3yaaa-aaaag-ay5xa-cai",
+  "llama_cpp_lfm2_1p2b_q4": "nkqtb-5yaaa-aaaag-ay6da-cai",
   "llama_cpp_qwen25_05b_q8": "6uwoh-vaaaa-aaaag-amema-cai",
   "llama_cpp_qwen3_06b_q8": "4osxs-5iaaa-aaaag-ay5ia-cai",
   "llama_cpp_qwen3_17b_q4": "44ual-ryaaa-aaaag-ay5la-cai"
