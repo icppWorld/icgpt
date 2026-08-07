@@ -64,30 +64,36 @@ export function DocsLayout() {
     : { width: '210px', flexShrink: 0 }
   const main = { flex: 1, minWidth: 0 }
 
-  const navLink = ({ isActive }) =>
-    isMobile
-      ? {
-          flex: '0 0 auto',
-          padding: '6px 12px',
-          borderRadius: '999px',
-          fontSize: '13px',
-          whiteSpace: 'nowrap',
-          textDecoration: 'none',
-          color: isActive ? '#21222c' : '#c7cbe0',
-          backgroundColor: isActive ? '#bd93f9' : '#21222c',
-          border: '1px solid #44475a',
-        }
-      : {
-          display: 'block',
-          padding: '7px 10px',
-          marginBottom: '2px',
-          borderRadius: '6px',
-          fontSize: '14px',
-          textDecoration: 'none',
-          color: isActive ? '#f1fa8c' : '#c7cbe0',
-          backgroundColor: isActive ? '#21222c' : 'transparent',
-          borderLeft: isActive ? '2px solid #bd93f9' : '2px solid transparent',
-        }
+  // `child` (an entry with a `parent`) renders as an indented, slightly muted
+  // sub-item on desktop; on the mobile strip it looks like any other pill.
+  const navLink =
+    (child) =>
+    ({ isActive }) =>
+      isMobile
+        ? {
+            flex: '0 0 auto',
+            padding: '6px 12px',
+            borderRadius: '999px',
+            fontSize: '13px',
+            whiteSpace: 'nowrap',
+            textDecoration: 'none',
+            color: isActive ? '#21222c' : '#c7cbe0',
+            backgroundColor: isActive ? '#bd93f9' : '#21222c',
+            border: '1px solid #44475a',
+          }
+        : {
+            display: 'block',
+            padding: child ? '5px 10px 5px 26px' : '7px 10px',
+            marginBottom: '2px',
+            borderRadius: '6px',
+            fontSize: child ? '13px' : '14px',
+            textDecoration: 'none',
+            color: isActive ? '#f1fa8c' : child ? '#9aa0bd' : '#c7cbe0',
+            backgroundColor: isActive ? '#21222c' : 'transparent',
+            borderLeft: isActive
+              ? '2px solid #bd93f9'
+              : '2px solid transparent',
+          }
 
   return (
     <div style={page}>
@@ -121,7 +127,11 @@ export function DocsLayout() {
       <div style={container}>
         <nav style={sidebar}>
           {DOCS.map((d) => (
-            <NavLink key={d.slug} to={`/docs/${d.slug}`} style={navLink}>
+            <NavLink
+              key={d.slug}
+              to={`/docs/${d.slug}`}
+              style={navLink(Boolean(d.parent))}
+            >
               {d.title}
             </NavLink>
           ))}
