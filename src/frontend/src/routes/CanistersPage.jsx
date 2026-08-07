@@ -30,6 +30,16 @@ function describe(name) {
   }
 }
 
+// Card order: icgpt_admin (the controller) first, then the models in the SAME order as the
+// Lab dropdown — by model size / #weights (MODELS is already weight-sorted). The on-chain
+// snapshot returns them in registry-insertion order, so we re-sort here. Unknown models last.
+const MODEL_ORDER = MODELS.map((m) => m.gguf)
+function canisterSortKey(name) {
+  if (name === 'icgpt_admin') return -1
+  const i = MODEL_ORDER.indexOf(name)
+  return i === -1 ? MODEL_ORDER.length : i
+}
+
 // icgpt_admin's own snapshot entry carries an empty id (the frontend already knows it).
 function idOf(entry) {
   if (entry.canisterId) return entry.canisterId
@@ -132,7 +142,11 @@ export function CanistersPage() {
     load()
   }, [load])
 
-  const canisters = report ? report.canisters : []
+  const canisters = report
+    ? [...report.canisters].sort(
+        (a, b) => canisterSortKey(a.name) - canisterSortKey(b.name)
+      )
+    : []
   const low = canisters.filter((c) => Number(c.cycles) < LOW_CYCLES)
   const updated = report ? agoLabel(report.updatedAt) : null
 
