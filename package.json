@@ -69,5 +69,8 @@
     "react-dom": "^17.0.2",
     "react-helmet": "^6.1.0",
     "react-router-dom": "^6.2.1"
+  },
+  "overrides": {
+    "@remix-run/router": "1.23.2"
   }
 }
