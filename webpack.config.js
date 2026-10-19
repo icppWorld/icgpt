@@ -46,13 +46,14 @@ function getDevServerConfig() {
   return {
     port: 8081, // pinned so the II derivationOrigin / dev URL is stable
     headers: { 'Set-Cookie': `ic_env=${cookie}; SameSite=Lax;` },
-    proxy: {
-      '/api': {
+    proxy: [
+      {
+        context: ['/api'],
         // api_url has a trailing slash; strip it or the replica 400s on //api/v3.
         target: status.api_url.replace(/\/$/, ''),
         changeOrigin: true,
       },
-    },
+    ],
     static: path.resolve(__dirname, 'src', frontendDirectory, 'assets'),
     hot: true,
     watchFiles: [path.resolve(__dirname, 'src', frontendDirectory)],
