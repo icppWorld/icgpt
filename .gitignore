@@ -160,3 +160,6 @@ TMP-*
 !.claude/skills/
 .claude/skills/*
 !.claude/skills/icgpt-local-e2e/
+_handoff/
+# Local mainnet deploy identity name
+.icp-identity
