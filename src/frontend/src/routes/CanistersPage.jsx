@@ -1,7 +1,5 @@
-// eslint-disable-next-line no-use-before-define
 import React from 'react'
-import { useOutletContext } from 'react-router-dom'
-import { Helmet } from 'react-helmet'
+import { useOutletContext } from 'react-router'
 import { getCyclesReport } from '../canisters/admin'
 import { canisterIdFor } from '../canisters/agent'
 import { formatCycles, usd } from '../common/cycles'
@@ -152,9 +150,7 @@ export function CanistersPage() {
 
   return (
     <div style={C.page}>
-      <Helmet>
-        <title>ICGPT — Canisters & Cycles</title>
-      </Helmet>
+      <title>ICGPT — Canisters & Cycles</title>
 
       <div style={C.header}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

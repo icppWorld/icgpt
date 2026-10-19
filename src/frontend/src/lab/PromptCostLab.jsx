@@ -1,7 +1,5 @@
-// eslint-disable-next-line no-use-before-define
 import React from 'react'
-import { useOutletContext } from 'react-router-dom'
-import { Helmet } from 'react-helmet'
+import { useOutletContext } from 'react-router'
 import { MODELS, getModelById, DEFAULT_MODEL_ID } from '../common/models'
 import { RECOMMENDED_PARAMS } from '../common/params'
 import {
@@ -183,9 +181,7 @@ export function PromptCostLab() {
 
   return (
     <div style={S.page}>
-      <Helmet>
-        <title>Prompt Cost Lab — ICGPT</title>
-      </Helmet>
+      <title>Prompt Cost Lab — ICGPT</title>
       <div>
         <h1 style={S.h1}>Prompt Cost Lab</h1>
         <p style={S.lead}>

@@ -1,7 +1,6 @@
-// eslint-disable-next-line no-use-before-define
 import React from 'react'
 import PropTypes from 'prop-types'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router'
 
 // Renders an author-written HTML fragment (from the docs registry) into a
 // dracula-styled `.docs-prose` container. Safe because the content is

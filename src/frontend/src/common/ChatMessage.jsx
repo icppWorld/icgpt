@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
 import PropTypes from 'prop-types'
 
 // One conversation bubble. User messages align right, ICGPT (assistant) left.

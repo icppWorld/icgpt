@@ -1,7 +1,4 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import { DOCS } from '../docs/registry'
 
 // The /docs landing: a short intro + a grid of section cards from the registry.
@@ -17,13 +14,11 @@ export function DocsHome() {
 
   return (
     <div>
-      <Helmet>
-        <title>ICGPT Docs — On-chain Prompt Studio</title>
-        <meta
-          name="description"
-          content="Documentation for ICGPT, the on-chain Prompt Studio: how it works and the models running inside Internet Computer canisters."
-        />
-      </Helmet>
+      <title>ICGPT Docs — On-chain Prompt Studio</title>
+      <meta
+        name="description"
+        content="Documentation for ICGPT, the on-chain Prompt Studio: how it works and the models running inside Internet Computer canisters."
+      />
 
       <h1
         style={{

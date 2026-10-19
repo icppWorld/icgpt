@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import 'dracula-ui/styles/dracula-ui.css'
 
 // ICGPT's on-chain heritage, demoted to a quiet trust signal in the footer

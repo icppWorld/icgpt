@@ -3,7 +3,7 @@
 // Each entry: { slug, title, description, html, parent? }. `html` is the raw HTML
 // content fragment (imported as a string via the webpack `asset/source` rule
 // scoped to this folder — see webpack.config.js). This list drives the sidebar
-// nav, the `/docs/:slug` routing, and each page's <Helmet> title/description.
+// nav, the `/docs/:slug` routing, and each page's <title>/description.
 // `parent` (optional) is another entry's slug: it renders this page as an
 // indented sub-item under that one in the sidebar (keep it directly after its
 // parent in the list).

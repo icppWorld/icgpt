@@ -1,7 +1,5 @@
-// eslint-disable-next-line no-use-before-define
 import React from 'react'
 import PropTypes from 'prop-types'
-import { Helmet } from 'react-helmet'
 import { requestAccess } from '../canisters/admin'
 import { Footer } from '../common/Footer'
 
@@ -139,9 +137,7 @@ export function EarlyAccessLockScreen({
   if (access?.error) {
     return (
       <div>
-        <Helmet>
-          <title>ICGPT — On-chain Prompt Studio · reconnecting</title>
-        </Helmet>
+        <title>ICGPT — On-chain Prompt Studio · reconnecting</title>
         <div style={wrap}>
           <div style={card}>
             <div style={{ fontSize: '38px', color: '#6272a4', lineHeight: 1 }}>
@@ -193,9 +189,7 @@ export function EarlyAccessLockScreen({
 
   return (
     <div>
-      <Helmet>
-        <title>ICGPT — On-chain Prompt Studio · early access</title>
-      </Helmet>
+      <title>ICGPT — On-chain Prompt Studio · early access</title>
       <div style={wrap}>
         <div style={card}>
           <div style={{ fontSize: '18px', fontWeight: 'bold' }}>

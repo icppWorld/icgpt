@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-use-before-define
 import React from 'react'
 
 // True when the viewport is at most `maxWidth` px wide (default 640 — phones and

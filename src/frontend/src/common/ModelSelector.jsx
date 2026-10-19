@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
 import PropTypes from 'prop-types'
 import { MODELS, getModelById } from './models'
 import { useIsMobile } from './useIsMobile'

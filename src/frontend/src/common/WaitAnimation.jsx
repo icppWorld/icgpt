@@ -1,8 +1,5 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
-import { Helmet } from 'react-helmet'
 import 'dracula-ui/styles/dracula-ui.css'
-import { Box, Button, Card, Heading, Text, Divider } from 'dracula-ui'
+import { Box, Card, Text, Divider } from 'dracula-ui'
 import { ImageWithFallback } from '../common/ImageWithFallback'
 import { floatingStyleTop } from '../common/styles'
 

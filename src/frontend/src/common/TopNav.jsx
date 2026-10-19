@@ -1,7 +1,5 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
 import PropTypes from 'prop-types'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router'
 import { useIsMobile } from './useIsMobile'
 
 // The shared top navigation bar for every signed-in page (rendered once in App.jsx above the

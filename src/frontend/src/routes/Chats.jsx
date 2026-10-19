@@ -1,8 +1,6 @@
-// eslint-disable-next-line no-use-before-define
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
-import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
-import { doNewChatLlamacpp } from '../canisters/llamacpp.js'
+import { Box, Button } from 'dracula-ui'
 import { ChatsPopupModal } from './ChatsPopupModal'
 
 const DEBUG = true

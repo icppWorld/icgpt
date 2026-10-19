@@ -12,9 +12,6 @@ Use as:
   /> 
 */
 
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
-
 export function ImageWithFallback({
   src,
   fallback,

@@ -1,6 +1,4 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
-import { Outlet, Link, NavLink } from 'react-router-dom'
+import { Outlet, Link, NavLink } from 'react-router'
 import { DOCS } from '../docs/registry'
 import { useIsMobile } from '../common/useIsMobile'
 import '../docs/docs.css'

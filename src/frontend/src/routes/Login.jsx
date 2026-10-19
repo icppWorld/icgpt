@@ -1,7 +1,4 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router'
 import 'dracula-ui/styles/dracula-ui.css'
 
 import { Footer } from '../common/Footer'
@@ -19,9 +16,7 @@ export function Login({ setAuthClient }) {
 
   return (
     <div>
-      <Helmet>
-        <title>ICGPT — On-chain Prompt Studio</title>
-      </Helmet>
+      <title>ICGPT — On-chain Prompt Studio</title>
       <main>
         <div
           className="container-fluid text-center"

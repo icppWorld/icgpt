@@ -1,9 +1,7 @@
-// eslint-disable-next-line no-use-before-define
 import React from 'react'
 import { Head } from './common/Head'
 import { Footer } from './common/Footer'
-import { StagingBanner } from './common/StagingBanner'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router'
 import { Login } from './routes/Login'
 import { EarlyAccessLockScreen } from './routes/EarlyAccessLockScreen'
 import { TopNav, TOPNAV_HEIGHT } from './common/TopNav'
@@ -348,7 +346,7 @@ export function App() {
   const [chats, setChats] = React.useState()
 
   // ---------------------------------------------------------
-  function print_state() {
+  function printState() {
     console.log('------------------------------------')
     console.log('chatNew              : ' + chatNew)
     console.log('chatDone             : ' + chatDone)
@@ -364,7 +362,7 @@ export function App() {
 
   // state updates are asynchronous, so call dependent ones with useEffect
   React.useEffect(() => {
-    print_state()
+    printState()
   }, [
     chatNew,
     chatDone,

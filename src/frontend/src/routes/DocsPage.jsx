@@ -1,7 +1,4 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
-import { Helmet } from 'react-helmet'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router'
 import { getDoc } from '../docs/registry'
 import { DocsContent } from '../docs/DocsContent'
 
@@ -14,9 +11,7 @@ export function DocsPage() {
   if (!doc) {
     return (
       <div>
-        <Helmet>
-          <title>Not found — ICGPT Docs</title>
-        </Helmet>
+        <title>Not found — ICGPT Docs</title>
         <h1 style={{ color: '#f1fa8c', fontWeight: 800 }}>Page not found</h1>
         <p style={{ color: '#c7cbe0' }}>
           That docs page doesn&apos;t exist.{' '}
@@ -30,10 +25,9 @@ export function DocsPage() {
 
   return (
     <div>
-      <Helmet>
-        <title>{doc.title} — ICGPT Docs</title>
-        <meta name="description" content={doc.description} />
-      </Helmet>
+      {/* React 19 needs a single string child in <title>, not text + expression. */}
+      <title>{`${doc.title} — ICGPT Docs`}</title>
+      <meta name="description" content={doc.description} />
 
       <DocsContent html={doc.html} />
 

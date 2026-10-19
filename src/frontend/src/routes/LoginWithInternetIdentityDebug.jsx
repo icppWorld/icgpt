@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-use-before-define
 import { DelegationIdentity } from '@icp-sdk/core/identity'
 
 export function writeAuthClientDetailsToConsole(authClient) {

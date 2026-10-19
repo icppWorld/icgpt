@@ -1,7 +1,5 @@
-// eslint-disable-next-line no-use-before-define
 import React from 'react'
-import { Helmet } from 'react-helmet'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext } from 'react-router'
 import 'dracula-ui/styles/dracula-ui.css'
 
 import { StatsBar } from '../common/StatsBar'
@@ -117,9 +115,7 @@ export function Chat() {
 
   return (
     <div>
-      <Helmet>
-        <title>ICGPT — On-chain Prompt Studio</title>
-      </Helmet>
+      <title>ICGPT — On-chain Prompt Studio</title>
       <main>
         <div className="container-fluid text-center">
           {/* All children below are position:fixed, so this wrapper only needs

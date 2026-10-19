@@ -2,10 +2,8 @@
 
 import React from 'react'
 import 'dracula-ui/styles/dracula-ui.css'
-import { Box, Button, Card, Heading, Divider, Text } from 'dracula-ui'
+import { Button, Card, Heading, Divider } from 'dracula-ui'
 import { getChatsLlamacpp } from '../canisters/llamacpp.js'
-
-const DEBUG = true
 
 export function ChatsPopupModal({
   authClient,

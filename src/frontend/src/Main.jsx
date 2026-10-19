@@ -1,7 +1,6 @@
-// eslint-disable-next-line no-use-before-define
 import React from 'react'
-import ReactDOM from 'react-dom'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { createRoot } from 'react-dom/client'
+import { BrowserRouter, Routes, Route } from 'react-router'
 import { App } from './App'
 import { Chat } from './routes/Chat'
 import { PromptCostLab } from './lab/PromptCostLab'
@@ -13,7 +12,7 @@ import { DocsPage } from './routes/DocsPage'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
-ReactDOM.render(
+createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
       <Routes>
@@ -37,6 +36,5 @@ ReactDOM.render(
         </Route>
       </Routes>
     </BrowserRouter>
-  </React.StrictMode>,
-  document.getElementById('root')
+  </React.StrictMode>
 )

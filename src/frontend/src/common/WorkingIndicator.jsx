@@ -1,5 +1,3 @@
-// eslint-disable-next-line no-use-before-define
-import React from 'react'
 import PropTypes from 'prop-types'
 
 // A subtle "the canister is working" status line, rendered inline in the
