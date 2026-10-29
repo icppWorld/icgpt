@@ -154,7 +154,7 @@ ICGPT's LLM backend runs on [llama_cpp_canister](https://github.com/onicai/llama
 
 The `llms/llama_cpp_canister` folder contains an unzipped official release of
 [llama_cpp_canister](https://github.com/onicai/llama_cpp_canister), currently
-**v0.16.4** (see `llms/llama_cpp_canister/version.txt`). It is dfx-free: it ships
+**v0.23.0rc5** (see `llms/llama_cpp_canister/version.txt`). It is dfx-free: it ships
 its own `icp.yaml` and an icp-native gguf uploader (`scripts/`).
 
 The wasm & did are not committed (see .gitignore), so after a fresh clone you must
@@ -237,7 +237,7 @@ Notes:
 Once the model gguf is in place, as described in the previous step, you can deploy everything with:
 
 ```bash
-# ICGPT serves FIVE models, each in its own canister (same llama_cpp v0.16.4 wasm):
+# ICGPT serves FIVE models, each in its own canister (same llama_cpp v0.23.0rc5 wasm):
 #   llama_cpp_qwen3_06b_q8  (Qwen3-0.6B, the default)   16K ctx, max_tokens_update 20
 #   llama_cpp_qwen25_05b_q8 (Qwen2.5-0.5B)              16K ctx, max_tokens_update 20
 #   llama_cpp_qwen3_17b_q4  (Qwen3-1.7B, Q4_K_M)        16K ctx, max_tokens_update 4,

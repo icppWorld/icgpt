@@ -1,0 +1,145 @@
+# Qwen2.5-0.5B-Instruct (previous default model)
+
+> This was the default reference model up to and including release **v0.12.1**.
+> From **v0.13.0** the default is **Qwen3-0.6B** — see the main [README.md](../README.md).
+> Qwen2.5-0.5B is kept here (and in `test/test_qwen2.py` / `native/test_qwen2.cpp`)
+> for regression, and remains an excellent, lightweight single-turn model. Follow
+> the main README for `# Set up` (icp, Python env, build & deploy), then use the
+> model-specific steps below instead of the Qwen3 ones.
+>
+> This model is served by the **`llama_cpp_qwen25`** canister (defined alongside the
+> default `llama_cpp` / Qwen3 canister in `icp.yaml`). On the IC mainnet it is
+> `6uwoh-vaaaa-aaaag-amema-cai`. The `icp` commands below therefore target
+> `llama_cpp_qwen25`; deploy just that canister with `icp deploy llama_cpp_qwen25 -e local -y`.
+
+## Upload the gguf file
+
+Download from HuggingFace: https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF
+
+```bash
+mkdir -p models/Qwen/Qwen2.5-0.5B-Instruct-GGUF
+wget -c \
+  -O models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf \
+  https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/qwen2.5-0.5b-instruct-q8_0.gguf
+```
+
+Verify the sha256 after download:
+
+```bash
+$ sha256sum models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e
+```
+
+Upload it to the canister as `models/model.gguf`:
+
+```bash
+python -m scripts.upload \
+  --network local \
+  --canister llama_cpp_qwen25 \
+  --canister-filename models/model.gguf \
+  --filetype gguf \
+  --hf-sha256 "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e" \
+  models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf
+```
+
+Check filesize & sha256 in the canister:
+
+```bash
+icp canister call llama_cpp_qwen25 -e local uploaded_file_details '(record { filename = "models/model.gguf" })'
+# ->
+(
+  variant {
+    Ok = record {
+      filename = "models/model.gguf";
+      filesize = 675_710_816 : nat64;
+      filesha256 = "ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e";
+    }
+  },
+)
+```
+
+Optional pytest QA: `pytest -vv --network local --identity "$(icp identity default)" test/test_qwen2.py`
+(since icpp-pro 6.0.0 pytest must be told which identity to run as — it has to be
+the one that deployed the canister; see the main README's smoke-testing section)
+
+## Load the model
+
+Qwen2.5-0.5B fits with the default context and only needs the K cache quantized:
+
+```bash
+icp canister call llama_cpp_qwen25 -e local load_model '(record {
+  args = vec {
+    "--model"; "models/model.gguf";
+    "--cache-type-k"; "q8_0";
+  }
+})'
+```
+
+## Set max_tokens
+
+```bash
+icp canister call llama_cpp_qwen25 -e local set_max_tokens '(record {
+  max_tokens_query = 1 : nat64;
+  max_tokens_update = 0 : nat64
+})'
+```
+
+`0` means no cap: every update call, and every chunk of a `run_update_full`, stops by
+itself before the IC's instruction limit. For this model that is ~25 tokens per call
+(measured on the b10076 build; the hard first-call ceiling is 28).
+
+## Chat
+
+Qwen2.5 is not a thinking model, so the assistant turn ends right after
+`<|im_start|>assistant\n` (no `<think>` block).
+
+Start a new chat:
+
+```bash
+icp canister call llama_cpp_qwen25 -e local new_chat '(record {
+  args = vec { "--prompt-cache"; "prompt.cache"; "--cache-type-k"; "q8_0"; }
+})'
+```
+
+Ingest the prompt and generate the whole response, in one call:
+
+```bash
+icp canister call llama_cpp_qwen25 -e local run_update_full '(record {
+  args = vec {
+    "--prompt-cache"; "prompt.cache"; "--prompt-cache-all";
+    "--cache-type-k"; "q8_0";
+    "--repeat-penalty"; "1.1";
+    "--temp"; "0.6";
+    "-sp";
+    "-p"; "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n";
+    "-n"; "512"
+  }
+})'
+```
+
+On a local network, this returned a 299-token answer in one call of 61s (17 chunks),
+with `generated_eog = true` and `partial = opt false`. To show the text while it is being
+generated, use the `run_update` loop instead (see the
+[main README](../README.md#set-up)).
+
+Remove the prompt cache when done:
+
+```bash
+icp canister call llama_cpp_qwen25 -e local remove_prompt_cache '(record {
+  args = vec { "--prompt-cache"; "prompt.cache" }
+})'
+```
+
+Equivalent local `llama-cli` command:
+
+```bash
+<path-to>/llama-cli \
+  -m /models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruct-q8_0.gguf \
+  --prompt-cache prompt.cache --prompt-cache-all \
+  --cache-type-k q8_0 \
+  --repeat-penalty 1.1 \
+  --temp 0.6 \
+  -sp \
+  -p "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\ngive me a short introduction to LLMs.<|im_end|>\n<|im_start|>assistant\n" \
+  -n 512
+```

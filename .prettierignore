@@ -29,3 +29,4 @@ llms/llama_cpp_canister
 .claude
 .icp/cache
 TMP-*
+_handoff

@@ -1,0 +1,6 @@
+wasm_sha256=8c602fa56de7e4b53b795bb4625b827ba84c8c2fa94b75d76e6873930e6b474d
+fork_repo=onicai/llama_cpp_onicai_fork
+fork_commit=702142008552e33844f99dddefc409550166d175
+fork_build_number=11483
+icpp_pro=icpp-pro         version: 7.0.0rc7 wasi-sdk         version: wasi-sdk-25.0 wasi2ic          version: c0f5063e734f8365f1946baf2845d8322cc9bfec ic-wasi-polyfill version: b788d8d6fe80deb0d8e27198ebeee5045204302f rust             version: 1.93.0 
+wasi_sdk_clang=clang version 19.1.5-wasi-sdk (https://github.com/llvm/llvm-project ab4b5a2db582958af1ee308a790cfdb42bd24720)
