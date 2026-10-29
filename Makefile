@@ -388,6 +388,15 @@ icp-provision-llm: require-identity require-llm
 	@icp canister call $(CANISTER_NAME) set_access '(record { level = 0 : nat16 })' -e $(ENV) $(ICP_ID)
 	@icp canister call $(CANISTER_NAME) ready '()' --query -e $(ENV) $(ICP_ID)
 
+# Code-only upgrade of one LLM canister to the vendored wasm. Unlike `icp deploy`, it never
+# syncs icp.yaml settings, so controllers added outside icp.yaml (production 4osxs + 44ual
+# carry the dfx wallet jh35u, 6uwoh carries cda4n) are kept. icp still runs its Candid
+# compatibility check (no -y outside local). Follow it with icp-provision-llm.
+# make icp-upgrade-llm CANISTER_NAME=.. ENV=..
+.PHONY: icp-upgrade-llm
+icp-upgrade-llm: require-identity require-llm
+	@icp canister install $(CANISTER_NAME) -m upgrade --wasm llms/llama_cpp_canister/build/llama_cpp.wasm -e $(ENV) $(ICP_ID) $(if $(filter local,$(ENV)),-y) < /dev/null
+
 .PHONY: icp-provision-llms
 icp-provision-llms:          # all LLM canisters of ENV
 	@for c in $(LLM_CANISTERS); do $(MAKE) --no-print-directory icp-provision-llm CANISTER_NAME=$$c ENV=$(ENV) || exit 1; done

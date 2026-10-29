@@ -67,7 +67,7 @@ Order: backend first, frontend last (the new backend serves the old frontend).
 
 ```bash
 make icp-deploy-canister CANISTER_NAME=icgpt_admin ENV=staging      # if changed
-make icp-deploy-canister CANISTER_NAME=<llm> ENV=staging            # only if the llama wasm changed
+make icp-upgrade-llm CANISTER_NAME=<llm> ENV=staging                # only if the llama wasm changed
 make icp-provision-llm CANISTER_NAME=<llm> ENV=staging              # after EVERY llm install/upgrade
 make icp-deploy-frontend ENV=staging                                # if src/frontend changed
 make release-record ENV=staging                                     # deployed == built ("same")
@@ -105,7 +105,11 @@ make icp-start CANISTER_NAME=icgpt_admin ENV=production
   screen; once started, non-admins see the maintenance screen.
 - LLM canisters, only if the llama wasm changed (their snapshots are large — confirm
   the cycles cost with the user first): per canister `make release-snapshot`,
-  `make icp-deploy-canister`, `make icp-start`, `make icp-provision-llm`.
+  `make icp-upgrade-llm`, `make icp-start`, `make icp-provision-llm`. Never
+  `icp-deploy-canister` for an LLM: `icp deploy` syncs icp.yaml's controllers and would
+  drop the extra ones production carries (the dfx wallet on 4osxs + 44ual, cda4n on 6uwoh).
+  The upgrade keeps the uploaded gguf; a snapshot is about the canister's memory size
+  (1.4-3.9 GiB) and costs storage cycles until it is deleted.
 - Frontend (if changed): `make icp-deploy-frontend ENV=production`. Its rollback
   is redeploying the previous tag's frontend, so it needs no snapshot.
 
