@@ -24,7 +24,7 @@ export function ModelSelector({
   // wrap onto multiple rows instead of overflowing off the right edge.
   const barStyle = {
     position: 'fixed',
-    top: '52px', // just below the shared TopNav (TOPNAV_HEIGHT = 48)
+    top: 'calc(52px + var(--env-bar-h, 0px))', // just below the shared TopNav (TOPNAV_HEIGHT = 48)
     left: 0,
     right: 0,
     zIndex: 950, // above the conversation view (900), below the TopNav (1000)

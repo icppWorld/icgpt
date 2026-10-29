@@ -42,7 +42,7 @@ export function TopNav({ access, labRun, onOpenAdmin, onLogout }) {
 
   const bar = {
     position: 'fixed',
-    top: 0,
+    top: 'var(--env-bar-h, 0px)', // below the staging/local environment bar
     left: 0,
     right: 0,
     height: `${TOPNAV_HEIGHT}px`,

@@ -39,6 +39,22 @@ export async function setEarlyAccess(authClient, enabled) {
   return (await adminActor(authClient)).setEarlyAccess(enabled)
 }
 
+// ----- environment + maintenance ------------------------------------------
+// "production" | "staging" | "local" (anonymous query: works before sign-in).
+export async function getEnvironment() {
+  return (await adminActor()).getEnvironment()
+}
+
+// Returns { on, message }.
+export async function getMaintenance(authClient) {
+  return (await adminActor(authClient)).getMaintenance()
+}
+
+// Ops-only (admin or controller). message "" = the default maintenance text.
+export async function setMaintenance(authClient, on, message) {
+  return (await adminActor(authClient)).setMaintenance(on, message)
+}
+
 // principal args from the lists are already Principal objects; pass them through.
 export async function approveRequest(authClient, principal) {
   return (await adminActor(authClient)).approve(principal)

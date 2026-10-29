@@ -15,7 +15,10 @@ import {
   getEarlyAccessCallCap,
   setEarlyAccessCallCap,
   getLogs,
+  getMaintenance,
+  setMaintenance as setMaintenanceCall,
 } from '../canisters/admin'
+import { useEnvironment } from '../common/environment'
 
 function fmtDate(at) {
   try {
@@ -37,11 +40,23 @@ function fmtTime(at) {
   }
 }
 
-// Admin panel (admins only). Toggle early access, review/approve access requests,
-// manage the whitelist, and manage runtime admins. All actions call the icgpt_admin
-// canister (which re-checks admin server-side) then refresh the lists.
-export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
+// Admin panel (admins only). Toggle maintenance + early access, review/approve access
+// requests, manage the whitelist, and manage runtime admins. All actions call the
+// icgpt_admin canister (which re-checks admin server-side) then refresh the lists.
+// `onAccessChanged` lets the app refresh its access record (eg. the maintenance banner).
+export function AdminPanel({
+  authClient,
+  initialEarlyAccess,
+  onAccessChanged,
+  onClose,
+}) {
+  const isStaging = useEnvironment() === 'staging'
   const [earlyAccess, setEarly] = React.useState(initialEarlyAccess === true)
+  const [maintenance, setMaintenanceState] = React.useState({
+    on: false,
+    message: '',
+  })
+  const [maintMsg, setMaintMsg] = React.useState('')
   const [requests, setRequests] = React.useState([])
   const [whitelist, setWhitelist] = React.useState([])
   const [admins, setAdmins] = React.useState({ bootstrap: [], added: [] })
@@ -63,14 +78,16 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
   const reload = React.useCallback(async () => {
     setErr(null)
     try {
-      const [r, w, a, u, cap, lg] = await Promise.all([
+      const [r, w, a, u, cap, lg, m] = await Promise.all([
         listRequests(authClient),
         listWhitelist(authClient),
         listAdmins(authClient),
         listUsage(authClient),
         getEarlyAccessCallCap(authClient),
         getLogs(authClient, 0),
+        getMaintenance(authClient),
       ])
+      setMaintenanceState(m)
       setRequests(r)
       setWhitelist(w)
       setAdmins(a)
@@ -98,6 +115,14 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
     } finally {
       setBusy(false)
     }
+  }
+
+  async function toggleMaintenance() {
+    const next = !maintenance.on
+    await act(async () => {
+      await setMaintenanceCall(authClient, next, next ? maintMsg.trim() : '')
+      if (onAccessChanged) onAccessChanged()
+    })
   }
 
   async function toggleEarly() {
@@ -193,6 +218,45 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
           </p>
         ) : null}
 
+        {/* Maintenance toggle */}
+        <div style={h}>Maintenance</div>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            flexWrap: 'wrap',
+          }}
+        >
+          <span style={{ color: maintenance.on ? '#ffb86c' : '#50fa7b' }}>
+            {maintenance.on
+              ? 'ON — users are paused (admins keep access)'
+              : 'OFF — ICGPT is running normally'}
+          </span>
+          {maintenance.on ? null : (
+            <input
+              value={maintMsg}
+              onChange={(e) => setMaintMsg(e.target.value)}
+              placeholder="Message for users (optional)"
+              maxLength={500}
+              style={{ ...input, flex: 1, minWidth: '200px' }}
+            />
+          )}
+          <button
+            type="button"
+            style={btn(maintenance.on ? '#50fa7b' : '#ffb86c', '#21222c')}
+            disabled={busy}
+            onClick={toggleMaintenance}
+          >
+            {maintenance.on ? 'Resume ICGPT' : 'Pause for maintenance'}
+          </button>
+        </div>
+        {maintenance.on ? (
+          <p style={{ color: '#6272a4', fontSize: '12px', marginTop: '6px' }}>
+            Users see: {maintenance.message}
+          </p>
+        ) : null}
+
         {/* Early access toggle */}
         <div style={h}>Early access</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -201,14 +265,20 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
               ? 'ON — only admins + whitelisted can use ICGPT'
               : 'OFF — open to everyone'}
           </span>
-          <button
-            type="button"
-            style={btn('#bd93f9', '#21222c')}
-            disabled={busy}
-            onClick={toggleEarly}
-          >
-            {earlyAccess ? 'Open to everyone' : 'Turn early access ON'}
-          </button>
+          {isStaging ? (
+            <span style={{ color: '#6272a4', fontSize: '12px' }}>
+              Always on in staging (dev accounts only)
+            </span>
+          ) : (
+            <button
+              type="button"
+              style={btn('#bd93f9', '#21222c')}
+              disabled={busy}
+              onClick={toggleEarly}
+            >
+              {earlyAccess ? 'Open to everyone' : 'Turn early access ON'}
+            </button>
+          )}
         </div>
 
         {/* Requests */}
@@ -456,5 +526,6 @@ export function AdminPanel({ authClient, initialEarlyAccess, onClose }) {
 AdminPanel.propTypes = {
   authClient: PropTypes.object.isRequired,
   initialEarlyAccess: PropTypes.bool,
+  onAccessChanged: PropTypes.func,
   onClose: PropTypes.func.isRequired,
 }

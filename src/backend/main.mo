@@ -13,6 +13,7 @@ import Judge "Judge";
 import LogStore "LogStore";
 import Cycles "mo:base/ExperimentalCycles";
 import Timer "mo:base/Timer";
+import Runtime "mo:core/Runtime";
 
 // ICGPT admin & CONTROLLER canister.
 //
@@ -33,6 +34,8 @@ persistent actor {
     whitelisted : Bool;
     requested : Bool;
     allowed : Bool;
+    maintenance : Bool; // true while non-admins are paused (see setMaintenance)
+    maintenanceMessage : Text;
   };
 
   // Early-access scale is small, so keep state as plain stable arrays (persist across
@@ -42,6 +45,28 @@ persistent actor {
   var admins : [(Principal, Text)] = []; // runtime admins (in addition to Bootstrap)
   var whitelist : [(Principal, Entry)] = [];
   var requests : [(Principal, Entry)] = [];
+
+  // Maintenance mode: pauses inference + Lab saves for non-admins during a prod upgrade,
+  // while admins keep full access to smoke-test before resuming (see setMaintenance).
+  var maintenance : Bool = false;
+  var maintenanceMessage : Text = "";
+  transient let DEFAULT_MAINTENANCE_MESSAGE : Text = "ICGPT is briefly down for maintenance. Please try again in a few minutes.";
+  // Inference rejected for maintenance uses its own status code ("Locked"), so the frontend
+  // never retries it as a transient 503 and never confuses it with a 403 access denial.
+  transient let MAINTENANCE_STATUS : Nat16 = 423;
+
+  // Deploy environment ("production" | "staging" | "local"), from the ICGPT_ENV canister
+  // environment variable that icp.yaml sets per environment (absent = "production"). Only
+  // controllers can set canister environment variables, so it is trusted session state, never
+  // user input. Transient: re-read on every install/upgrade (a query cannot read env vars).
+  transient let environment : Text = switch (Runtime.envVar<system>("ICGPT_ENV")) {
+    case (?e) { e };
+    case null { "production" };
+  };
+  // Staging is for dev accounts only: early access is always enforced there (it can not be
+  // turned off), and nobody can request access - an admin whitelists the dev principals.
+  func isStaging() : Bool { environment == "staging" };
+  func effectiveEarlyAccess() : Bool { earlyAccess or isStaging() };
 
   // ----- entry-list helpers -------------------------------------------------
   func findEntry(arr : [(Principal, Entry)], p : Principal) : ?Entry {
@@ -81,7 +106,15 @@ persistent actor {
   // Allowed to use inference: admin OR early access is off OR whitelisted.
   func isAllowed(caller : Principal) : Bool {
     if (Principal.isAnonymous(caller)) { return false };
-    isAdmin(caller) or (not earlyAccess) or hasKey(whitelist, caller);
+    isAdmin(caller) or (not effectiveEarlyAccess()) or hasKey(whitelist, caller);
+  };
+
+  // Paused for this caller: maintenance is on and the caller is not an admin.
+  func inMaintenance(caller : Principal) : Bool {
+    maintenance and not isAdmin(caller);
+  };
+  func maintenanceText() : Text {
+    if (maintenanceMessage == "") { DEFAULT_MAINTENANCE_MESSAGE } else { maintenanceMessage };
   };
 
   // Ops = app admin OR an IC controller of this canister (the deploy/CLI identity),
@@ -99,28 +132,36 @@ persistent actor {
   public query ({ caller }) func whoami() : async Principal { caller };
 
   /// The single call the frontend gate needs. allowed = admin OR not earlyAccess OR
-  /// whitelisted. Non-allowed users are shown the request-access screen.
+  /// whitelisted. Non-allowed users are shown the request-access screen; while maintenance
+  /// is on, non-admins are shown the maintenance screen.
   public query ({ caller }) func myAccess() : async Access {
-    let admin = isAdmin(caller);
-    let wl = hasKey(whitelist, caller);
     {
-      earlyAccess;
-      isAdmin = admin;
-      whitelisted = wl;
+      earlyAccess = effectiveEarlyAccess();
+      isAdmin = isAdmin(caller);
+      whitelisted = hasKey(whitelist, caller);
       requested = hasKey(requests, caller);
-      allowed = admin or (not earlyAccess) or wl;
+      allowed = isAllowed(caller);
+      maintenance;
+      maintenanceMessage = maintenanceText();
     };
   };
 
   public query ({ caller }) func isCallerAdmin() : async Bool { isAdmin(caller) };
 
-  public query func getEarlyAccess() : async Bool { earlyAccess };
+  public query func getEarlyAccess() : async Bool { effectiveEarlyAccess() };
+
+  /// The deploy environment ("production" | "staging" | "local"). Public and anonymous, so the
+  /// frontend can show the environment header before sign-in.
+  public query func getEnvironment() : async Text { environment };
 
   /// A signed-in, not-yet-allowed caller requests access, describing their use case.
   /// An admin later approves it onto the whitelist (approval is discussed on OpenChat).
   /// The use case is stored in the `note` field. Bounded to protect stable memory.
   public shared ({ caller }) func requestAccess(useCase : Text) : async Result.Result<(), Text> {
     if (Principal.isAnonymous(caller)) { return #err("sign in first") };
+    if (isStaging()) {
+      return #err("staging is for dev accounts only - ask an admin to whitelist your principal");
+    };
     if (isAdmin(caller) or hasKey(whitelist, caller)) {
       return #err("you already have access");
     };
@@ -137,7 +178,25 @@ persistent actor {
   // ----- admin: early access ------------------------------------------------
   public shared ({ caller }) func setEarlyAccess(e : Bool) : async () {
     requireAdmin(caller);
+    if (isStaging() and not e) {
+      Debug.trap("staging is for dev accounts only: early access can not be turned off");
+    };
     earlyAccess := e;
+  };
+
+  // ----- ops: maintenance mode ----------------------------------------------
+  /// Pause (on = true) or resume ICGPT for non-admins. `message` is shown to users; "" uses
+  /// the default. Ops-only (admin or controller), so the release process can flip it from
+  /// the CLI with the deploy identity. Admins keep full access, to smoke-test while paused.
+  public shared ({ caller }) func setMaintenance(on : Bool, message : Text) : async () {
+    requireOps(caller);
+    if (Text.size(message) > 500) { Debug.trap("maintenance message too long (max 500)") };
+    maintenance := on;
+    maintenanceMessage := message;
+  };
+
+  public query func getMaintenance() : async { on : Bool; message : Text } {
+    { on = maintenance; message = maintenanceText() };
   };
 
   public query ({ caller }) func listRequests() : async [Info] {
@@ -493,6 +552,7 @@ persistent actor {
     if (not isAllowed(caller)) {
       return errOut("Access denied - request early access");
     };
+    if (inMaintenance(caller)) { return errOutCode(maintenanceText(), MAINTENANCE_STATUS) };
     if (llmCanisters.size() == 0) { return errOut("no LLM configured") };
     // Quota: block STARTING a new conversation once over the call budget (a reply
     // in progress is never cut off, since run_update is not quota-checked).
@@ -531,6 +591,7 @@ persistent actor {
     if (not isAllowed(caller)) {
       return errOut("Access denied - request early access");
     };
+    if (inMaintenance(caller)) { return errOutCode(maintenanceText(), MAINTENANCE_STATUS) };
     let idx = getCallerLlm(caller);
     if (idx >= llmCanisters.size()) {
       return errOut("session LLM unavailable - start a new chat");
@@ -592,6 +653,7 @@ persistent actor {
     if (not isAllowed(caller)) {
       return #err("Access denied - request early access");
     };
+    if (inMaintenance(caller)) { return #err(maintenanceText()) };
     let sys = "You are a strict evaluator. Score how well the ANSWER satisfies the RUBRIC on a scale from 0 to 100, where 0 is total failure and 100 is perfect. Respond with ONLY a single integer between 0 and 100 - no words, no punctuation, no explanation.\nRUBRIC:\n" # Judge.truncateBytes(rubric, JUDGE_RUBRIC_CAP);
     let usr = "ANSWER:\n" # Judge.truncateBytes(reply, JUDGE_REPLY_CAP);
     var samples : [Nat] = [];
@@ -659,7 +721,7 @@ persistent actor {
   /// (e.g. a transient network error that exhausted the frontend's retries and never reached a
   /// method here). Bounded: the ring buffer caps total entries; kind/detail are truncated.
   public shared ({ caller }) func logClientEvent(kind : Text, detail : Text) : async () {
-    if (not isAllowed(caller)) { return };
+    if (not isAllowed(caller) or inMaintenance(caller)) { return };
     logEvent("client:" # LogStore.truncate(kind, 64), "", caller, 0, detail);
   };
 
@@ -681,6 +743,7 @@ persistent actor {
   /// only - the same gate as running the Lab. Oversize returns a clean #err (never traps).
   public shared ({ caller }) func saveLabState(state : Text) : async Result.Result<(), Text> {
     if (not isAllowed(caller)) { return #err("Access denied - request early access") };
+    if (inMaintenance(caller)) { return #err(maintenanceText()) };
     if (Text.size(state) > MAX_LAB_STATE_CHARS) { return #err("lab state too large") };
     let without = Array.filter<(Principal, Text)>(labState, func((k, _)) { k != caller });
     labState := Array.append(without, [(caller, state)]);

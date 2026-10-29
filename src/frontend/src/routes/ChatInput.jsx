@@ -36,6 +36,7 @@ export function ChatInput({
   params,
   chats,
   setChats,
+  onInferenceFailed,
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: entered ChatInput.jsx ChatInput ')
@@ -86,6 +87,7 @@ export function ChatInput({
       systemPromptText,
       selectedModel,
       params,
+      onInferenceFailed,
     })
   }
 

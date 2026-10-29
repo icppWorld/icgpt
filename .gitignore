@@ -153,13 +153,16 @@ deps
 # they capture in-flight plans and findings, not repo state.
 TMP-*
 
-# claude code — ignore .claude/ EXCEPT this project's own skill(s). git can't re-include a path
-# under an excluded dir, so each parent is un-excluded step by step. The ic-* skills are installed
-# from dfinity/icskills and deliberately NOT committed (a committed copy drifts from upstream).
+# claude code — ignore .claude/ EXCEPT the IC-skills sync hook and this project's own icgpt-*
+# skills. git can't re-include a path under an excluded dir, so each parent is un-excluded step
+# by step. The IC skills are mirrored per checkout from skills.internetcomputer.org by the
+# SessionStart hook (.claude/sync-ic-skills.sh) and deliberately NOT committed.
 .claude/*
+!.claude/settings.json
+!.claude/sync-ic-skills.sh
 !.claude/skills/
 .claude/skills/*
-!.claude/skills/icgpt-local-e2e/
+!.claude/skills/icgpt-*/
 _handoff/
 # Local mainnet deploy identity name
 .icp-identity

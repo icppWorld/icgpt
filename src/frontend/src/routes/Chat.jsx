@@ -19,6 +19,7 @@ const DEBUG = true
 
 export function Chat() {
   const { authClient, setAuthClient } = useOutletContext()
+  const { refreshAccessQuietly } = useOutletContext()
   const { actorRef, setActorRef } = useOutletContext()
   const { chatNew, setChatNew } = useOutletContext()
   const { chatDone, setChatDone } = useOutletContext()
@@ -229,6 +230,7 @@ export function Chat() {
               params={params}
               chats={chats}
               setChats={setChats}
+              onInferenceFailed={refreshAccessQuietly}
             />
           </div>
         </div>

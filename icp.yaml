@@ -10,7 +10,9 @@
 #   - canister_frontend      : the React studio, served by the official IC assets canister
 #                              (honors src/frontend/src/.ic-assets.json5 — CSP + SPA fallback).
 #
-# Environments: `local` (local replica) and `production` (IC mainnet). The three LLM
+# Environments: `local` (local replica), `staging` (IC mainnet, dev accounts only) and
+# `production` (IC mainnet, the live app). Never deploy with `-e ic`: icp-cli's implicit `ic`
+# environment has its own empty ID store and would create brand-new canisters. The LLM
 # canisters are wired declaratively per environment: 3.75 GiB wasm-memory limit and
 # controllers = [deployer, icgpt_admin] (the hard gate — only icgpt_admin, the controller
 # canister, may reach the LLMs; the deployer principal is kept so we retain management).
@@ -97,36 +99,51 @@ networks:
     ii: true
 
 environments:
+  # Settings are written per canister, sharing YAML anchors (&llm_big / &llm_small). Do NOT
+  # use `<<:` merge keys: icp-cli silently ignores them. icgpt_admin gets the ICGPT_ENV
+  # canister environment variable (read by main.mo: staging = dev accounts only, plus the
+  # environment header in the frontend). production sets none -> "production".
   - name: local
     network: local
-    settings: &llm_settings
-      llama_cpp_qwen25_05b_q8:
+    settings:
+      icgpt_admin:
+        environment_variables:
+          ICGPT_ENV: local
+      llama_cpp_qwen25_05b_q8: &llm_big
         wasm_memory_limit: 3.75gib
         controllers:
           - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
           - icgpt_admin
-      llama_cpp_qwen3_06b_q8:
-        wasm_memory_limit: 3.75gib
-        controllers:
-          - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
-          - icgpt_admin
-      llama_cpp_qwen3_17b_q4:
-        wasm_memory_limit: 3.75gib
-        controllers:
-          - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
-          - icgpt_admin
-      llama_cpp_gemma3_270m:
+      llama_cpp_qwen3_06b_q8: *llm_big
+      llama_cpp_qwen3_17b_q4: *llm_big
+      llama_cpp_gemma3_270m: &llm_small
         # No wasm_memory_limit bump — 270M uses ~0.9 GiB (the default limit is enough).
         # Only the hard-gate controllers are set (chfec deployer + icgpt_admin).
         controllers:
           - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
           - icgpt_admin
-      llama_cpp_lfm2_1p2b_q4:
-        wasm_memory_limit: 3.75gib
-        controllers:
-          - chfec-vmrjj-vsmhw-uiolc-dpldl-ujifg-k6aph-pwccq-jfwii-nezv4-2ae
-          - icgpt_admin
+      llama_cpp_lfm2_1p2b_q4: *llm_big
+
+  # Staging: a full mirror of production on IC mainnet, with its own canisters (ids in
+  # .icp/data/mappings/staging.ids.json). `icgpt_admin` in the controller lists resolves to
+  # STAGING's admin canister, so the hard gate holds per environment.
+  - name: staging
+    network: ic
+    settings:
+      icgpt_admin:
+        environment_variables:
+          ICGPT_ENV: staging
+      llama_cpp_qwen25_05b_q8: *llm_big
+      llama_cpp_qwen3_06b_q8: *llm_big
+      llama_cpp_qwen3_17b_q4: *llm_big
+      llama_cpp_gemma3_270m: *llm_small
+      llama_cpp_lfm2_1p2b_q4: *llm_big
 
   - name: production
     network: ic
-    settings: *llm_settings
+    settings:
+      llama_cpp_qwen25_05b_q8: *llm_big
+      llama_cpp_qwen3_06b_q8: *llm_big
+      llama_cpp_qwen3_17b_q4: *llm_big
+      llama_cpp_gemma3_270m: *llm_small
+      llama_cpp_lfm2_1p2b_q4: *llm_big

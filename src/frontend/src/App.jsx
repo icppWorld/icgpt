@@ -91,6 +91,17 @@ export function App() {
     recheckAccess()
   }, [authClient, recheckAccess])
 
+  // Refresh the access record in place (no "checking access" screen), eg. after an admin
+  // toggles maintenance in the Admin panel. A failure keeps the current record.
+  const refreshAccessQuietly = React.useCallback(async () => {
+    if (!authClient) return
+    try {
+      setAccess(await getMyAccess(authClient))
+    } catch (e) {
+      console.error('icgpt_admin myAccess refresh failed', e)
+    }
+  }, [authClient])
+
   const doLogout = React.useCallback(async () => {
     try {
       if (authClient) await authClient.logout()
@@ -221,6 +232,9 @@ export function App() {
       } catch (e) {
         const msg = e && e.message ? e.message : String(e)
         setLabError(msg)
+        // A failure may mean maintenance was just switched on: re-read access, so the
+        // app swaps to the maintenance screen instead of leaving a bare error.
+        refreshAccessQuietly()
         // Best-effort: record a Lab failure (that survived retries) to the on-chain
         // monitoring log. Skip user-initiated cancels. Fire-and-forget.
         if (!labCancelRef.current.aborted) {
@@ -235,7 +249,7 @@ export function App() {
         setLabProgress(null)
       }
     },
-    [authClient, persistLabState]
+    [authClient, persistLabState, refreshAccessQuietly]
   )
   const cancelLabRun = () => {
     labCancelRef.current.aborted = true
@@ -412,8 +426,10 @@ export function App() {
     )
   }
 
-  // Signed in but not allowed during early access → request-access lock screen.
-  if (!openWhenSignedIn && !access.allowed) {
+  // Signed in but not allowed during early access → request-access lock screen. While
+  // maintenance is on, non-admins get the lock screen's maintenance card instead.
+  const pausedForUser = access?.maintenance && !access?.isAdmin
+  if (!openWhenSignedIn && (!access.allowed || pausedForUser)) {
     return (
       <div>
         <Head />
@@ -437,12 +453,30 @@ export function App() {
         onLogout={doLogout}
       />
       <div style={{ paddingTop: `${TOPNAV_HEIGHT}px` }}>
+        {access?.maintenance && access?.isAdmin ? (
+          <div
+            role="status"
+            style={{
+              background: '#ffb86c',
+              color: '#21222c',
+              fontFamily: 'monospace',
+              fontSize: '12px',
+              fontWeight: 'bold',
+              textAlign: 'center',
+              padding: '4px 8px',
+            }}
+          >
+            MAINTENANCE ON — users are paused; you have admin access. Turn it
+            off in the Admin panel.
+          </div>
+        ) : null}
         <Outlet
           context={{
             authClient,
             setAuthClient,
             access,
             recheckAccess,
+            refreshAccessQuietly,
             doLogout,
             actorRef,
             setActorRef,
@@ -491,10 +525,10 @@ export function App() {
         <AdminPanel
           authClient={authClient}
           initialEarlyAccess={access?.earlyAccess}
+          onAccessChanged={refreshAccessQuietly}
           onClose={() => setShowAdminPanel(false)}
         />
       ) : null}
-      {/* <StagingBanner /> */}
       <Footer fixed />
     </div>
   )

@@ -76,6 +76,8 @@ const RETRYABLE_MSG =
 // Permanent rejections (gate / quota / bad request) - surface immediately, never retry.
 const PERMANENT_MSG =
   /access denied|early access|unknown model|usage limit|no LLM configured|session LLM unavailable/i
+// icgpt_admin rejects inference with this status while maintenance mode is on (never retried).
+export const MAINTENANCE_STATUS = 423
 
 // Classify an inference application-error (returned as `{ Err }` in a SUCCESSFUL response) as
 // retryable (transient "not ready" / infra) or not (permanent gate/quota). The controller now
@@ -83,6 +85,7 @@ const PERMANENT_MSG =
 // is authoritative; the message patterns are a belt-and-suspenders fallback.
 export function classifyInferenceError(statusCode, errText) {
   const t = errText || ''
+  if (statusCode === MAINTENANCE_STATUS) return false
   if (PERMANENT_MSG.test(t)) return false
   if (statusCode === 403) return false
   if (RETRYABLE_STATUS.has(statusCode)) return true

@@ -2,6 +2,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { requestAccess } from '../canisters/admin'
 import { Footer } from '../common/Footer'
+import { useEnvironment } from '../common/environment'
 
 const OPENCHAT_URL =
   'https://oc.app/community/mepna-eqaaa-aaaar-bclua-cai/channel/2881126157'
@@ -10,6 +11,9 @@ const OPENCHAT_URL =
 // (not an admin, not whitelisted). They describe their use case to request access,
 // then join our OpenChat channel to discuss it with the team; an admin approves them
 // onto the whitelist. Their principal is shown (copyable) to reference in the chat.
+// Also shown, with a dedicated card, while maintenance is on (to non-admins) and when the
+// access check could not reach the canister. On staging there is no request form: staging is
+// for dev accounts only, whitelisted by an admin.
 export function EarlyAccessLockScreen({
   authClient,
   access,
@@ -17,6 +21,7 @@ export function EarlyAccessLockScreen({
   onRetry,
 }) {
   const principalText = authClient.getIdentity().getPrincipal().toText()
+  const isStaging = useEnvironment() === 'staging'
 
   const [useCase, setUseCase] = React.useState('')
   const [submitted, setSubmitted] = React.useState(access?.requested === true)
@@ -134,6 +139,58 @@ export function EarlyAccessLockScreen({
   // comes back as allowed:false in the record) - and App.jsx has already auto-retried with
   // backoff before we get here. So show a calm, dedicated reconnect screen instead of
   // crowding the access-request card with an alarming "couldn't verify your access".
+  if (access?.maintenance && !access?.isAdmin) {
+    return (
+      <div>
+        <title>ICGPT — On-chain Prompt Studio · maintenance</title>
+        <div style={wrap}>
+          <div style={card}>
+            <div style={{ fontSize: '38px', color: '#ffb86c', lineHeight: 1 }}>
+              <i className="bi bi-tools" />
+            </div>
+            <div
+              style={{
+                fontSize: '18px',
+                fontWeight: 'bold',
+                marginTop: '10px',
+              }}
+            >
+              Down for maintenance
+            </div>
+            <p
+              style={{
+                fontSize: '13px',
+                color: '#6272a4',
+                lineHeight: 1.5,
+                marginTop: '8px',
+              }}
+            >
+              {access.maintenanceMessage}
+            </p>
+            <button
+              type="button"
+              onClick={onRetry}
+              style={{ ...btn('#bd93f9', '#21222c'), marginTop: '14px' }}
+            >
+              Try again
+            </button>
+            <div
+              style={{ borderTop: '1px solid #44475a', margin: '18px 0 12px' }}
+            />
+            <button
+              type="button"
+              onClick={onLogout}
+              style={{ ...btn('transparent', '#6272a4'), fontSize: '12px' }}
+            >
+              Sign out / switch identity
+            </button>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
   if (access?.error) {
     return (
       <div>
@@ -203,10 +260,27 @@ export function EarlyAccessLockScreen({
               marginTop: '4px',
             }}
           >
-            Early access
+            {isStaging ? 'Staging — dev accounts only' : 'Early access'}
           </div>
 
-          {submitted ? (
+          {isStaging ? (
+            <p
+              style={{
+                marginTop: '18px',
+                fontSize: '13px',
+                lineHeight: 1.5,
+                textAlign: 'left',
+              }}
+            >
+              This is the staging environment, for the ICGPT team only. To get
+              access, send your principal id (below) to an admin, who adds it to
+              the dev accounts. Looking for the live app? Go to{' '}
+              <a href="https://icgpt.onicai.com" style={{ color: '#8be9fd' }}>
+                icgpt.onicai.com
+              </a>
+              .
+            </p>
+          ) : submitted ? (
             <div style={{ marginTop: '18px', textAlign: 'left' }}>
               <p style={{ fontSize: '13px', lineHeight: 1.5 }}>
                 Request received. To move forward, join our OpenChat channel and
