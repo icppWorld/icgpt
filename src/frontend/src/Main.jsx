@@ -9,11 +9,14 @@ import { NothingHere } from './common/NothingHere'
 import { DocsLayout } from './routes/DocsLayout'
 import { DocsHome } from './routes/DocsHome'
 import { DocsPage } from './routes/DocsPage'
+import { StagingBanner } from './common/StagingBanner'
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    {/* Permanent environment header (staging/local only), above every route. */}
+    <StagingBanner />
     <BrowserRouter>
       <Routes>
         {/* PUBLIC docs — a top-level route OUTSIDE <App>, so it bypasses the

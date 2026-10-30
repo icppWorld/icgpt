@@ -1,12 +1,17 @@
 [toolchain]
 moc = "1.4.1"
 
-[canisters]
-icgpt_admin = "src/backend/main.mo"
+[canisters.icgpt_admin]
+main = "src/backend/main.mo"
+# Public Candid interface (as dfx did): lets any caller - icp-cli, the Candid UI, the
+# non-controller pytest identities - decode replies with field names. The frontend ships
+# its own IDL, so it does not depend on this.
+args = ["--public-metadata", "candid:service"]
 
 [dependencies]
 base = "0.16.0"
 llm = "3.1.0"
+core = "2.2.0"
 
 [dev-dependencies]
 test = "2.1.2"

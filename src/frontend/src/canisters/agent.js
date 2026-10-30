@@ -25,12 +25,13 @@ export function envValue(key) {
   return canisterEnv?.[key]
 }
 
-// Build an authenticated actor for `canisterId` using the caller's II identity.
+// Build an authenticated actor for `canisterId` using the caller's II identity, or an
+// anonymous one when `authClient` is omitted (for public queries before sign-in).
 // Uses the @icp-sdk/core Actor API with a pre-built agent (same candid lineage as
 // the old @dfinity/agent, so decoding of results is unchanged). The root key comes
 // from the cookie — no fetchRootKey() and no local/ic branching.
 export async function makeActor(idlFactory, canisterId, authClient) {
-  const identity = await authClient.getIdentity()
+  const identity = authClient ? await authClient.getIdentity() : undefined
   const agent = await HttpAgent.create({
     identity,
     host: window.location.origin,

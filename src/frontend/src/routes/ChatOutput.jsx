@@ -35,8 +35,10 @@ export function ChatOutput({
   const topPx = isMobile ? 128 : 92
   const containerStyle = {
     ...floatingStyleTop,
-    top: `${topPx}px`,
-    maxHeight: `calc(100vh - ${heightChatInput}px - ${topPx + 86}px)`,
+    top: `calc(${topPx}px + var(--env-bar-h, 0px))`,
+    maxHeight: `calc(100vh - ${heightChatInput}px - ${
+      topPx + 86
+    }px - var(--env-bar-h, 0px))`,
     overflowY: 'auto',
     textAlign: 'left',
   }

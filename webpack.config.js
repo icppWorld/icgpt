@@ -9,6 +9,9 @@ const CopyPlugin = require('copy-webpack-plugin')
 // ENV=production` (mainnet). A production webpack build flips minification + the
 // production mode; a development build keeps source maps and certificate-friendly output.
 const isDevelopment = process.env.NODE_ENV !== 'production'
+const isProductionDomainBuild = !['staging', 'local'].includes(
+  process.env.ICGPT_ENV
+)
 console.warn(`isDevelopment: ${isDevelopment}`)
 
 const frontendDirectory = 'frontend'
@@ -214,10 +217,18 @@ module.exports = () => {
             to: path.join(__dirname, 'dist', 'frontend/video'),
             noErrorOnMissing: true,
           },
-          {
-            from: path.join(__dirname, 'src', 'frontend/domain-info'),
-            to: path.join(__dirname, 'dist', 'frontend'),
-          },
+          // .well-known/ic-domains (icgpt.onicai.com, icgpt.icpp.world) belongs to PRODUCTION
+          // only: the staging/local asset canisters must not claim prod's custom domains. Kept
+          // unless ICGPT_ENV (set by `make icp-deploy-frontend`) is explicitly staging/local, so
+          // a plain `npm run build` for production still ships it.
+          ...(isProductionDomainBuild
+            ? [
+                {
+                  from: path.join(__dirname, 'src', 'frontend/domain-info'),
+                  to: path.join(__dirname, 'dist', 'frontend'),
+                },
+              ]
+            : []),
           {
             from: `src/frontend/src/.ic-assets.json*`,
             to: '.ic-assets.json5',

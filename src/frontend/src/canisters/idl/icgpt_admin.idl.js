@@ -52,7 +52,9 @@ export const idlFactory = ({ IDL }) => {
   })
   const Access = IDL.Record({
     requested: IDL.Bool,
+    maintenanceMessage: IDL.Text,
     allowed: IDL.Bool,
+    maintenance: IDL.Bool,
     earlyAccess: IDL.Bool,
     isAdmin: IDL.Bool,
     whitelisted: IDL.Bool,
@@ -87,8 +89,14 @@ export const idlFactory = ({ IDL }) => {
     getCyclesReport: IDL.Func([], [CyclesReport], ['query']),
     getEarlyAccess: IDL.Func([], [IDL.Bool], ['query']),
     getEarlyAccessCallCap: IDL.Func([], [IDL.Nat], ['query']),
+    getEnvironment: IDL.Func([], [IDL.Text], ['query']),
     getLabState: IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
     getLogs: IDL.Func([IDL.Nat], [IDL.Vec(LogEntry)], ['query']),
+    getMaintenance: IDL.Func(
+      [],
+      [IDL.Record({ on: IDL.Bool, message: IDL.Text })],
+      ['query']
+    ),
     get_llm_balances: IDL.Func([], [IDL.Vec(IDL.Nat)], []),
     get_llm_canisters: IDL.Func(
       [],
@@ -123,6 +131,7 @@ export const idlFactory = ({ IDL }) => {
     saveLabState: IDL.Func([IDL.Text], [Result], []),
     setEarlyAccess: IDL.Func([IDL.Bool], [], []),
     setEarlyAccessCallCap: IDL.Func([IDL.Nat], [], []),
+    setMaintenance: IDL.Func([IDL.Bool, IDL.Text], [], []),
     whoami: IDL.Func([], [IDL.Principal], ['query']),
   })
 }

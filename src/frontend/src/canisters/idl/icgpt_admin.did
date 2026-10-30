@@ -93,6 +93,8 @@ type Access =
    allowed: bool;
    earlyAccess: bool;
    isAdmin: bool;
+   maintenance: bool;
+   maintenanceMessage: text;
    requested: bool;
    whitelisted: bool;
  };
@@ -113,11 +115,18 @@ service : {
   getCyclesReport: () -> (CyclesReport) query;
   getEarlyAccess: () -> (bool) query;
   getEarlyAccessCallCap: () -> (nat) query;
+  /// The deploy environment ("production" | "staging" | "local"). Public and anonymous, so the
+  /// frontend can show the environment header before sign-in.
+  getEnvironment: () -> (text) query;
   /// The caller's saved Lab state, or null if none. Non-anonymous only (own state).
   getLabState: () -> (opt text) query;
   /// Admins review recent failure events. `limit == 0` returns all (bounded to LOG_CAP);
   /// otherwise the most recent `limit`, newest last. Non-admins get an empty list.
   getLogs: (limit: nat) -> (vec LogEntry) query;
+  getMaintenance: () -> (record {
+                           message: text;
+                           on: bool;
+                         }) query;
   /// The live cycle balance of each registered LLM (via the management canister's
   /// canister_status — this canister is a controller of each). Ops-only; also confirms
   /// the per-call cost measurement can read balances. (On a local replica cycles are
@@ -147,7 +156,8 @@ service : {
   /// method here). Bounded: the ring buffer caps total entries; kind/detail are truncated.
   logClientEvent: (kind: text, detail: text) -> ();
   /// The single call the frontend gate needs. allowed = admin OR not earlyAccess OR
-  /// whitelisted. Non-allowed users are shown the request-access screen.
+  /// whitelisted. Non-allowed users are shown the request-access screen; while maintenance
+  /// is on, non-admins are shown the maintenance screen.
   myAccess: () -> (Access) query;
   new_chat: (model: text, input: InputRecord) -> (OutputRecordResultX);
   reject: (p: principal) -> ();
@@ -165,6 +175,10 @@ service : {
   saveLabState: (state: text) -> (Result);
   setEarlyAccess: (e: bool) -> ();
   setEarlyAccessCallCap: (n: nat) -> ();
+  /// Pause (on = true) or resume ICGPT for non-admins. `message` is shown to users; "" uses
+  /// the default. Ops-only (admin or controller), so the release process can flip it from
+  /// the CLI with the deploy identity. Admins keep full access, to smoke-test while paused.
+  setMaintenance: (on: bool, message: text) -> ();
   /// The caller's principal - handy for the access screen and for capturing a
   /// principal to hardcode as a bootstrap admin.
   whoami: () -> (principal) query;

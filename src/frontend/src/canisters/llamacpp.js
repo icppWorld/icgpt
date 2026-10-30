@@ -572,6 +572,7 @@ export async function doSubmitLlamacpp({
   systemPromptText,
   selectedModel,
   params,
+  onInferenceFailed,
 }) {
   if (DEBUG) {
     console.log('DEBUG-FLOW: doSubmitLlamacpp', { chatNew })
@@ -642,6 +643,9 @@ export async function doSubmitLlamacpp({
     ).catch(() => {})
     setChatDone(true)
     setChatDisplay('CanisterError')
+    // A failure may mean maintenance was just switched on: let the app re-read access
+    // (it then shows the maintenance screen instead of this error).
+    if (onInferenceFailed) onInferenceFailed()
   } finally {
     setWaitAnimationMessage('Calling the in-canister LLM')
     setIsSubmitting(false)

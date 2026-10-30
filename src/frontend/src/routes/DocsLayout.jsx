@@ -17,7 +17,7 @@ export function DocsLayout() {
   }
   const header = {
     position: 'sticky',
-    top: 0,
+    top: 'var(--env-bar-h, 0px)', // below the staging/local environment bar
     zIndex: 10,
     display: 'flex',
     alignItems: 'center',

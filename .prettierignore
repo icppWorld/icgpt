@@ -24,3 +24,8 @@ src/git-submodules
 # llms/llama_cpp_canister is an unzipped llama_cpp_canister release; keep it
 # byte-identical to the release zip so the vendored content stays verifiable.
 llms/llama_cpp_canister
+# Tooling + local state, not repo source: Claude Code config and the IC skills synced per
+# checkout, the icp-cli cache (local replica state), and release records.
+.claude
+.icp/cache
+TMP-*

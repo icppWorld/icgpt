@@ -178,14 +178,14 @@ $ shasum -a 256 llms/models/Qwen/Qwen2.5-0.5B-Instruct-GGUF/qwen2.5-0.5b-instruc
 ca59ca7f13d0e15a8cfa77bd17e65d24f6844b554a7b6c12e07a5f89ff76844e
 ```
 
-### LLM model configuration (load_model + set_max_tokens) — SINGLE SOURCE OF TRUTH
+### LLM model configuration (load_model + set_max_tokens)
 
 Each LLM canister is (re)configured after **every** install/upgrade with its `load_model`
 args and `set_max_tokens`. These live in the canister's **main** memory, which an upgrade
 resets — so they MUST be re-run after every install/upgrade (the gguf itself is preserved
 in stable memory across an upgrade, so it does NOT need re-uploading; only after a
-`reinstall` must you re-upload the gguf first). The exact settings for the three production
-models are:
+`reinstall` must you re-upload the gguf first). The single source of truth is the `LLM_*`
+table in the Makefile, applied by `make icp-provision-llm` (this table mirrors it):
 
 | canister                        | model (in canister) | `load_model` args                                                                                     | `set_max_tokens` query / update |
 | ------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
@@ -229,8 +229,8 @@ Notes:
   re-traps — do a plain `-m upgrade` first (fresh heap, gguf preserved), *then* `load_model`.
 - After **every** install/upgrade also re-arm the in-memory timers
   (`cache_cleanup_start_timer`, `cycle_balance_start_timer`) and, under the hard gate, keep
-  `set_access` at level 0 (controllers only). See the walkthrough below for the full call
-  sequence, and "Production provisioning reference" for the mainnet variant.
+  `set_access` at level 0 (controllers only). `make icp-provision-llm CANISTER_NAME=<c> ENV=<env>`
+  does all of it in order.
 
 ## Deploy ICGPT to local network
 
@@ -253,44 +253,27 @@ Once the model gguf is in place, as described in the previous step, you can depl
 # Start the local network. icp seeds every local identity (incl. icpp-llm) with cycles.
 make icp-network-start        # = icp network start -d ; prints gateway_url / api_url
 
-# 1) Build + deploy all canisters. Deploy AS a controller identity — icpp-llm is the
-#    deployer principal listed in icp.yaml's controllers=[deployer, icgpt_admin], so
-#    deploying as it avoids locking yourself out. This mops-builds icgpt_admin, installs
-#    the prebuilt llama wasm into the 3 LLM canisters (with their 3.75 GiB wasm-memory
-#    limit + controllers), and deploys the frontend assets canister. icp also injects
-#    PUBLIC_CANISTER_ID:* into every canister → the asset canister's ic_env cookie.
-icp deploy -e local --identity icpp-llm -y
+# 1) Build + deploy all canisters, as the deploy identity from .icp-identity (icpp-llm, the
+#    deployer principal in icp.yaml's controllers=[deployer, icgpt_admin]). This mops-builds
+#    icgpt_admin, installs the prebuilt llama wasm into the LLM canisters (with their
+#    wasm-memory limit + controllers), and deploys the frontend assets canister. icp injects
+#    PUBLIC_CANISTER_ID:* into every canister (→ the asset canister's ic_env cookie) and
+#    ICGPT_ENV=local into icgpt_admin (→ the grey LOCAL header).
+make icp-deploy ENV=local MODE=auto
 
-# 2) Upload the gguf for each model (icp-native uploader — needs the model files in place
-#    and the network running):
-make upload-llama-cpp-qwen25-05b-q8-local
-make upload-llama-cpp-qwen3-06b-q8-local
-make upload-llama-cpp-qwen3-17b-q4-local
-# If a big-model upload traps with IC0207 (out of cycles), top up the canister first, e.g.:
-#   make icp-topup CANISTER_NAME=llama_cpp_qwen3_17b_q4 AMOUNT=20000000000000 ENV=local
+# 2) Upload each model's gguf (verifies the HuggingFace sha256; point the *_GGUF variables
+#    at your downloads, eg. ~/github/repos/llama_cpp_canister/models/...):
+make upload-llm CANISTER_NAME=llama_cpp_qwen3_06b_q8 ENV=local QWEN3_06B_Q8_GGUF=<path>
+# ... and the other LLM canisters you need. If an upload traps with IC0207 (out of cycles):
+#   make icp-topup CANISTER_NAME=llama_cpp_qwen3_06b_q8 AMOUNT=100000000000000 ENV=local
 
-# 3) Provision each LLM canister (load the model, cap tokens, arm the in-memory timers).
-#    Below is Qwen3-0.6B (the default); repeat for the others using the exact args in the
-#    "LLM model configuration" table above (05b = 06b; 17b uses models/model.gguf, batch 8,
-#    max_tokens_update 4).
-C=llama_cpp_qwen3_06b_q8
-make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=load_model \
-  CANISTER_ARGUMENT='(record { args = vec {"--model"; "model.gguf"; "--cache-type-k"; "q8_0"; "--cache-type-v"; "q8_0"; "--batch-size"; "64"; "--ubatch-size"; "64"; "--ctx-size"; "16384"} })'
-make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=set_max_tokens \
-  CANISTER_ARGUMENT='(record { max_tokens_query = 1 : nat64; max_tokens_update = 20 : nat64 })'
-make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=cache_cleanup_start_timer CANISTER_ARGUMENT='()'
-make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=cycle_balance_start_timer CANISTER_ARGUMENT='()'
-make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=ready CANISTER_ARGUMENT='()' QUERY=--query   # expect status_code = 200
+# 3) Provision each LLM canister (load the model, cap tokens, arm the in-memory timers, lock
+#    it to controllers only) with the settings from the Makefile's LLM_* table:
+make icp-provision-llm CANISTER_NAME=llama_cpp_qwen3_06b_q8 ENV=local   # or: make icp-provision-llms ENV=local
 
-# 4) Wire the rest of the hard gate in icgpt_admin. Part (a) — controllers — was set by the
-#    deploy (step 1). Part (b): register each LLM (keyed by its gguf filename). Part (c): lock
-#    each LLM to controllers-only. Grant yourself admin by adding your per-origin frontend
-#    principal to src/backend/Bootstrap.mo, then `make icp-deploy-canister CANISTER_NAME=icgpt_admin MODE=upgrade`.
-make icp-call ENV=local CANISTER_NAME=icgpt_admin CANISTER_METHOD=add_llm_canister \
-  CANISTER_ARGUMENT='("Qwen3-0.6B-Q8_0.gguf", "'$(icp canister status llama_cpp_qwen3_06b_q8 -e local --id-only)'")'
-# ... repeat add_llm_canister for the qwen2.5 + qwen3-1.7B gguf names ...
-make icp-call ENV=local CANISTER_NAME=icgpt_admin CANISTER_METHOD=checkAccessToLLMs CANISTER_ARGUMENT='()'  # (variant { ok })
-make icp-call ENV=local CANISTER_NAME=$C CANISTER_METHOD=set_access CANISTER_ARGUMENT='(record { level = 0 : nat16 })'
+# 4) Register the LLMs in icgpt_admin (the hard gate) and give the local dev sign-in access:
+make icp-register-llms ENV=local
+make icp-whitelist-dev ENV=local
 
 # The frontend assets canister was already deployed in step 1. To rebuild + redeploy just
 # the frontend after a code change:
@@ -461,77 +444,30 @@ All front-end color styling is done using the open source Dracula UI:
 
 # Deployment to IC
 
-ICGPT is live at https://icgpt.onicai.com/. Mainnet deploys now go through **icp-cli**
-(environment `production`, network `ic`). The five canister IDs are already recorded in the
-icp ID store (`.icp/data/mappings/production.ids.json`, committed) and in `canister_ids.json`.
+ICGPT is live at https://icgpt.onicai.com/ (icp environment `production`). Releases go
+through a mainnet **staging** environment first (dev accounts only, red STAGING header),
+then to production paused behind maintenance mode, with a snapshot to roll back to.
 
-```bash
-# 0) One time on a fresh clone: link the existing mainnet IDs into icp's store (already
-#    committed for this repo; re-link only if the store is missing):
-#    make icp-link CANISTER_NAME=icgpt_admin PRINCIPAL=4jtrg-qqaaa-aaaag-ay5iq-cai ENV=production
-#    ...and the same for the 3 llama_cpp_* canisters + canister_frontend.
+Follow the `icgpt-release` skill (`.claude/skills/icgpt-release/SKILL.md`) — it is the
+release procedure. New work follows `icgpt-new-feature` (branch → PR → CodeRabbit →
+manual approval). The canister IDs are committed in `.icp/data/mappings/<env>.ids.json`.
 
-# 1) Read-only sanity check that icp can reach mainnet:
-make icp-status CANISTER_NAME=icgpt_admin ENV=production
-make icp-call ENV=production CANISTER_NAME=icgpt_admin CANISTER_METHOD=get_llm_canisters \
-     CANISTER_ARGUMENT='()' QUERY=--query
+The Makefile targets the release uses (all take `ENV=staging|production`; `ENV=ic` is
+refused, mainnet deploys never pass `-y`, so icp-cli's Candid compatibility check runs):
 
-# 2) Backend upgrade (preserves state; -m upgrade keeps the models in stable memory):
-make icp-deploy-canister CANISTER_NAME=icgpt_admin ENV=production MODE=upgrade
-make icp-deploy-canister CANISTER_NAME=llama_cpp_qwen3_06b_q8 ENV=production MODE=upgrade
-#   After an LLM UPGRADE, re-load the model + re-arm the timers (in-memory), e.g.:
-#     make icp-call ENV=production CANISTER_NAME=llama_cpp_qwen3_06b_q8 CANISTER_METHOD=load_model CANISTER_ARGUMENT='(record { args = vec {"--model"; "model.gguf"; ...16K ctx... } })'
-#     make icp-call ENV=production CANISTER_NAME=... CANISTER_METHOD=cache_cleanup_start_timer CANISTER_ARGUMENT='()'  (and cycle_balance_start_timer)
-#   After a REINSTALL, re-upload the gguf first: make upload-llama-cpp-<model>-ic
-#   The 3.75 GiB wasm-memory-limit + controllers=[deployer, icgpt_admin] are applied
-#   automatically from icp.yaml on deploy (no manual update-settings).
-
-# 3) Frontend: webpack production build + sync to the assets canister (honors
-#    .ic-assets.json5). Canister IDs + root key resolve at RUNTIME from the ic_env cookie,
-#    so no .env is generated. NOTE: sign-in uses Internet Identity at id.ai; after this
-#    deploy, confirm login still works (the frontend moved from @dfinity/* to @icp-sdk/*).
-make icp-deploy-frontend ENV=production
-```
-
-> The gguf upload (`make upload-*-ic`, now `--network production`) and everything else run
-> on icp-cli — **dfx is fully retired**.
-
-## Production provisioning reference (icp-cli)
-
-After a **reinstall** of an LLM canister you must re-upload its gguf and reload the model;
-after an **upgrade** the gguf is preserved in stable memory and you only reload the model.
-The 3.75 GiB `wasm_memory_limit` + `controllers=[deployer, icgpt_admin]` are applied from
-`icp.yaml` on every deploy (no manual `update-settings`). Deploy/provision AS a controller
-identity: `--identity icpp-llm`.
-
-```bash
-C=llama_cpp_qwen25_05b_q8
-
-# After a REINSTALL only: re-upload the gguf (an upgrade preserves it in stable memory)
-make upload-llama-cpp-qwen25-05b-q8-ic
-
-# Reload the model (REQUIRED after every install/upgrade)
-make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=load_model \
-  CANISTER_ARGUMENT='(record { args = vec {"--model"; "model.gguf"; "--cache-type-k"; "q8_0"; } })'
-
-# Cap tokens
-make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=set_max_tokens \
-  CANISTER_ARGUMENT='(record { max_tokens_query = 1 : nat64; max_tokens_update = 20 : nat64 })'
-
-# Arm the in-memory timers (REQUIRED after every install/upgrade):
-#   cache cleanup deletes prompt caches older than 6h; cycle balance refreshes hourly.
-make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=cache_cleanup_start_timer CANISTER_ARGUMENT='()'
-make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=cycle_balance_start_timer CANISTER_ARGUMENT='()'
-
-# Access level: the HARD GATE keeps each LLM at level 0 (controllers only) — the
-# icgpt_admin controller is the sole caller (0 = controllers only, 1 = all except anonymous).
-make icp-call ENV=production CANISTER_NAME=$C CANISTER_METHOD=set_access CANISTER_ARGUMENT='(record { level = 0 : nat16 })'
-
-# Download a canister's main.log:
-make download-log-llama-cpp-qwen25-05b-q8-ic
-```
-
-The frontend is deployed with `make icp-deploy-frontend ENV=production` (see above).
+| target                                          | what it does                                                      |
+| ----------------------------------------------- | ----------------------------------------------------------------- |
+| `release-record`                                | records module hashes, cycles, settings, Candid; diffs vs before  |
+| `release-stable-check`                          | deployed vs new icgpt_admin: Motoko stable state + Candid         |
+| `maintenance-on MSG=..` / `maintenance-off`     | pause / resume users (admins keep access)                         |
+| `release-snapshot CANISTER_NAME=..`             | stop + snapshot a canister before its upgrade                     |
+| `icp-deploy-canister CANISTER_NAME=..`          | upgrade one canister (production: `--no-create`)                  |
+| `icp-start CANISTER_NAME=..`                    | start a canister stopped by `release-snapshot`                    |
+| `icp-provision-llm CANISTER_NAME=..`            | reload model + timers + access level after an LLM install/upgrade |
+| `icp-deploy-frontend`                           | production build + asset sync (`ic-domains` only for production)  |
+| `release-rollback CANISTER_NAME=.. SNAPSHOT=..` | restore a snapshot and start the canister                         |
+| `upload-llm CANISTER_NAME=..`                   | upload a gguf (after a reinstall or for a new environment)        |
+| `download-log-llm CANISTER_NAME=..`             | download an LLM canister's main.log                               |
 
 ## Verify readiness
 
@@ -543,13 +479,13 @@ make icp-call ENV=local CANISTER_NAME=llama_cpp_qwen3_06b_q8 CANISTER_METHOD=rea
 
 ```bash
 make icp-status CANISTER_NAME=llama_cpp_qwen3_06b_q8 ENV=production   # shows cycles + module hash
-icp cycles balance -e production                                      # the active identity's balance
+make icp-cycles-balance ENV=production                                # the deploy identity's balance
 ```
 
 ## Top up cycles
 
 ```bash
-# From the active identity's balance (AMOUNT in cycles):
+# From the deploy identity's cycles-ledger balance (AMOUNT in cycles):
 make icp-topup CANISTER_NAME=llama_cpp_qwen3_06b_q8 AMOUNT=20000000000000 ENV=production
 ```
 
@@ -575,7 +511,7 @@ The frontend resolves canister IDs and the replica root key at **runtime** from 
 ## Internet Identity
 
 icgpt uses Internet Identity for authentication, via `@icp-sdk/auth` (7.x). The provider
-is mainnet II at `https://id.ai/authorize` — used from local dev too (pocket-ic trusts
-mainnet subnet signatures), so no local II canister is deployed. The user's principal is
+is mainnet II at `https://id.ai/authorize`; on the local replica icp.yaml deploys a throwaway
+local II (`ii: true`) and the dev server points the frontend at it. The user's principal is
 derived from the app's origin (so the local `localhost:8081` principal and the mainnet
 `icgpt.onicai.com` principal differ — founding admins add both in `src/backend/Bootstrap.mo`).
