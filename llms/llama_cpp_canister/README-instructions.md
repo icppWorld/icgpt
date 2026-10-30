@@ -3,7 +3,7 @@
 This folder holds an unzipped official release of
 https://github.com/onicai/llama_cpp_canister
 
-Currently: **v0.16.4** (see version.txt)
+Currently: **v0.23.0rc5** (see version.txt)
 
 Note that `build/` and `*.wasm` are gitignored, so after a fresh clone of ICGPT
 you must unzip the release here yourself, using the steps below.
@@ -17,7 +17,7 @@ How to unzip a release here, or upgrade ICGPT to a new version:
 - Check version.txt and correct it if the release forgot to bump it
 
 Do NOT reformat the content of this folder. It is excluded from prettier &
-eslint (see .eslintignore), so it stays byte-identical to the release zip.
+eslint (see .prettierignore), so it stays byte-identical to the release zip.
 
 ## Regenerating the frontend bindings
 

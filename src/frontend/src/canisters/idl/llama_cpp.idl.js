@@ -31,8 +31,10 @@ export const idlFactory = ({ IDL }) => {
     'runs' : IDL.Nat64,
     'files_failed' : IDL.Nat64,
     'last_run_ns' : IDL.Nat64,
+    'max_decision_states' : IDL.Opt(IDL.Nat64),
     'max_files_per_run' : IDL.Nat64,
     'is_running' : IDL.Bool,
+    'max_decision_states_per_scope' : IDL.Opt(IDL.Nat64),
   });
   const CacheCleanupStatsResult = IDL.Variant({
     'Ok' : CacheCleanupStatsRecord,
@@ -179,11 +181,17 @@ export const idlFactory = ({ IDL }) => {
     'status_code' : StatusCode,
     'prompt_remaining' : IDL.Text,
     'generated_eog' : IDL.Bool,
+    'partial' : IDL.Opt(IDL.Bool),
     'n_prompt_tokens_decoded' : IDL.Opt(IDL.Nat64),
   });
   const OutputRecordResult = IDL.Variant({
     'Ok' : RunOutputRecord,
     'Err' : RunOutputRecord,
+  });
+  const DecisionPinInputRecord = IDL.Record({
+    'until_ns' : IDL.Nat64,
+    'state_key' : IDL.Text,
+    'scope' : IDL.Text,
   });
   const DirContentInputRecord = IDL.Record({
     'dir' : IDL.Text,
@@ -199,21 +207,97 @@ export const idlFactory = ({ IDL }) => {
     'Err' : ApiError,
   });
   const TextResult = IDL.Variant({ 'Ok' : IDL.Text, 'Err' : ApiError });
+  const ClassifyInputRecord = IDL.Record({ 'text' : IDL.Text });
+  const ClassifyOutputRecord = IDL.Record({
+    'scores' : IDL.Vec(IDL.Float64),
+    'labels' : IDL.Vec(IDL.Text),
+    'instructions' : IDL.Opt(IDL.Nat64),
+    'input_tokens' : IDL.Nat64,
+  });
+  const ClassifyResult = IDL.Variant({
+    'Ok' : ClassifyOutputRecord,
+    'Err' : ApiError,
+  });
+  const DecisionKind = IDL.Variant({
+    'noul' : IDL.Null,
+    'score' : IDL.Null,
+    'choice' : IDL.Null,
+  });
+  const DecisionInputRecord = IDL.Record({
+    'scope' : IDL.Opt(IDL.Text),
+    'state' : IDL.Variant({ 'Json' : IDL.Text, 'Text' : IDL.Text }),
+    'questions' : IDL.Vec(
+      IDL.Record({
+        'id' : IDL.Text,
+        'kind' : DecisionKind,
+        'instructions' : IDL.Text,
+      })
+    ),
+    'options' : IDL.Vec(
+      IDL.Record({
+        'key' : IDL.Text,
+        'description' : IDL.Text,
+        'question_id' : IDL.Text,
+      })
+    ),
+  });
+  const DecisionOutputRecord = IDL.Record({
+    'probabilities' : IDL.Vec(
+      IDL.Record({
+        'key' : IDL.Text,
+        'probability' : IDL.Float64,
+        'question_id' : IDL.Text,
+      })
+    ),
+    'state_tokens_remaining' : IDL.Opt(IDL.Nat64),
+    'pending' : IDL.Vec(IDL.Text),
+    'state_key' : IDL.Opt(IDL.Text),
+    'answers' : IDL.Vec(
+      IDL.Record({
+        'id' : IDL.Text,
+        'yes' : IDL.Float64,
+        'kind' : DecisionKind,
+        'score' : IDL.Float64,
+        'choice' : IDL.Text,
+        'confidence' : IDL.Float64,
+      })
+    ),
+    'instructions' : IDL.Opt(IDL.Nat64),
+    'input_tokens' : IDL.Nat64,
+    'state_tokens' : IDL.Opt(IDL.Nat64),
+  });
+  const DecisionResult = IDL.Variant({
+    'Ok' : DecisionOutputRecord,
+    'Err' : ApiError,
+  });
   const AccessInputRecord = IDL.Record({ 'level' : IDL.Nat16 });
   const CacheCleanupConfigInput = IDL.Record({
     'ttl_seconds' : IDL.Opt(IDL.Nat64),
     'period_seconds' : IDL.Opt(IDL.Nat64),
+    'max_decision_states' : IDL.Opt(IDL.Nat64),
     'max_files_per_run' : IDL.Opt(IDL.Nat64),
+    'max_decision_states_per_scope' : IDL.Opt(IDL.Nat64),
   });
   const CacheCleanupConfigRecord = IDL.Record({
     'ttl_seconds' : IDL.Nat64,
     'period_seconds' : IDL.Nat64,
+    'max_decision_states' : IDL.Opt(IDL.Nat64),
     'max_files_per_run' : IDL.Nat64,
     'is_running' : IDL.Bool,
+    'max_decision_states_per_scope' : IDL.Opt(IDL.Nat64),
   });
   const CacheCleanupConfigResult = IDL.Variant({
     'Ok' : CacheCleanupConfigRecord,
     'Err' : ApiError,
+  });
+  const StampPromptCacheInputRecord = IDL.Record({
+    'stamp' : IDL.Text,
+    'promptcache' : IDL.Text,
+    'filesha256' : IDL.Text,
+  });
+  const DecisionUnpinInputRecord = IDL.Record({
+    'state_key' : IDL.Text,
+    'scope' : IDL.Text,
   });
   const UploadPromptCacheInputRecord = IDL.Record({
     'chunk' : IDL.Vec(IDL.Nat8),
@@ -299,6 +383,11 @@ export const idlFactory = ({ IDL }) => {
     'log_pause' : IDL.Func([], [StatusCodeRecordResult], []),
     'log_resume' : IDL.Func([], [StatusCodeRecordResult], []),
     'new_chat' : IDL.Func([InputRecord], [OutputRecordResult], []),
+    'pin_decision_state' : IDL.Func(
+        [DecisionPinInputRecord],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'ready' : IDL.Func([], [StatusCodeRecordResult], ['query']),
     'recursive_dir_content_query' : IDL.Func(
         [DirContentInputRecord],
@@ -310,11 +399,25 @@ export const idlFactory = ({ IDL }) => {
         [DirContentRecordResult],
         [],
       ),
+    'remove_decision_scope' : IDL.Func(
+        [IDL.Text],
+        [StatusCodeRecordResult],
+        [],
+      ),
     'remove_log_file' : IDL.Func([InputRecord], [OutputRecordResult], []),
     'remove_prompt_cache' : IDL.Func([InputRecord], [OutputRecordResult], []),
     'revokeAdminRole' : IDL.Func([IDL.Text], [TextResult], []),
+    'run_classify' : IDL.Func([ClassifyInputRecord], [ClassifyResult], []),
+    'run_classify_query' : IDL.Func(
+        [ClassifyInputRecord],
+        [ClassifyResult],
+        ['query'],
+      ),
+    'run_decision' : IDL.Func([DecisionInputRecord], [DecisionResult], []),
+    'run_decision_full' : IDL.Func([DecisionInputRecord], [DecisionResult], []),
     'run_query' : IDL.Func([InputRecord], [OutputRecordResult], ['query']),
     'run_update' : IDL.Func([InputRecord], [OutputRecordResult], []),
+    'run_update_full' : IDL.Func([InputRecord], [OutputRecordResult], []),
     'set_access' : IDL.Func([AccessInputRecord], [AccessRecordResult], []),
     'set_cache_cleanup_config' : IDL.Func(
         [CacheCleanupConfigInput],
@@ -323,6 +426,16 @@ export const idlFactory = ({ IDL }) => {
       ),
     'set_max_tokens' : IDL.Func(
         [MaxTokensRecord],
+        [StatusCodeRecordResult],
+        [],
+      ),
+    'stamp_uploaded_prompt_cache' : IDL.Func(
+        [StampPromptCacheInputRecord],
+        [StatusCodeRecordResult],
+        [],
+      ),
+    'unpin_decision_state' : IDL.Func(
+        [DecisionUnpinInputRecord],
         [StatusCodeRecordResult],
         [],
       ),
